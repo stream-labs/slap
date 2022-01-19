@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Redumbx</title>
+    <style>
+        html, body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans";
+            padding: 0;
+            margin: 0;
+        }
+        a {
+            text-decoration: none;
+        }
+        .hero {
+            margin-top: 57px;
+            overflow: hidden;
+            padding: 4rem 0;
+            position: relative;
+            text-align: center;
+            background-color: #764abc;
+        }
+        .hero__title {
+            font-size: 3rem;
+            color: white;
+        }
+        .hero__subtitle {
+            color: white;
+            font-size: 1.5rem;
+        }
+        .buttons {
+            padding: 8px 35px;
+            background-color: white;
+            font-size: 21px;
+            display: inline-block;
+            margin: 0 auto;
+            border-radius: 6px;
+        }
+        .buttons a {
+            color: inherit;
+        }
+        .content {
+            max-width: 800px;
+            margin: 50px auto;
+        }
+        .features {
+            max-width: 390px;
+            margin: 20px auto;
+            font-size: 19px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.26.0/plugins/unescaped-markup/prism-unescaped-markup.min.css" integrity="sha512-g33HCZ23fueSK96JEeoy9DelAlu7Ry5mtxqLk+zlEiPj7NIpFI6T9mybOvQxjBN50FALFDCviMXiLqWJcFwzaA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.26.0/themes/prism-okaidia.min.css" integrity="sha512-mIs9kKbaw6JZFfSuo+MovjU+Ntggfoj8RwAmJbVXQ5mkAX5LlgETQEweFPI18humSPHymTb5iikEOKWF7I8ncQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.26.0/components/prism-core.min.js" integrity="sha512-NC2WFBzw/SdbWrzG0C+sg3iv1OITcQKsUitDcYKfOp9vxe92zpNlRc5Ad3q81kAp8Ff/fDV8pZQxdCCeyFdgLw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.26.0/plugins/autoloader/prism-autoloader.min.js" integrity="sha512-GP4x8UWxWyh4BMbyJGOGneiTbkrWEF5izsVJByzVLodP8CuJH/n936+yQDMJJrOPUHLgyPbLiGw2rXmdvGdXHA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.26.0/plugins/unescaped-markup/prism-unescaped-markup.min.js" integrity="sha512-rQtEAFW9oS0hBzTOYejcMPkq3jYbOoueW4C5CkRmrC3yzjw24oT+9V72/JGvI3EzAnU3DZlUn76OD0WTAJhP/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        function goToGetStarted() {
+            alert('Coming soon');
+        }
+    </script>
+</head>
+<body>
+    <header class="hero">
+        <div class="container">
+            <h1 class="hero__title">Redumbx</h1>
+            <p class="hero__subtitle">Simple and Scalable Redux Configuration</p>
+            <div class="buttons">
+                <a class="button" onclick="goToGetStarted()" href="javascript:void(0);">Get Started</a>
+            </div>
+        </div>
+    </header>
+
+    <section>
+        <ul class="features">
+            <li>React-Redux is under the hood.</li>
+            <li>TypeScript ready</li>
+            <li>No additional wrappers for components</li>
+            <li>Minimal boilerplate code</li>
+        </ul>
+    </section>
+
+    <div class="content">
+        <h2>
+            Counter application example
+        </h2>
+        You can compare a vanilla Redux version <a target="_blank" href="https://redux.js.org/usage/usage-with-typescript#standard-redux-toolkit-project-setup-with-typescript">here</a>
+        <script type="text/plain" class="language-tsx">
+import { mutation, useModule } from 'redumbx';
+
+// Define a ReduxModule
+class CounterModule {
+
+  state = {
+    counter: 1,
+  };
+
+  @mutation()
+  increment() {
+    this.state.counter++;
+  }
+
+  @mutation()
+  decrement() {
+    this.state.counter--;
+  }
+}
+
+// Define a React component
+export function Counter() {
+  const { counter, increment, decrement } = useModule(CounterModule);
+  return (
+    <div>
+      Counter Value = {counter}
+      <button onClick={increment}> + </button>
+      <button onClick={decrement}> - </button>
+    </div>
+  );
+}
+
+        </script>
+
+
+    </div>
+</body>
+</html>
