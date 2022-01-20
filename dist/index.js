@@ -7,7 +7,7 @@
 		exports["redumbx"] = factory(require("react"), require("@reduxjs/toolkit"), require("react-redux"));
 	else
 		root["redumbx"] = factory(root["React"], root["ReduxToolkit"], root["ReactRedux"]);
-})(self, function(__WEBPACK_EXTERNAL_MODULE__359__, __WEBPACK_EXTERNAL_MODULE__509__, __WEBPACK_EXTERNAL_MODULE__821__) {
+})(typeof self !== 'undefined' ? self : this, function(__WEBPACK_EXTERNAL_MODULE__359__, __WEBPACK_EXTERNAL_MODULE__509__, __WEBPACK_EXTERNAL_MODULE__821__) {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({

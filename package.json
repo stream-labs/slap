@@ -4,7 +4,7 @@
   "description": "Simple and Scalable Redux Configuration",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "webpack serve --mode development",
+    "start": "webpack serve --config webpack.config.demo.js --progress  --mode development",
     "build": "webpack --progress  --mode production",
     "build-demo": "webpack --config webpack.config.demo.js --progress  --mode production",
     "watch-demo": "webpack serve --config webpack.config.demo.js --progress  --mode development"
@@ -17,6 +17,11 @@
     "@reduxjs/toolkit": "^1.7.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.16.10",
+    "@storybook/addon-actions": "^6.4.13",
+    "@storybook/addon-essentials": "^6.4.13",
+    "@storybook/addon-links": "^6.4.13",
+    "@storybook/react": "^6.4.13",
     "@types/react": "^17.0.38",
     "@types/react-dom": "^17.0.11",
     "@typescript-eslint/eslint-plugin": "^5.9.1",
@@ -33,6 +38,7 @@
     "html-webpack-plugin": "^5.5.0",
     "is-plain-object": "^5.0.0",
     "react-dom": "^17.0.2",
+    "react-redux": "^7.2.6",
     "ts-loader": "^9.2.6",
     "typescript": "^4.5.4",
     "webpack": "^5.66.0",

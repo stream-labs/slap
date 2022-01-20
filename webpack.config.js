@@ -8,6 +8,7 @@ module.exports = {
     clean: true,
     library: 'redumbx',
     libraryTarget: 'umd',
+    globalObject: 'typeof self !== \'undefined\' ? self : this', // for usage in node-js
   },
   devtool: 'source-map',
 
