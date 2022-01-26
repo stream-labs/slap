@@ -5,9 +5,11 @@ import { batch, useSelector as useReduxSelector } from 'react-redux';
 import React, { useEffect, useRef } from 'react';
 // eslint-disable-next-line camelcase
 import { unstable_batchedUpdates } from 'react-dom';
+import { Store } from 'redux';
 import { useOnCreate } from './hooks';
 import { isSimilar } from './isDeepEqual';
 import { traverseClassInstance } from './traverseClassInstance';
+import { useModuleManager } from './useModule';
 
 /*
  * This file provides Redux integration in a modular way
@@ -15,52 +17,64 @@ import { traverseClassInstance } from './traverseClassInstance';
 
 // INITIALIZE REDUX STORE
 
-export const modulesSlice = createSlice({
-  name: 'modules',
-  initialState: {},
-  reducers: {
-    initModule: (state, action) => {
-      const { moduleName, contextId, initialState } = action.payload;
-      const moduleId = moduleName + '_' + contextId;
-      (state as any)[moduleId] = initialState;
+function createReduxStore(appId: string) {
+  const modulesSlice = createSlice({
+    name: 'modules',
+    initialState: {
+      appId,
     },
-    destroyModule: (state, action) => {
-      const { moduleName, contextId } = action.payload;
-      const moduleId = moduleName + '_' + contextId;
-      delete (state as any)[moduleId];
+    reducers: {
+      initModule: (state, action) => {
+        const { moduleName, contextId, initialState } = action.payload;
+        const moduleId = moduleName + '_' + contextId;
+        (state as any)[moduleId] = initialState;
+      },
+      destroyModule: (state, action) => {
+        const { moduleName, contextId } = action.payload;
+        const moduleId = moduleName + '_' + contextId;
+        delete (state as any)[moduleId];
+      },
+      mutateModule: (state, action) => {
+        const {
+          moduleName, contextId, methodName, args,
+        } = action.payload;
+        const moduleManager = getModuleManager(appId);
+        const module = moduleManager.getModule(moduleName, contextId);
+        moduleManager.setImmerState(state);
+        (module as any)[methodName](...args);
+        moduleManager.setImmerState(null);
+      },
     },
-    mutateModule: (state, action) => {
-      const {
-        moduleName, contextId, methodName, args,
-      } = action.payload;
-      const moduleManager = getModuleManager();
-      const module = getModuleManager().getModule(moduleName, contextId);
-      moduleManager.setImmerState(state);
-      (module as any)[methodName](...args);
-      moduleManager.setImmerState(null);
-    },
-  },
-});
+  });
 
-export const store = configureStore({
-  reducer: {
-    modules: modulesSlice.reducer,
-  },
-});
+  const store = configureStore({
+    reducer: {
+      modules: modulesSlice.reducer,
+    },
+  });
 
-const { actions } = modulesSlice;
+  const { actions } = modulesSlice;
+
+  return { store, modulesSlice, actions };
+}
 
 /**
  * ReduxModuleManager helps to organize code splitting with help of Redux Modules
  * Each Redux Module controls its own chunk of state in the global Redux store
  * Redux Modules are objects that contain initialState, actions, mutations and getters
  */
-class ReduxModuleManager {
+export class ReduxModuleManager {
   public immerState: any;
 
   registeredModules: Record<string, Record<string, IReduxModuleMetadata>> = {};
 
   currentContext: Record<string, string> = {};
+
+  actions: any;
+
+  constructor(public store: Store, public modulesSlice: any, public appId: string) {
+    this.actions = modulesSlice.actions;
+  }
 
   /**
    * Register a new Redux Module and initialize it
@@ -83,6 +97,7 @@ class ReduxModuleManager {
     if (!this.registeredModules[moduleName]) this.registeredModules[moduleName] = {};
     this.registeredModules[moduleName][contextId] = {
       contextId,
+      moduleName,
       componentIds: [],
       module: undefined,
       watchers: [],
@@ -92,10 +107,11 @@ class ReduxModuleManager {
     };
 
     if (shouldInitialize) this.initModule(moduleName, contextId);
+
     return this.registeredModules[moduleName][contextId];
   }
 
-  initModule(moduleName: string, contextId: string): any {
+  initModule(moduleName: string, contextId: string): void {
     // call `init()` method of module if exist
     unstable_batchedUpdates(() => {
       const { ModuleClass, initParams } = this.registeredModules[moduleName][contextId];
@@ -106,10 +122,12 @@ class ReduxModuleManager {
       const initialState = module.state;
 
       // replace module methods with mutation calls
-      replaceMethodsWithMutations(module, contextId);
+      replaceMethodsWithMutations(module, contextId, this.appId);
 
       // prevent usage of destroyed modules
       catchDestroyedModuleCalls(module);
+
+      const moduleManager = moduleManagers[this.appId];
 
       // Re-define the `state` variable of the module
       // It should be linked to the global Redux state after module initialization
@@ -122,7 +140,7 @@ class ReduxModuleManager {
           }
           const moduleId = moduleName + '_' + contextId;
           if (this.immerState) return this.immerState[moduleId];
-          const globalState = store.getState() as any;
+          const globalState = this.store.getState() as any;
           return globalState.modules[moduleId];
         },
         set: (newState: unknown) => {
@@ -134,10 +152,8 @@ class ReduxModuleManager {
       });
 
       // call the `initModule` mutation to initialize the module's initial state
-      store.dispatch(modulesSlice.actions.initModule({ moduleName, contextId, initialState }));
+      this.store.dispatch(this.actions.initModule({ moduleName, contextId, initialState }));
     });
-
-    return module;
   }
 
   /**
@@ -146,15 +162,62 @@ class ReduxModuleManager {
   unregisterModule(moduleName: string, contextId: string) {
     const module = this.getModule(moduleName, contextId);
     module.destroy && module.destroy();
-    store.dispatch(actions.destroyModule({ moduleName, contextId }));
+    this.store.dispatch(this.actions.destroyModule({ moduleName, contextId }));
     delete this.registeredModules[moduleName][contextId];
   }
 
+  registerServices<T extends { [key: string]: new (...args: any) => any }>
+  (serviceClasses: T): TInstances<T> {
+    const moduleManager = this;
+
+    const result = {};
+
+    Object.keys(serviceClasses).forEach(serviceName => {
+      const serviceClass = serviceClasses[serviceName];
+      moduleManager.registerModule(serviceClass as any, null, '', true, 'service');
+      Object.defineProperty(result, serviceName, {
+        get: () => {
+          const service = moduleManager.getService(serviceName);
+          return service;
+        },
+      });
+    });
+
+    return result as TInstances<T>;
+
+    // return new Proxy(
+    // {} as TInstances<T>,
+    // {
+    //   get(target, propName, receiver) {
+    //     return moduleManager.getModule(propName as string, 'service');
+    //   },
+    // },
+    // );
+  }
+
   /**
-     * Get the Module by name
-     */
+   * Get the Module by name
+   */
   getModule<TModule extends IReduxModule<any, any>>(moduleName: string, contextId: string): TModule {
     return this.registeredModules[moduleName]?.[contextId]?.module as TModule;
+  }
+
+  /**
+   * Get the Service by name
+   * Initialized the service if not initialized
+   */
+  getService(serviceName: string) {
+    const serviceMetadata = this.registeredModules[serviceName].service;
+    if (!serviceMetadata) throw new Error(`Service "${serviceName}" is not found. Is it registered?`);
+    const { moduleName, contextId, module } = serviceMetadata;
+    const shouldInit = !module;
+    if (shouldInit) {
+      console.log('Should init module', moduleName);
+      this.initModule(moduleName, contextId);
+      return this.registeredModules[serviceName][contextId].module;
+    }
+    console.log('Should NOT init module', moduleName, module);
+    return module;
   }
 
   // /**
@@ -229,22 +292,45 @@ class ReduxModuleManager {
   }
 }
 
-let moduleManager: ReduxModuleManager;
+const moduleManagers: Record<string, ReduxModuleManager> = {};
+
+export function createModuleManager() {
+  const appId = generateId();
+
+  // create ReduxStore
+  const { store, modulesSlice } = createReduxStore(appId);
+
+  // create the ModuleManager and
+  // automatically register some additional modules
+  const moduleManager = new ReduxModuleManager(store, modulesSlice, appId);
+
+  moduleManagers[appId] = moduleManager;
+
+  // add a BatchedUpdatesModule for rendering optimizations
+  moduleManager.registerModule(BatchedUpdatesModule, { appId }, 'BatchedUpdatesModule');
+
+  return moduleManager;
+}
+
+export function destroyModuleManager(appId: string) {
+  delete moduleManagers[appId];
+}
 
 /**
  * The ModuleManager is a singleton object accessible in other files
  * via the `getModuleManager()` call
  */
-export function getModuleManager() {
-  if (!moduleManager) {
-    // create the ModuleManager and
-    // automatically register some additional modules
-    moduleManager = new ReduxModuleManager();
-
-    // add a BatchedUpdatesModule for rendering optimizations
-    moduleManager.registerModule(BatchedUpdatesModule, null, 'BatchedUpdatesModule');
-  }
-  return moduleManager;
+export function getModuleManager(appId: string) {
+  return moduleManagers[appId];
+  // if (!moduleManager) {
+  //   // create the ModuleManager and
+  //   // automatically register some additional modules
+  //   moduleManager = createModuleManager();
+  //
+  //   // add a BatchedUpdatesModule for rendering optimizations
+  //   moduleManager.registerModule(BatchedUpdatesModule, null, 'BatchedUpdatesModule');
+  // }
+  // return moduleManager;
 }
 
 /**
@@ -259,8 +345,13 @@ export function getModuleManager() {
  */
 class BatchedUpdatesModule {
   state = {
+    appId: '',
     isRenderingDisabled: false,
   };
+
+  init(params: { appId: string }) {
+    this.state.appId = params.appId;
+  }
 
   /**
      * Temporary disables rendering for components when multiple mutations are being applied
@@ -272,10 +363,12 @@ class BatchedUpdatesModule {
     // disable rendering
     this.setIsRenderingDisabled(true);
 
+    const appId = this.state.appId;
+
     // enable rendering again when Javascript processes the current queue of tasks
     setTimeout(() => {
       this.setIsRenderingDisabled(false);
-      moduleManager.runWatchers();
+      getModuleManager(appId).runWatchers();
     });
   }
 
@@ -296,9 +389,10 @@ export function mutation() {
   };
 }
 
-function replaceMethodsWithMutations(module: IReduxModule<unknown, unknown>, contextId: string) {
+function replaceMethodsWithMutations(module: IReduxModule<unknown, unknown>, contextId: string, appId: string) {
   const moduleName = getDefined(module.name);
   const mutationNames: string[] = Object.getPrototypeOf(module).mutations || [];
+  const moduleManager = moduleManagers[appId];
 
   mutationNames.forEach((mutationName) => {
     const originalMethod = (module as any)[mutationName];
@@ -333,7 +427,7 @@ function replaceMethodsWithMutations(module: IReduxModule<unknown, unknown>, con
       // will not cause redundant re-renderings in components
       batch(() => {
         if (moduleName !== 'BatchedUpdatesModule') batchedUpdatesModule.temporaryDisableRendering();
-        store.dispatch(actions.mutateModule({
+        moduleManager.store.dispatch(moduleManager.actions.mutateModule({
           moduleName, contextId, methodName: mutationName, args,
         }));
       });
@@ -368,7 +462,7 @@ function catchDestroyedModuleCalls(module: any) {
  * - Uses isDeepEqual with depth 2 as a default comparison function
  */
 export function useSelector<T extends Object>(fn: () => T): T {
-  const moduleManager = getModuleManager();
+  const moduleManager = useModuleManager();
   const batchedUpdatesModule = moduleManager.getModule<BatchedUpdatesModule>(
     'BatchedUpdatesModule',
     'default',
@@ -468,22 +562,22 @@ export function createDependencyWatcher<T extends object>(watchedObject: T) {
   return { watcherProxy, getDependentFields, getDependentValues };
 }
 
-export function getModule<T extends new (...args: any) => any>(ModuleClass: T, contextId = 'default'): InstanceType<T> {
-  const moduleManager = getModuleManager();
-  const moduleName = ModuleClass.prototype.constructor.name;
-  let moduleMetadata = moduleManager.registeredModules[moduleName][contextId];
-  if (!moduleMetadata) {
-    moduleMetadata = moduleManager.registerModule(ModuleClass);
-  }
-  if (!moduleMetadata.module) {
-    return moduleManager.initModule(moduleName, contextId);
-  }
-  return moduleMetadata.module as any;
-}
-
-export function getService<T extends new (...args: any) => any>(ModuleClass: T): InstanceType<T> {
-  return getModule(ModuleClass, 'service');
-}
+// export function getModule<T extends new (...args: any) => any>(ModuleClass: T, contextId = 'default'): InstanceType<T> {
+//   const moduleManager = getModuleManager();
+//   const moduleName = ModuleClass.prototype.constructor.name;
+//   let moduleMetadata = moduleManager.registeredModules[moduleName][contextId];
+//   if (!moduleMetadata) {
+//     moduleMetadata = moduleManager.registerModule(ModuleClass);
+//   }
+//   if (!moduleMetadata.module) {
+//     return moduleManager.initModule(moduleName, contextId);
+//   }
+//   return moduleMetadata.module as any;
+// }
+//
+// export function getService<T extends new (...args: any) => any>(ModuleClass: T): InstanceType<T> {
+//   return getModule(ModuleClass, 'service');
+// }
 
 export function assertIsDefined<T>(val: T): asserts val is NonNullable<T> {
   if (val === undefined || val === null) {
@@ -504,9 +598,10 @@ export function watch<T>(
   selector: () => T,
   onChange: (newVal: T, prevVal: T) => unknown,
   contextId: string,
+  appId: string,
 ) {
   const moduleName = getDefined(module.name);
-  const moduleMetadata = moduleManager.registeredModules[moduleName][contextId];
+  const moduleMetadata = moduleManagers[appId].registeredModules[moduleName][contextId];
   moduleMetadata.watchers.push({
     selector,
     // @ts-ignore
@@ -529,6 +624,7 @@ export interface IReduxModule<TInitParams, TState> {
 }
 
 interface IReduxModuleMetadata {
+  moduleName: string;
   componentIds: string[];
   initParams: any;
   module?: IReduxModule<any, any>;
@@ -538,7 +634,11 @@ interface IReduxModuleMetadata {
   contextId: string;
 }
 
-let contextIdCounter = 1;
-export function generateContextId() {
-  return (contextIdCounter++).toString();
+let idCounter = 1;
+export function generateId() {
+  return (idCounter++).toString();
 }
+
+type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
+  [P in keyof T]: InstanceType<T[P]>;
+};

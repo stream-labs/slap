@@ -8,6 +8,7 @@ const entry = {
   index: './demo/index.tsx',
   todolistapp: './demo/todo-list-app.tsx',
   countersapp: './demo/counters-app.tsx',
+  twoapps: './demo/twoapps.tsx',
 };
 
 module.exports = {
@@ -18,11 +19,6 @@ module.exports = {
     filename: '[name].bundle.js',
     path: distPath,
   },
-  // entry: './demo/index.tsx',
-  // output: {
-  //   filename: 'demo.js',
-  //   path: distPath,
-  // },
   devtool: 'source-map',
   module: {
     rules: [
@@ -42,21 +38,6 @@ module.exports = {
     compress: true,
     port: 4000,
   },
-  // plugins: [new HtmlWebpackPlugin({
-  //   inject: false,
-  //   templateContent: ({ htmlWebpackPlugin }) => `
-  //   <html>
-  //     <head>
-  //       ${htmlWebpackPlugin.tags.headTags}
-  //     </head>
-  //     <body>
-  //
-  //       <div id="app">App placeholder</div>
-  //       ${htmlWebpackPlugin.tags.bodyTags}
-  //     </body>
-  //   </html>
-  // `,
-  // })],
   plugins: [
     ...Object.keys(entry).map(entryName => {
       return new HtmlWebpackPlugin({

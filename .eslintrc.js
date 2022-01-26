@@ -42,5 +42,6 @@ module.exports = {
     'arrow-parens': 0,
     'react/jsx-one-expression-per-line': 0,
     'prefer-template': 0,
+    'prefer-destructuring': 0,
   },
 };

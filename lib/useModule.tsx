@@ -5,6 +5,7 @@ import {
 } from './store';
 import { merge } from './merge';
 import { lockThis } from './lockThis';
+import { ReactReduxContext } from 'react-redux';
 
 /**
  * A hook for using ReduxModules in components
@@ -42,6 +43,7 @@ function useModuleContext<
   const computedPropsRef = useRef<any>({});
   const dependencyWatcherRef = useRef<any>(null);
   const componentId = useComponentId();
+  const moduleManager = useModuleManager();
   moduleName = moduleName || ModuleClass.name;
 
   // register the component in the ModuleManager upon component creation
@@ -49,10 +51,7 @@ function useModuleContext<
     module, select, selector, moduleContextId,
   } = useOnCreate(() => {
     // get existing module's instance or create a new one
-    const moduleManager = getModuleManager();
     const moduleContextId = moduleManager.currentContext[moduleName] || 'default';
-
-    console.log('create module', moduleName, 'for context', moduleContextId);
 
     let module = moduleManager.getModule(moduleName, moduleContextId);
     if (!module) {
@@ -60,7 +59,8 @@ function useModuleContext<
       if (moduleMetadata.module) {
         module = moduleMetadata.module;
       } else {
-        module = moduleManager.initModule(moduleName, moduleContextId);
+        moduleManager.initModule(moduleName, moduleContextId);
+        module = moduleManager.getModule(moduleName, moduleContextId);
       }
     }
 
@@ -129,7 +129,7 @@ function useModuleContext<
 
   // unregister the component from the module onDestroy
   useOnDestroy(() => {
-    if (!isService) getModuleManager().unRegisterComponent(moduleName, moduleContextId, componentId);
+    if (!isService) moduleManager.unRegisterComponent(moduleName, moduleContextId, componentId);
   });
 
   // call Redux selector to make selected props reactive
@@ -187,7 +187,7 @@ export function useModuleContextByName<TModule extends IReduxModule<any, any>>(
   moduleName: string,
   contextId: string,
 ): TUseModuleReturnType<TModule> {
-  const moduleManager = getModuleManager();
+  const moduleManager = useModuleManager();
   const module = moduleManager.getModule(moduleName, contextId);
   if (!module) throw new Error(`Can not find module with name "${moduleName}" `);
   return (useModuleContext(
@@ -195,6 +195,13 @@ export function useModuleContextByName<TModule extends IReduxModule<any, any>>(
     null,
     moduleName,
   ) as unknown) as TUseModuleReturnType<TModule>;
+}
+
+export function useModuleManager() {
+  const { store } = useContext(ReactReduxContext);
+  const { appId } = store.getState().modules;
+  const moduleManager = getModuleManager(appId);
+  return moduleManager;
 }
 
 /**

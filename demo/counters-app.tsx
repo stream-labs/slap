@@ -77,7 +77,7 @@ export function MultipleIndependentCounters() {
   );
 }
 
-class CounterService extends CounterModule {}
+export class CounterService extends CounterModule {}
 
 export function PersistentCounter() {
   const { counter, decrement, increment } = useService(CounterService);

@@ -1,17 +1,31 @@
-import { Provider } from 'react-redux';
-import React, { ReactNode, useEffect } from 'react';
-import { generateContextId, getModuleManager, store } from './store';
-import { useOnCreate } from './hooks';
+import { Provider, ReactReduxContext } from 'react-redux';
+import React, {
+  ReactNode, useEffect, useState,
+} from 'react';
+import {
+  createModuleManager, destroyModuleManager,
+  generateId,
+  ReduxModuleManager,
+} from './store';
+import { useOnCreate, useOnDestroy } from './hooks';
+import { useModuleManager } from './useModule';
 
-export function RedumbxApp(p: {children: ReactNode | ReactNode[]}) {
-  return <Provider store={store}>{p.children}</Provider>;
+export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?: ReduxModuleManager}) {
+  const [moduleManager] = useState(() => p.moduleManager || createModuleManager());
+  const { store } = moduleManager;
+
+  useOnDestroy(() => {
+    destroyModuleManager(moduleManager.appId);
+  });
+
+  return <Provider store={store} context={ReactReduxContext}>{p.children}</Provider>;
 }
 
 export function ModuleRoot(p: {children: ReactNode | ReactNode[], module: any }) {
-  const moduleManager = getModuleManager();
+  const moduleManager = useModuleManager();
 
   const { moduleName, contextId } = useOnCreate(() => {
-    const contextId = generateContextId();
+    const contextId = generateId();
     const moduleName = p.module.prototype.constructor.name;
     moduleManager.registerModule(p.module, null, moduleName, false, contextId);
     return { contextId, moduleName };
@@ -22,11 +36,4 @@ export function ModuleRoot(p: {children: ReactNode | ReactNode[], module: any })
     moduleManager.resetModuleContext(moduleName);
   });
   return <>{p.children}</>;
-  //
-  // moduleManager.setModuleContext(moduleName, contextId);
-  // const $el = <>{p.children}</>;
-  // moduleManager.resetModuleContext(moduleName);
-  // return $el;
-
-  // return <ModulesContext.Provider value={moduleManager.currentContext}>{p.children}</ModulesContext.Provider>;
 }
