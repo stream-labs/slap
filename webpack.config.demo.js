@@ -3,12 +3,25 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const distPath = path.resolve(__dirname, 'dist', 'demo');
 
+const entry = {
+  index: './demo/index.tsx',
+  todolistapp: './demo/todo-list-app.tsx',
+  countersapp: './demo/counters-app.tsx',
+}
+
 module.exports = {
-  entry: './demo/index.tsx',
+
+  entry,
+
   output: {
-    filename: 'demo.js',
+    filename: '[name].bundle.js',
     path: distPath,
   },
+  // entry: './demo/index.tsx',
+  // output: {
+  //   filename: 'demo.js',
+  //   path: distPath,
+  // },
   devtool: 'source-map',
   module: {
     rules: [
@@ -28,20 +41,30 @@ module.exports = {
     compress: true,
     port: 4000,
   },
-  plugins: [new HtmlWebpackPlugin({
-    inject: false,
-    templateContent: ({ htmlWebpackPlugin }) => `
-    <html>
-      <head>
-        ${htmlWebpackPlugin.tags.headTags}
-      </head>
-      <body>
-        <div id="app">App placeholder</div>
-        ${htmlWebpackPlugin.tags.bodyTags}
-      </body>
-    </html>
-  `,
-  })],
-  // plugins: [new HtmlWebpackPlugin({ template: './demo/index.html' })],
+  // plugins: [new HtmlWebpackPlugin({
+  //   inject: false,
+  //   templateContent: ({ htmlWebpackPlugin }) => `
+  //   <html>
+  //     <head>
+  //       ${htmlWebpackPlugin.tags.headTags}
+  //     </head>
+  //     <body>
+  //
+  //       <div id="app">App placeholder</div>
+  //       ${htmlWebpackPlugin.tags.bodyTags}
+  //     </body>
+  //   </html>
+  // `,
+  // })],
+  plugins: [
+    ...Object.keys(entry).map(entryName => {
+      return new HtmlWebpackPlugin({
+        inject: false,
+        template: './demo/index.html',
+        filename: `${entryName}.html`,
+        chunks: [entryName],
+      });
+    }),
+  ],
   // plugins: [new HtmlWebpackPlugin({ template: path.resolve(distPath, 'index.html') })],
 };

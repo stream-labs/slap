@@ -40,6 +40,7 @@ module.exports = {
     'react/destructuring-assignment': 0,
     'react/button-has-type': 0,
     'arrow-parens': 0,
-    'jsx-one-expression-per-line': 0,
+    'react/jsx-one-expression-per-line': 0,
+    'prefer-template': 0,
   },
 };

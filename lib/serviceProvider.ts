@@ -1,4 +1,3 @@
-// maps a dictionary of classes to a dictionary of types
 import { getModuleManager, getService } from './store';
 
 type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
@@ -18,7 +17,7 @@ export function registerServices<T extends { [key: string]: new (...args: any) =
     {} as TInstances<T>,
     {
       get(target, propName, receiver) {
-        return moduleManager.getModule(propName as string);
+        return moduleManager.getModule(propName as string, 'service');
       },
     },
   );

@@ -1,0 +1,105 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
+import {
+  mutation, RedumbxApp, useModule, useService,
+} from '../lib';
+import { ModuleRoot } from '../lib/RedumbxApp';
+
+function CountersApp() {
+  return (
+    <RedumbxApp>
+      <Counter />
+      <MultipleCounters />
+      <MultipleIndependentCounters />
+      <MultiplePersistentCounters />
+    </RedumbxApp>
+  );
+}
+
+class CounterModule {
+  state = {
+    counter: 1,
+  };
+
+  @mutation()
+  increment() {
+    this.state.counter++;
+  }
+
+  @mutation()
+  decrement() {
+    this.state.counter--;
+  }
+}
+
+export function Counter() {
+  const { counter } = useModule(CounterModule);
+  return (
+    <div>
+      Counter Value =
+      {counter}
+      <CounterButtons />
+    </div>
+  );
+}
+
+export function CounterButtons() {
+  const { increment, decrement } = useModule(CounterModule);
+  return (
+    <>
+      <button onClick={decrement}>Decrement</button>
+      <button onClick={increment}>Increment</button>
+    </>
+  );
+}
+
+export function MultipleCounters() {
+  return (
+    <ModuleRoot module={CounterModule}>
+      <h1>Multiple counters with shared state</h1>
+      <Counter />
+      <Counter />
+    </ModuleRoot>
+  );
+}
+
+export function IndependentCounter() {
+  return <ModuleRoot module={CounterModule}><Counter /></ModuleRoot>;
+}
+
+export function MultipleIndependentCounters() {
+  return (
+    <>
+      <h1>Multiple counters with independent state</h1>
+      <IndependentCounter />
+      <IndependentCounter />
+    </>
+  );
+}
+
+class CounterService extends CounterModule {}
+
+export function PersistentCounter() {
+  const { counter, decrement, increment } = useService(CounterService);
+  return (
+    <div>
+      Counter Value =
+      {counter}
+      <button onClick={decrement}>Decrement</button>
+      <button onClick={increment}>Increment</button>
+    </div>
+  );
+}
+
+export function MultiplePersistentCounters() {
+  return (
+    <>
+      <h1>Multiple counters with persistent state</h1>
+      <PersistentCounter />
+      <PersistentCounter />
+    </>
+  );
+}
+
+
+ReactDOM.render(<CountersApp />, document.getElementById('app'));

@@ -1,0 +1,165 @@
+<html>
+<head>
+    <%= htmlWebpackPlugin.tags.headTags %>
+
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">-->
+<!--    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>-->
+<!--    -->
+    <style>
+        html {
+            background-color: #60CCD3;
+            font-family: Arial, serif;
+        }
+
+        section {
+            background-color: white;
+            border-radius: 2px;
+        }
+
+        button {
+            line-height: 1.5715;
+            position: relative;
+            display: inline-block;
+            font-weight: 400;
+            white-space: nowrap;
+            text-align: center;
+            background-image: none;
+            border: 1px solid transparent;
+            box-shadow: 0 2px #00000004;
+            cursor: pointer;
+            transition: all .3s cubic-bezier(.645,.045,.355,1);
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+            height: 32px;
+            padding: 4px 15px;
+            font-size: 14px;
+            border-radius: 2px;
+            color: #000000d9;
+            border-color: #d9d9d9;
+            background: #fff;
+        }
+
+        input {
+            box-sizing: border-box;
+            margin: 0;
+            font-variant: tabular-nums;
+            list-style: none;
+            font-feature-settings: "tnum";
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            min-width: 0;
+            padding: 4px 11px;
+            color: #000000d9;
+            font-size: 14px;
+            line-height: 1.5715;
+            background-color: #fff;
+            background-image: none;
+            border: 1px solid #d9d9d9;
+            border-radius: 2px;
+            transition: all .3s;
+        }
+        input:focus {
+            box-shadow: 0 0 0 1px #40a9ff;
+            border-color: transparent;
+            outline: none;
+        }
+        input:hover {
+            border-color: #40a9ff;
+            outline: none;
+        }
+
+        .input-box {
+            display: flex;
+        }
+
+        button:hover, button:focus {
+            color: rgb(64, 169, 255);
+            border-color: rgb(64, 169, 255);
+            background: #fff;
+        }
+
+        button.danger {
+            color: #ff7875;
+            border-color: #ff9895;
+        }
+
+        button.danger:hover {
+            color: #ff4d4f;
+            border-color: #ff4d4f;
+        }
+
+        button:disabled {
+            color: #ddd;
+        }
+
+        button:disabled:focus,
+        button:disabled:hover {
+            border-color: inherit;
+            cursor: inherit;
+        }
+
+        #app {
+            margin-top: 10%;
+        }
+
+        .todo-list {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 25px 25px;
+        }
+        .todo-list h2 {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .todo-input {
+            margin: 0 76px;
+            margin-bottom: 25px;
+        }
+        .todo-input button {
+            margin-left: -1px;
+        }
+        .todo-items {
+            list-style: none;
+            padding: 0 50px;
+            text-align: left;
+            margin-bottom: 40px;
+        }
+        .todo-items li {
+            height: 50px;
+            line-height: 50px;
+            border: 1px solid transparent;
+            border-bottom: 1px solid #ddd;
+            padding: 0 25px;
+            position: relative;
+        }
+        .todo-actions {
+            position: absolute;
+            right: 25px;
+            top: 8px;
+            display: none;
+        }
+        .todo-items li:hover .todo-actions {
+            display: block;
+        }
+        .todo-actions button {
+            margin-left: 7px;
+        }
+        .todo-items li:hover {
+            background-color: rgba(64, 169, 255, 0.2);
+        }
+        .todo-footer {
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+    <%= htmlWebpackPlugin.tags.bodyTags %>
+
+    <div id="app">App placeholder</div>
+</body>
+</html>

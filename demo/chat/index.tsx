@@ -1,6 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import { getModule, RedumbxApp, useService } from '../../lib';
+import { useService } from '../../lib';
 import { ChatService } from './services/chat';
 
 // ReactDOM.render(<App />, document.getElementById('app'));
@@ -41,12 +40,12 @@ export function ChatPage() {
   );
 }
 
-export function HomePage() {
-  const chatService = getModule(ChatService);
-  console.log('chatService', chatService);
-  return (
-    <div>
-      Home Page
-    </div>
-  );
-}
+// export function HomePage() {
+//   const chatService = getModule(ChatService);
+//   console.log('chatService', chatService);
+//   return (
+//     <div>
+//       Home Page
+//     </div>
+//   );
+// }

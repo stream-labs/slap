@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import React, { useContext, useRef } from 'react';
 import { useOnCreate, useOnDestroy, useComponentId } from './hooks';
 import {
   IReduxModule, getModuleManager, useSelector, createDependencyWatcher,
@@ -37,7 +37,7 @@ function useModuleContext<
       fn: (module: InstanceType<TModuleClass>) => TComputedProps,
     ) => InstanceType<TModuleClass> & TComputedProps & { module: InstanceType<TModuleClass> };
   }
->(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '', isService = false): TReturnType {
+>(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '', isService = false, rootContextId = ''): TReturnType {
   const computedPropsFnRef = useRef<null | Function>(null);
   const computedPropsRef = useRef<any>({});
   const dependencyWatcherRef = useRef<any>(null);
@@ -45,20 +45,27 @@ function useModuleContext<
   moduleName = moduleName || ModuleClass.name;
 
   // register the component in the ModuleManager upon component creation
-  const { module, select, selector } = useOnCreate(() => {
+  const {
+    module, select, selector, moduleContextId,
+  } = useOnCreate(() => {
     // get existing module's instance or create a new one
     const moduleManager = getModuleManager();
-    let module = moduleManager.getModule(moduleName);
+    const moduleContextId = moduleManager.currentContext[moduleName] || 'default';
+
+    console.log('create module', moduleName, 'for context', moduleContextId);
+
+    let module = moduleManager.getModule(moduleName, moduleContextId);
     if (!module) {
-      const moduleMetadata = moduleManager.registerModule(ModuleClass, initParams, moduleName);
+      const moduleMetadata = moduleManager.registerModule(ModuleClass, initParams, moduleName, false, moduleContextId);
       if (moduleMetadata.module) {
         module = moduleMetadata.module;
       } else {
-        module = moduleManager.initModule(moduleName);
+        module = moduleManager.initModule(moduleName, moduleContextId);
       }
     }
+
     // register the component in the module
-    if (!isService) moduleManager.registerComponent(moduleName, componentId);
+    if (!isService) moduleManager.registerComponent(moduleName, moduleContextId, componentId);
 
     // lockedModule is a copy of the module where all methods have a persistent `this`
     // as if we called `module.methodName = module.methodName.bind(this)` for each method
@@ -116,12 +123,13 @@ function useModuleContext<
       module,
       selector,
       select,
+      moduleContextId,
     };
   });
 
   // unregister the component from the module onDestroy
   useOnDestroy(() => {
-    if (!isService) getModuleManager().unRegisterComponent(moduleName, componentId);
+    if (!isService) getModuleManager().unRegisterComponent(moduleName, moduleContextId, componentId);
   });
 
   // call Redux selector to make selected props reactive
@@ -157,8 +165,8 @@ export function useModuleContextRoot<
   TInitParams,
   TState,
   TModuleClass extends new(...args: any[]) => IReduxModule<TInitParams, TState>
->(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '') {
-  return useModuleContext(ModuleClass, initParams, moduleName);
+>(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '', contextId = '') {
+  return useModuleContext(ModuleClass, initParams, moduleName, false, contextId);
 }
 
 /**
@@ -177,9 +185,10 @@ export function useModuleRoot<
  */
 export function useModuleContextByName<TModule extends IReduxModule<any, any>>(
   moduleName: string,
+  contextId: string,
 ): TUseModuleReturnType<TModule> {
   const moduleManager = getModuleManager();
-  const module = moduleManager.getModule(moduleName);
+  const module = moduleManager.getModule(moduleName, contextId);
   if (!module) throw new Error(`Can not find module with name "${moduleName}" `);
   return (useModuleContext(
     module.constructor as new (...args: any[]) => IReduxModule<null, unknown>,
@@ -191,8 +200,8 @@ export function useModuleContextByName<TModule extends IReduxModule<any, any>>(
 /**
  * same as useModule but locates a module by name instead of a class
  */
-export function useModuleByName(moduleName: string) {
-  return useModuleContextByName(moduleName).select();
+export function useModuleByName(moduleName: string, contextId: string) {
+  return useModuleContextByName(moduleName, contextId).select();
 }
 
 export function useService<
