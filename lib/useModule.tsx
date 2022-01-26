@@ -38,7 +38,7 @@ function useModuleContext<
       fn: (module: InstanceType<TModuleClass>) => TComputedProps,
     ) => InstanceType<TModuleClass> & TComputedProps & { module: InstanceType<TModuleClass> };
   }
->(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '', isService = false, rootContextId = ''): TReturnType {
+>(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '', isService = false): TReturnType {
   const computedPropsFnRef = useRef<null | Function>(null);
   const computedPropsRef = useRef<any>({});
   const dependencyWatcherRef = useRef<any>(null);
@@ -51,7 +51,7 @@ function useModuleContext<
     module, select, selector, moduleContextId,
   } = useOnCreate(() => {
     // get existing module's instance or create a new one
-    const moduleContextId = moduleManager.currentContext[moduleName] || 'default';
+    const moduleContextId = isService ? 'service' : moduleManager.currentContext[moduleName] || 'default';
 
     let module = moduleManager.getModule(moduleName, moduleContextId);
     if (!module) {
@@ -166,7 +166,7 @@ export function useModuleContextRoot<
   TState,
   TModuleClass extends new(...args: any[]) => IReduxModule<TInitParams, TState>
 >(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '', contextId = '') {
-  return useModuleContext(ModuleClass, initParams, moduleName, false, contextId);
+  return useModuleContext(ModuleClass, initParams, moduleName, false);
 }
 
 /**

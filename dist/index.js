@@ -1469,7 +1469,7 @@ const react_redux_1 = __webpack_require__(821);
  * const { foo, fooBar } = useModule(MyModule)
  *  .selectExtra(module => { fooBar: module.foo + module.bar  }))
  */
-function useModuleContext(ModuleClass, initParams, moduleName = '', isService = false, rootContextId = '') {
+function useModuleContext(ModuleClass, initParams, moduleName = '', isService = false) {
     const computedPropsFnRef = (0, react_1.useRef)(null);
     const computedPropsRef = (0, react_1.useRef)({});
     const dependencyWatcherRef = (0, react_1.useRef)(null);
@@ -1479,7 +1479,7 @@ function useModuleContext(ModuleClass, initParams, moduleName = '', isService = 
     // register the component in the ModuleManager upon component creation
     const { module, select, selector, moduleContextId, } = (0, hooks_1.useOnCreate)(() => {
         // get existing module's instance or create a new one
-        const moduleContextId = moduleManager.currentContext[moduleName] || 'default';
+        const moduleContextId = isService ? 'service' : moduleManager.currentContext[moduleName] || 'default';
         let module = moduleManager.getModule(moduleName, moduleContextId);
         if (!module) {
             const moduleMetadata = moduleManager.registerModule(ModuleClass, initParams, moduleName, false, moduleContextId);
@@ -1575,7 +1575,7 @@ exports.useModule = useModule;
  * Create a Redux module instance with given params
  */
 function useModuleContextRoot(ModuleClass, initParams, moduleName = '', contextId = '') {
-    return useModuleContext(ModuleClass, initParams, moduleName, false, contextId);
+    return useModuleContext(ModuleClass, initParams, moduleName, false);
 }
 exports.useModuleContextRoot = useModuleContextRoot;
 /**
