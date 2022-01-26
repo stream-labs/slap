@@ -27,6 +27,7 @@ export declare function useModuleRoot<TInitParams, TState, TModuleClass extends 
  * same as useModule but locates a module by name instead of a class
  */
 export declare function useModuleContextByName<TModule extends IReduxModule<any, any>>(moduleName: string, contextId: string): TUseModuleReturnType<TModule>;
+export declare function useModuleManager(): import("./store").ReduxModuleManager;
 /**
  * same as useModule but locates a module by name instead of a class
  */

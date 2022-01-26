@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("react"), require("@reduxjs/toolkit"), require("react-redux"));
+		module.exports = factory(require("@reduxjs/toolkit"), require("react"), require("react-redux"));
 	else if(typeof define === 'function' && define.amd)
-		define(["react", "@reduxjs/toolkit", "react-redux"], factory);
+		define(["@reduxjs/toolkit", "react", "react-redux"], factory);
 	else if(typeof exports === 'object')
-		exports["redumbx"] = factory(require("react"), require("@reduxjs/toolkit"), require("react-redux"));
+		exports["redumbx"] = factory(require("@reduxjs/toolkit"), require("react"), require("react-redux"));
 	else
-		root["redumbx"] = factory(root["React"], root["ReduxToolkit"], root["ReactRedux"]);
-})(typeof self !== 'undefined' ? self : this, function(__WEBPACK_EXTERNAL_MODULE__359__, __WEBPACK_EXTERNAL_MODULE__509__, __WEBPACK_EXTERNAL_MODULE__821__) {
+		root["redumbx"] = factory(root["ReduxToolkit"], root["React"], root["ReactRedux"]);
+})(typeof self !== 'undefined' ? self : this, function(__WEBPACK_EXTERNAL_MODULE__509__, __WEBPACK_EXTERNAL_MODULE__359__, __WEBPACK_EXTERNAL_MODULE__821__) {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
@@ -571,14 +571,20 @@ const react_redux_1 = __webpack_require__(821);
 const react_1 = __webpack_require__(359);
 const store_1 = __webpack_require__(971);
 const hooks_1 = __webpack_require__(886);
+const useModule_1 = __webpack_require__(340);
 function RedumbxApp(p) {
-    return (0, jsx_runtime_1.jsx)(react_redux_1.Provider, Object.assign({ store: store_1.store }, { children: p.children }), void 0);
+    const [moduleManager] = (0, react_1.useState)(() => p.moduleManager || (0, store_1.createModuleManager)());
+    const { store } = moduleManager;
+    (0, hooks_1.useOnDestroy)(() => {
+        (0, store_1.destroyModuleManager)(moduleManager.appId);
+    });
+    return (0, jsx_runtime_1.jsx)(react_redux_1.Provider, Object.assign({ store: store, context: react_redux_1.ReactReduxContext }, { children: p.children }), void 0);
 }
 exports.RedumbxApp = RedumbxApp;
 function ModuleRoot(p) {
-    const moduleManager = (0, store_1.getModuleManager)();
+    const moduleManager = (0, useModule_1.useModuleManager)();
     const { moduleName, contextId } = (0, hooks_1.useOnCreate)(() => {
-        const contextId = (0, store_1.generateContextId)();
+        const contextId = (0, store_1.generateId)();
         const moduleName = p.module.prototype.constructor.name;
         moduleManager.registerModule(p.module, null, moduleName, false, contextId);
         return { contextId, moduleName };
@@ -588,12 +594,6 @@ function ModuleRoot(p) {
         moduleManager.resetModuleContext(moduleName);
     });
     return (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, { children: p.children }, void 0);
-    //
-    // moduleManager.setModuleContext(moduleName, contextId);
-    // const $el = <>{p.children}</>;
-    // moduleManager.resetModuleContext(moduleName);
-    // return $el;
-    // return <ModulesContext.Provider value={moduleManager.currentContext}>{p.children}</ModulesContext.Provider>;
 }
 exports.ModuleRoot = ModuleRoot;
 
@@ -841,9 +841,8 @@ function mergeTwo(target1, target2) {
 /***/ }),
 
 /***/ 971:
-/***/ (function(module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
-/* module decorator */ module = __webpack_require__.nmd(module);
 
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
@@ -855,7 +854,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateContextId = exports.watch = exports.getDefined = exports.assertIsDefined = exports.getService = exports.getModule = exports.createDependencyWatcher = exports.useSelector = exports.mutation = exports.getModuleManager = exports.store = exports.modulesSlice = void 0;
+exports.generateId = exports.watch = exports.getDefined = exports.assertIsDefined = exports.createDependencyWatcher = exports.useSelector = exports.mutation = exports.getModuleManager = exports.destroyModuleManager = exports.createModuleManager = exports.ReduxModuleManager = void 0;
 const toolkit_1 = __webpack_require__(509);
 const react_redux_1 = __webpack_require__(821);
 const react_1 = __webpack_require__(359);
@@ -864,49 +863,59 @@ const react_dom_1 = __webpack_require__(935);
 const hooks_1 = __webpack_require__(886);
 const isDeepEqual_1 = __webpack_require__(723);
 const traverseClassInstance_1 = __webpack_require__(820);
+const useModule_1 = __webpack_require__(340);
 /*
  * This file provides Redux integration in a modular way
  */
 // INITIALIZE REDUX STORE
-exports.modulesSlice = (0, toolkit_1.createSlice)({
-    name: 'modules',
-    initialState: {},
-    reducers: {
-        initModule: (state, action) => {
-            const { moduleName, contextId, initialState } = action.payload;
-            const moduleId = moduleName + '_' + contextId;
-            state[moduleId] = initialState;
+function createReduxStore(appId) {
+    const modulesSlice = (0, toolkit_1.createSlice)({
+        name: 'modules',
+        initialState: {
+            appId,
         },
-        destroyModule: (state, action) => {
-            const { moduleName, contextId } = action.payload;
-            const moduleId = moduleName + '_' + contextId;
-            delete state[moduleId];
+        reducers: {
+            initModule: (state, action) => {
+                const { moduleName, contextId, initialState } = action.payload;
+                const moduleId = moduleName + '_' + contextId;
+                state[moduleId] = initialState;
+            },
+            destroyModule: (state, action) => {
+                const { moduleName, contextId } = action.payload;
+                const moduleId = moduleName + '_' + contextId;
+                delete state[moduleId];
+            },
+            mutateModule: (state, action) => {
+                const { moduleName, contextId, methodName, args, } = action.payload;
+                const moduleManager = getModuleManager(appId);
+                const module = moduleManager.getModule(moduleName, contextId);
+                moduleManager.setImmerState(state);
+                module[methodName](...args);
+                moduleManager.setImmerState(null);
+            },
         },
-        mutateModule: (state, action) => {
-            const { moduleName, contextId, methodName, args, } = action.payload;
-            const moduleManager = getModuleManager();
-            const module = getModuleManager().getModule(moduleName, contextId);
-            moduleManager.setImmerState(state);
-            module[methodName](...args);
-            moduleManager.setImmerState(null);
+    });
+    const store = (0, toolkit_1.configureStore)({
+        reducer: {
+            modules: modulesSlice.reducer,
         },
-    },
-});
-exports.store = (0, toolkit_1.configureStore)({
-    reducer: {
-        modules: exports.modulesSlice.reducer,
-    },
-});
-const { actions } = exports.modulesSlice;
+    });
+    const { actions } = modulesSlice;
+    return { store, modulesSlice, actions };
+}
 /**
  * ReduxModuleManager helps to organize code splitting with help of Redux Modules
  * Each Redux Module controls its own chunk of state in the global Redux store
  * Redux Modules are objects that contain initialState, actions, mutations and getters
  */
 class ReduxModuleManager {
-    constructor() {
+    constructor(store, modulesSlice, appId) {
+        this.store = store;
+        this.modulesSlice = modulesSlice;
+        this.appId = appId;
         this.registeredModules = {};
         this.currentContext = {};
+        this.actions = modulesSlice.actions;
     }
     /**
      * Register a new Redux Module and initialize it
@@ -922,6 +931,7 @@ class ReduxModuleManager {
             this.registeredModules[moduleName] = {};
         this.registeredModules[moduleName][contextId] = {
             contextId,
+            moduleName,
             componentIds: [],
             module: undefined,
             watchers: [],
@@ -943,9 +953,10 @@ class ReduxModuleManager {
             module.init && module.init(initParams);
             const initialState = module.state;
             // replace module methods with mutation calls
-            replaceMethodsWithMutations(module, contextId);
+            replaceMethodsWithMutations(module, contextId, this.appId);
             // prevent usage of destroyed modules
             catchDestroyedModuleCalls(module);
+            const moduleManager = moduleManagers[this.appId];
             // Re-define the `state` variable of the module
             // It should be linked to the global Redux state after module initialization
             // But when mutation is running it should be linked to a special Proxy from the Immer library
@@ -958,7 +969,7 @@ class ReduxModuleManager {
                     const moduleId = moduleName + '_' + contextId;
                     if (this.immerState)
                         return this.immerState[moduleId];
-                    const globalState = exports.store.getState();
+                    const globalState = this.store.getState();
                     return globalState.modules[moduleId];
                 },
                 set: (newState) => {
@@ -970,9 +981,8 @@ class ReduxModuleManager {
                 },
             });
             // call the `initModule` mutation to initialize the module's initial state
-            exports.store.dispatch(exports.modulesSlice.actions.initModule({ moduleName, contextId, initialState }));
+            this.store.dispatch(this.actions.initModule({ moduleName, contextId, initialState }));
         });
-        return module;
     }
     /**
        * Unregister the module and erase its state from Redux
@@ -980,15 +990,56 @@ class ReduxModuleManager {
     unregisterModule(moduleName, contextId) {
         const module = this.getModule(moduleName, contextId);
         module.destroy && module.destroy();
-        exports.store.dispatch(actions.destroyModule({ moduleName, contextId }));
+        this.store.dispatch(this.actions.destroyModule({ moduleName, contextId }));
         delete this.registeredModules[moduleName][contextId];
     }
+    registerServices(serviceClasses) {
+        const moduleManager = this;
+        const result = {};
+        Object.keys(serviceClasses).forEach(serviceName => {
+            const serviceClass = serviceClasses[serviceName];
+            moduleManager.registerModule(serviceClass, null, '', true, 'service');
+            Object.defineProperty(result, serviceName, {
+                get: () => {
+                    const service = moduleManager.getService(serviceName);
+                    return service;
+                },
+            });
+        });
+        return result;
+        // return new Proxy(
+        // {} as TInstances<T>,
+        // {
+        //   get(target, propName, receiver) {
+        //     return moduleManager.getModule(propName as string, 'service');
+        //   },
+        // },
+        // );
+    }
     /**
-       * Get the Module by name
-       */
+     * Get the Module by name
+     */
     getModule(moduleName, contextId) {
         var _a, _b;
         return (_b = (_a = this.registeredModules[moduleName]) === null || _a === void 0 ? void 0 : _a[contextId]) === null || _b === void 0 ? void 0 : _b.module;
+    }
+    /**
+     * Get the Service by name
+     * Initialized the service if not initialized
+     */
+    getService(serviceName) {
+        const serviceMetadata = this.registeredModules[serviceName].service;
+        if (!serviceMetadata)
+            throw new Error(`Service "${serviceName}" is not found. Is it registered?`);
+        const { moduleName, contextId, module } = serviceMetadata;
+        const shouldInit = !module;
+        if (shouldInit) {
+            console.log('Should init module', moduleName);
+            this.initModule(moduleName, contextId);
+            return this.registeredModules[serviceName][contextId].module;
+        }
+        console.log('Should NOT init module', moduleName, module);
+        return module;
     }
     // /**
     //  * Get the Module by name for the current context
@@ -1056,20 +1107,40 @@ class ReduxModuleManager {
         delete this.currentContext[moduleName];
     }
 }
-let moduleManager;
+exports.ReduxModuleManager = ReduxModuleManager;
+const moduleManagers = {};
+function createModuleManager() {
+    const appId = generateId();
+    // create ReduxStore
+    const { store, modulesSlice } = createReduxStore(appId);
+    // create the ModuleManager and
+    // automatically register some additional modules
+    const moduleManager = new ReduxModuleManager(store, modulesSlice, appId);
+    moduleManagers[appId] = moduleManager;
+    // add a BatchedUpdatesModule for rendering optimizations
+    moduleManager.registerModule(BatchedUpdatesModule, { appId }, 'BatchedUpdatesModule');
+    return moduleManager;
+}
+exports.createModuleManager = createModuleManager;
+function destroyModuleManager(appId) {
+    delete moduleManagers[appId];
+}
+exports.destroyModuleManager = destroyModuleManager;
 /**
  * The ModuleManager is a singleton object accessible in other files
  * via the `getModuleManager()` call
  */
-function getModuleManager() {
-    if (!moduleManager) {
-        // create the ModuleManager and
-        // automatically register some additional modules
-        moduleManager = new ReduxModuleManager();
-        // add a BatchedUpdatesModule for rendering optimizations
-        moduleManager.registerModule(BatchedUpdatesModule, null, 'BatchedUpdatesModule');
-    }
-    return moduleManager;
+function getModuleManager(appId) {
+    return moduleManagers[appId];
+    // if (!moduleManager) {
+    //   // create the ModuleManager and
+    //   // automatically register some additional modules
+    //   moduleManager = createModuleManager();
+    //
+    //   // add a BatchedUpdatesModule for rendering optimizations
+    //   moduleManager.registerModule(BatchedUpdatesModule, null, 'BatchedUpdatesModule');
+    // }
+    // return moduleManager;
 }
 exports.getModuleManager = getModuleManager;
 /**
@@ -1085,8 +1156,12 @@ exports.getModuleManager = getModuleManager;
 class BatchedUpdatesModule {
     constructor() {
         this.state = {
+            appId: '',
             isRenderingDisabled: false,
         };
+    }
+    init(params) {
+        this.state.appId = params.appId;
     }
     /**
        * Temporary disables rendering for components when multiple mutations are being applied
@@ -1097,10 +1172,11 @@ class BatchedUpdatesModule {
             return;
         // disable rendering
         this.setIsRenderingDisabled(true);
+        const appId = this.state.appId;
         // enable rendering again when Javascript processes the current queue of tasks
         setTimeout(() => {
             this.setIsRenderingDisabled(false);
-            moduleManager.runWatchers();
+            getModuleManager(appId).runWatchers();
         });
     }
     setIsRenderingDisabled(disabled) {
@@ -1124,9 +1200,10 @@ function mutation() {
     };
 }
 exports.mutation = mutation;
-function replaceMethodsWithMutations(module, contextId) {
+function replaceMethodsWithMutations(module, contextId, appId) {
     const moduleName = getDefined(module.name);
     const mutationNames = Object.getPrototypeOf(module).mutations || [];
+    const moduleManager = moduleManagers[appId];
     mutationNames.forEach((mutationName) => {
         const originalMethod = module[mutationName];
         // override the original Module method to dispatch mutations
@@ -1155,7 +1232,7 @@ function replaceMethodsWithMutations(module, contextId) {
             (0, react_redux_1.batch)(() => {
                 if (moduleName !== 'BatchedUpdatesModule')
                     batchedUpdatesModule.temporaryDisableRendering();
-                exports.store.dispatch(actions.mutateModule({
+                moduleManager.store.dispatch(moduleManager.actions.mutateModule({
                     moduleName, contextId, methodName: mutationName, args,
                 }));
             });
@@ -1190,7 +1267,7 @@ function catchDestroyedModuleCalls(module) {
  * - Uses isDeepEqual with depth 2 as a default comparison function
  */
 function useSelector(fn) {
-    const moduleManager = getModuleManager();
+    const moduleManager = (0, useModule_1.useModuleManager)();
     const batchedUpdatesModule = moduleManager.getModule('BatchedUpdatesModule', 'default');
     const cachedSelectedResult = (0, react_1.useRef)(null);
     const isMountedRef = (0, react_1.useRef)(false);
@@ -1276,23 +1353,22 @@ function createDependencyWatcher(watchedObject) {
     return { watcherProxy, getDependentFields, getDependentValues };
 }
 exports.createDependencyWatcher = createDependencyWatcher;
-function getModule(ModuleClass, contextId = 'default') {
-    const moduleManager = getModuleManager();
-    const moduleName = ModuleClass.prototype.constructor.name;
-    let moduleMetadata = moduleManager.registeredModules[moduleName][contextId];
-    if (!moduleMetadata) {
-        moduleMetadata = moduleManager.registerModule(ModuleClass);
-    }
-    if (!moduleMetadata.module) {
-        return moduleManager.initModule(moduleName, contextId);
-    }
-    return moduleMetadata.module;
-}
-exports.getModule = getModule;
-function getService(ModuleClass) {
-    return getModule(ModuleClass, 'service');
-}
-exports.getService = getService;
+// export function getModule<T extends new (...args: any) => any>(ModuleClass: T, contextId = 'default'): InstanceType<T> {
+//   const moduleManager = getModuleManager();
+//   const moduleName = ModuleClass.prototype.constructor.name;
+//   let moduleMetadata = moduleManager.registeredModules[moduleName][contextId];
+//   if (!moduleMetadata) {
+//     moduleMetadata = moduleManager.registerModule(ModuleClass);
+//   }
+//   if (!moduleMetadata.module) {
+//     return moduleManager.initModule(moduleName, contextId);
+//   }
+//   return moduleMetadata.module as any;
+// }
+//
+// export function getService<T extends new (...args: any) => any>(ModuleClass: T): InstanceType<T> {
+//   return getModule(ModuleClass, 'service');
+// }
 function assertIsDefined(val) {
     if (val === undefined || val === null) {
         throw new Error(`Expected 'val' to be defined, but received ${val}`);
@@ -1307,9 +1383,9 @@ exports.getDefined = getDefined;
 /**
  * Watch changes on a reactive state in the module
  */
-function watch(module, selector, onChange, contextId) {
+function watch(module, selector, onChange, contextId, appId) {
     const moduleName = getDefined(module.name);
-    const moduleMetadata = moduleManager.registeredModules[moduleName][contextId];
+    const moduleMetadata = moduleManagers[appId].registeredModules[moduleName][contextId];
     moduleMetadata.watchers.push({
         selector,
         // @ts-ignore
@@ -1318,11 +1394,11 @@ function watch(module, selector, onChange, contextId) {
     });
 }
 exports.watch = watch;
-let contextIdCounter = 1;
-function generateContextId() {
-    return (contextIdCounter++).toString();
+let idCounter = 1;
+function generateId() {
+    return (idCounter++).toString();
 }
-exports.generateContextId = generateContextId;
+exports.generateId = generateId;
 
 
 /***/ }),
@@ -1366,12 +1442,13 @@ exports.traverseClassInstance = traverseClassInstance;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useService = exports.useModuleByName = exports.useModuleContextByName = exports.useModuleRoot = exports.useModuleContextRoot = exports.useModule = void 0;
+exports.useService = exports.useModuleByName = exports.useModuleManager = exports.useModuleContextByName = exports.useModuleRoot = exports.useModuleContextRoot = exports.useModule = void 0;
 const react_1 = __webpack_require__(359);
 const hooks_1 = __webpack_require__(886);
 const store_1 = __webpack_require__(971);
 const merge_1 = __webpack_require__(2);
 const lockThis_1 = __webpack_require__(924);
+const react_redux_1 = __webpack_require__(821);
 /**
  * A hook for using ReduxModules in components
  *
@@ -1396,13 +1473,12 @@ function useModuleContext(ModuleClass, initParams, moduleName = '', isService = 
     const computedPropsRef = (0, react_1.useRef)({});
     const dependencyWatcherRef = (0, react_1.useRef)(null);
     const componentId = (0, hooks_1.useComponentId)();
+    const moduleManager = useModuleManager();
     moduleName = moduleName || ModuleClass.name;
     // register the component in the ModuleManager upon component creation
     const { module, select, selector, moduleContextId, } = (0, hooks_1.useOnCreate)(() => {
         // get existing module's instance or create a new one
-        const moduleManager = (0, store_1.getModuleManager)();
         const moduleContextId = moduleManager.currentContext[moduleName] || 'default';
-        console.log('create module', moduleName, 'for context', moduleContextId);
         let module = moduleManager.getModule(moduleName, moduleContextId);
         if (!module) {
             const moduleMetadata = moduleManager.registerModule(ModuleClass, initParams, moduleName, false, moduleContextId);
@@ -1410,7 +1486,8 @@ function useModuleContext(ModuleClass, initParams, moduleName = '', isService = 
                 module = moduleMetadata.module;
             }
             else {
-                module = moduleManager.initModule(moduleName, moduleContextId);
+                moduleManager.initModule(moduleName, moduleContextId);
+                module = moduleManager.getModule(moduleName, moduleContextId);
             }
         }
         // register the component in the module
@@ -1473,7 +1550,7 @@ function useModuleContext(ModuleClass, initParams, moduleName = '', isService = 
     // unregister the component from the module onDestroy
     (0, hooks_1.useOnDestroy)(() => {
         if (!isService)
-            (0, store_1.getModuleManager)().unRegisterComponent(moduleName, moduleContextId, componentId);
+            moduleManager.unRegisterComponent(moduleName, moduleContextId, componentId);
     });
     // call Redux selector to make selected props reactive
     (0, store_1.useSelector)(selector);
@@ -1511,13 +1588,20 @@ exports.useModuleRoot = useModuleRoot;
  * same as useModule but locates a module by name instead of a class
  */
 function useModuleContextByName(moduleName, contextId) {
-    const moduleManager = (0, store_1.getModuleManager)();
+    const moduleManager = useModuleManager();
     const module = moduleManager.getModule(moduleName, contextId);
     if (!module)
         throw new Error(`Can not find module with name "${moduleName}" `);
     return useModuleContext(module.constructor, null, moduleName);
 }
 exports.useModuleContextByName = useModuleContextByName;
+function useModuleManager() {
+    const { store } = (0, react_1.useContext)(react_redux_1.ReactReduxContext);
+    const { appId } = store.getState().modules;
+    const moduleManager = (0, store_1.getModuleManager)(appId);
+    return moduleManager;
+}
+exports.useModuleManager = useModuleManager;
 /**
  * same as useModule but locates a module by name instead of a class
  */
@@ -1568,30 +1652,17 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__821__;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			id: moduleId,
-/******/ 			loaded: false,
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
 /******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
 /******/ 	
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
-/******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	/* webpack/runtime/node module decorator */
-/******/ 	(() => {
-/******/ 		__webpack_require__.nmd = (module) => {
-/******/ 			module.paths = [];
-/******/ 			if (!module.children) module.children = [];
-/******/ 			return module;
-/******/ 		};
-/******/ 	})();
 /******/ 	
 /************************************************************************/
 /******/ 	

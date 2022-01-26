@@ -1,48 +1,41 @@
-export declare const modulesSlice: import("@reduxjs/toolkit").Slice<{}, {
-    initModule: (state: import("immer/dist/internal").WritableDraft<{}>, action: {
-        payload: any;
-        type: string;
-    }) => void;
-    destroyModule: (state: import("immer/dist/internal").WritableDraft<{}>, action: {
-        payload: any;
-        type: string;
-    }) => void;
-    mutateModule: (state: import("immer/dist/internal").WritableDraft<{}>, action: {
-        payload: any;
-        type: string;
-    }) => void;
-}, "modules">;
-export declare const store: import("@reduxjs/toolkit").EnhancedStore<{
-    modules: {};
-}, import("redux").AnyAction, [import("redux-thunk").ThunkMiddleware<{
-    modules: {};
-}, import("redux").AnyAction, null> | import("redux-thunk").ThunkMiddleware<{
-    modules: {};
-}, import("redux").AnyAction, undefined>]>;
+import { Store } from 'redux';
 /**
  * ReduxModuleManager helps to organize code splitting with help of Redux Modules
  * Each Redux Module controls its own chunk of state in the global Redux store
  * Redux Modules are objects that contain initialState, actions, mutations and getters
  */
-declare class ReduxModuleManager {
+export declare class ReduxModuleManager {
+    store: Store;
+    modulesSlice: any;
+    appId: string;
     immerState: any;
     registeredModules: Record<string, Record<string, IReduxModuleMetadata>>;
     currentContext: Record<string, string>;
+    actions: any;
+    constructor(store: Store, modulesSlice: any, appId: string);
     /**
      * Register a new Redux Module and initialize it
      * @param module the module object
      * @param initParams params that will be passed in the `.init()` handler after initialization
      */
     registerModule<TInitParams>(ModuleClass: any, initParams?: TInitParams, moduleName?: string, isService?: boolean, contextId?: string): IReduxModuleMetadata;
-    initModule(moduleName: string, contextId: string): any;
+    initModule(moduleName: string, contextId: string): void;
     /**
        * Unregister the module and erase its state from Redux
        */
     unregisterModule(moduleName: string, contextId: string): void;
+    registerServices<T extends {
+        [key: string]: new (...args: any) => any;
+    }>(serviceClasses: T): TInstances<T>;
     /**
-       * Get the Module by name
-       */
+     * Get the Module by name
+     */
     getModule<TModule extends IReduxModule<any, any>>(moduleName: string, contextId: string): TModule;
+    /**
+     * Get the Service by name
+     * Initialized the service if not initialized
+     */
+    getService(serviceName: string): IReduxModule<any, any> | undefined;
     /**
        * Register a component that is using the module
        */
@@ -64,11 +57,13 @@ declare class ReduxModuleManager {
     setModuleContext(moduleName: string, contextId: string): void;
     resetModuleContext(moduleName: string): void;
 }
+export declare function createModuleManager(): ReduxModuleManager;
+export declare function destroyModuleManager(appId: string): void;
 /**
  * The ModuleManager is a singleton object accessible in other files
  * via the `getModuleManager()` call
  */
-export declare function getModuleManager(): ReduxModuleManager;
+export declare function getModuleManager(appId: string): ReduxModuleManager;
 /**
  * A decorator that registers the object method as an mutation
  */
@@ -95,14 +90,12 @@ export declare function createDependencyWatcher<T extends object>(watchedObject:
     getDependentFields: () => string[];
     getDependentValues: () => Partial<T>;
 };
-export declare function getModule<T extends new (...args: any) => any>(ModuleClass: T, contextId?: string): InstanceType<T>;
-export declare function getService<T extends new (...args: any) => any>(ModuleClass: T): InstanceType<T>;
 export declare function assertIsDefined<T>(val: T): asserts val is NonNullable<T>;
 export declare function getDefined<T>(val: T): NonNullable<T>;
 /**
  * Watch changes on a reactive state in the module
  */
-export declare function watch<T>(module: IReduxModule<any, any>, selector: () => T, onChange: (newVal: T, prevVal: T) => unknown, contextId: string): void;
+export declare function watch<T>(module: IReduxModule<any, any>, selector: () => T, onChange: (newVal: T, prevVal: T) => unknown, contextId: string, appId: string): void;
 interface IWatcher<T> {
     selector: () => T;
     onChange: (newVal: T, prevVal: T) => unknown;
@@ -115,6 +108,7 @@ export interface IReduxModule<TInitParams, TState> {
     destroy?: () => unknown;
 }
 interface IReduxModuleMetadata {
+    moduleName: string;
     componentIds: string[];
     initParams: any;
     module?: IReduxModule<any, any>;
@@ -123,5 +117,10 @@ interface IReduxModuleMetadata {
     isService: boolean;
     contextId: string;
 }
-export declare function generateContextId(): string;
+export declare function generateId(): string;
+declare type TInstances<T extends {
+    [key: string]: new (...args: any) => any;
+}> = {
+    [P in keyof T]: InstanceType<T[P]>;
+};
 export {};
