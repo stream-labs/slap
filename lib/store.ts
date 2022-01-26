@@ -180,6 +180,7 @@ export class ReduxModuleManager {
           const service = moduleManager.getService(serviceName);
           return service;
         },
+        enumerable: true,
       });
     });
 
