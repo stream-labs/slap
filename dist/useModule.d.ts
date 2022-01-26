@@ -9,7 +9,7 @@ export declare function useModule<TState, TModuleClass extends new (...args: any
 /**
  * Create a Redux module instance with given params
  */
-export declare function useModuleContextRoot<TInitParams, TState, TModuleClass extends new (...args: any[]) => IReduxModule<TInitParams, TState>>(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName?: string): InstanceType<TModuleClass> & {
+export declare function useModuleContextRoot<TInitParams, TState, TModuleClass extends new (...args: any[]) => IReduxModule<TInitParams, TState>>(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName?: string, contextId?: string): InstanceType<TModuleClass> & {
     select: () => InstanceType<TModuleClass> & InstanceType<TModuleClass>["state"] & {
         module: InstanceType<TModuleClass>;
     };
@@ -26,11 +26,11 @@ export declare function useModuleRoot<TInitParams, TState, TModuleClass extends 
 /**
  * same as useModule but locates a module by name instead of a class
  */
-export declare function useModuleContextByName<TModule extends IReduxModule<any, any>>(moduleName: string): TUseModuleReturnType<TModule>;
+export declare function useModuleContextByName<TModule extends IReduxModule<any, any>>(moduleName: string, contextId: string): TUseModuleReturnType<TModule>;
 /**
  * same as useModule but locates a module by name instead of a class
  */
-export declare function useModuleByName(moduleName: string): any;
+export declare function useModuleByName(moduleName: string, contextId: string): any;
 export declare function useService<TState, TModuleClass extends new (...args: any[]) => IReduxModule<unknown, TState>>(ModuleClass: TModuleClass): InstanceType<TModuleClass> & InstanceType<TModuleClass>["state"] & {
     module: InstanceType<TModuleClass>;
 };

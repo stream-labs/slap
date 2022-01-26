@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 
 const distPath = path.resolve(__dirname, 'dist', 'demo');
 
@@ -7,7 +8,7 @@ const entry = {
   index: './demo/index.tsx',
   todolistapp: './demo/todo-list-app.tsx',
   countersapp: './demo/counters-app.tsx',
-}
+};
 
 module.exports = {
 
@@ -64,6 +65,11 @@ module.exports = {
         filename: `${entryName}.html`,
         chunks: [entryName],
       });
+    }),
+    new CopyPlugin({
+      patterns: [
+        { from: './demo/index.css', to: path.resolve(distPath, 'index.css') },
+      ],
     }),
   ],
   // plugins: [new HtmlWebpackPlugin({ template: path.resolve(distPath, 'index.html') })],

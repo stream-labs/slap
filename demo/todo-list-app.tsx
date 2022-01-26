@@ -82,8 +82,6 @@ export function TodoCompleteButton() {
   );
 }
 
-// type TTask = { id: string, name: string, isCompleted: boolean };
-
 class TodoModule {
   state = {
     tasks: [
