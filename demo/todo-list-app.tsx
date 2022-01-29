@@ -1,6 +1,7 @@
 import React from 'react';
-import { mutation, RedumbxApp, useModule } from '../lib';
 import ReactDOM from 'react-dom';
+import { mutation, RedumbxApp, useModule } from '../lib';
+import './index.css';
 
 export function TodoListApp() {
   return (

@@ -9,6 +9,7 @@ const entry = {
   todolistapp: './demo/todo-list-app.tsx',
   countersapp: './demo/counters-app.tsx',
   twoapps: './demo/twoapps.tsx',
+  starseditor: './demo/stars-editor/index.tsx',
 };
 
 module.exports = {
@@ -26,6 +27,10 @@ module.exports = {
         test: /\.tsx?$/,
         use: 'ts-loader',
         exclude: /node_modules/,
+      },
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },

@@ -43,5 +43,6 @@ module.exports = {
     'react/jsx-one-expression-per-line': 0,
     'prefer-template': 0,
     'prefer-destructuring': 0,
+    'class-methods-use-this': 0,
   },
 };

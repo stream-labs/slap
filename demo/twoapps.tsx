@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { createModuleManager, RedumbxApp } from '../lib';
 import { CounterService, MultiplePersistentCounters } from './counters-app';
+import './index.css';
 
 const moduleManager = createModuleManager();
 

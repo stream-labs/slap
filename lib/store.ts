@@ -72,7 +72,12 @@ export class ReduxModuleManager {
 
   actions: any;
 
-  constructor(public store: Store, public modulesSlice: any, public appId: string) {
+  constructor(
+    public store: Store,
+    public modulesSlice: any,
+    public appId: string,
+    public plugins?: TModuleManagerHooks[],
+  ) {
     this.actions = modulesSlice.actions;
   }
 
@@ -213,11 +218,9 @@ export class ReduxModuleManager {
     const { moduleName, contextId, module } = serviceMetadata;
     const shouldInit = !module;
     if (shouldInit) {
-      console.log('Should init module', moduleName);
       this.initModule(moduleName, contextId);
       return this.registeredModules[serviceName][contextId].module;
     }
-    console.log('Should NOT init module', moduleName, module);
     return module;
   }
 
@@ -295,7 +298,7 @@ export class ReduxModuleManager {
 
 const moduleManagers: Record<string, ReduxModuleManager> = {};
 
-export function createModuleManager() {
+export function createModuleManager(plugins?: TModuleManagerHooks[]) {
   const appId = generateId();
 
   // create ReduxStore
@@ -303,7 +306,7 @@ export function createModuleManager() {
 
   // create the ModuleManager and
   // automatically register some additional modules
-  const moduleManager = new ReduxModuleManager(store, modulesSlice, appId);
+  const moduleManager = new ReduxModuleManager(store, modulesSlice, appId, plugins);
 
   moduleManagers[appId] = moduleManager;
 
@@ -643,3 +646,11 @@ export function generateId() {
 type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
   [P in keyof T]: InstanceType<T[P]>;
 };
+
+type TModuleManagerHooks = {
+  onModuleRegister(context: any): void;
+  onModuleInit(context: any): void;
+  onModuleDestroy(context: any): void;
+  onMutation(context: any): void;
+  onMethod(context: any): void;
+}

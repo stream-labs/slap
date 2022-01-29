@@ -4,6 +4,7 @@ import {
   mutation, RedumbxApp, useModule, useService,
 } from '../lib';
 import { ModuleRoot } from '../lib/RedumbxApp';
+import './index.css';
 
 function CountersApp() {
   return (
