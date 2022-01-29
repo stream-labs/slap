@@ -1,12 +1,20 @@
 import ReactDOM from 'react-dom';
 import React from 'react';
-import { moduleManager, Services } from './services/service-provider';
-import { RedumbxApp } from '../../lib';
+import { createModuleManager, RedumbxApp } from '../../lib';
 import { App } from './components/App';
+import { AppService } from './services/app';
+import { ApiService } from './services/api';
+import { EditorService } from './services/editor';
 import 'antd/dist/antd.css';
 
 function main() {
-  const app = Services.AppService;
+  const moduleManager = createModuleManager({
+    AppService,
+    ApiService,
+    EditorService,
+  });
+
+  const app = moduleManager.inject(AppService);
   app.init();
 
   ReactDOM.render(

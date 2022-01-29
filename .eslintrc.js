@@ -44,5 +44,6 @@ module.exports = {
     'prefer-template': 0,
     'prefer-destructuring': 0,
     'class-methods-use-this': 0,
+    'no-useless-constructor': 0,
   },
 };

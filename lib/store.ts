@@ -6,10 +6,12 @@ import React, { useEffect, useRef } from 'react';
 // eslint-disable-next-line camelcase
 import { unstable_batchedUpdates } from 'react-dom';
 import { Store } from 'redux';
+import { isPlainObject } from 'is-plain-object';
 import { useOnCreate } from './hooks';
 import { isSimilar } from './isDeepEqual';
 import { traverseClassInstance } from './traverseClassInstance';
 import { useModuleManager } from './useModule';
+import { Service } from './service';
 
 /*
  * This file provides Redux integration in a modular way
@@ -120,9 +122,10 @@ export class ReduxModuleManager {
     // call `init()` method of module if exist
     unstable_batchedUpdates(() => {
       const { ModuleClass, initParams } = this.registeredModules[moduleName][contextId];
-      const module = new ModuleClass();
+      const module = new ModuleClass(this);
       this.registeredModules[moduleName][contextId].module = module as any;
       module.name = moduleName;
+      module.beforeInit && module.beforeInit();
       module.init && module.init(initParams);
       const initialState = module.state;
 
@@ -171,34 +174,13 @@ export class ReduxModuleManager {
     delete this.registeredModules[moduleName][contextId];
   }
 
-  registerServices<T extends { [key: string]: new (...args: any) => any }>
+  registerServices<T extends TServiceConstructorMap>
   (serviceClasses: T): TInstances<T> {
-    const moduleManager = this;
-
-    const result = {};
-
     Object.keys(serviceClasses).forEach(serviceName => {
       const serviceClass = serviceClasses[serviceName];
-      moduleManager.registerModule(serviceClass as any, null, '', true, 'service');
-      Object.defineProperty(result, serviceName, {
-        get: () => {
-          const service = moduleManager.getService(serviceName);
-          return service;
-        },
-        enumerable: true,
-      });
+      this.registerModule(serviceClass as any, null, '', true, 'service');
     });
-
-    return result as TInstances<T>;
-
-    // return new Proxy(
-    // {} as TInstances<T>,
-    // {
-    //   get(target, propName, receiver) {
-    //     return moduleManager.getModule(propName as string, 'service');
-    //   },
-    // },
-    // );
+    return this.inject(serviceClasses);
   }
 
   /**
@@ -222,6 +204,43 @@ export class ReduxModuleManager {
       return this.registeredModules[serviceName][contextId].module;
     }
     return module;
+  }
+
+  inject<T>(injectedObject: T): GetInjectReturnType<T> {
+    if (isPlainObject(injectedObject)) {
+      return this.injectMany(injectedObject as any) as GetInjectReturnType<T>;
+    }
+    return this.injectOne(injectedObject as any) as GetInjectReturnType<T>;
+  }
+
+  private injectOne<
+    TServiceClass extends new (...args: any) => any
+    >(ServiceClass: TServiceClass): InstanceType<TServiceClass> {
+    const serviceName = ServiceClass.name;
+
+    const serviceMetadata = this.registeredModules[serviceName].service;
+    if (!serviceMetadata) throw new Error(`Service "${serviceName}" is not found. Is it registered?`);
+    const { moduleName, contextId, module } = serviceMetadata;
+    const shouldInit = !module;
+    if (shouldInit) {
+      this.initModule(moduleName, contextId);
+      return this.registeredModules[serviceName][contextId].module as any as InstanceType<TServiceClass>;
+    }
+    return module as any as InstanceType<TServiceClass>;
+  }
+
+  private injectMany<T extends { [key: string]: new (...args: any) => any }>
+  (serviceClasses: T): TInstances<T> {
+    const result = {};
+    Object.keys(serviceClasses).forEach(serviceName => {
+      const serviceClass = serviceClasses[serviceName];
+      Object.defineProperty(result, serviceName, {
+        get: () => {
+          return this.injectOne(serviceClass);
+        },
+      });
+    });
+    return result as TInstances<T>;
   }
 
   // /**
@@ -298,7 +317,7 @@ export class ReduxModuleManager {
 
 const moduleManagers: Record<string, ReduxModuleManager> = {};
 
-export function createModuleManager(plugins?: TModuleManagerHooks[]) {
+export function createModuleManager(Services?: TServiceConstructorMap, plugins?: TModuleManagerHooks[]) {
   const appId = generateId();
 
   // create ReduxStore
@@ -313,6 +332,8 @@ export function createModuleManager(plugins?: TModuleManagerHooks[]) {
   // add a BatchedUpdatesModule for rendering optimizations
   moduleManager.registerModule(BatchedUpdatesModule, { appId }, 'BatchedUpdatesModule');
 
+  if (Services) moduleManager.registerServices(Services);
+
   return moduleManager;
 }
 
@@ -326,15 +347,6 @@ export function destroyModuleManager(appId: string) {
  */
 export function getModuleManager(appId: string) {
   return moduleManagers[appId];
-  // if (!moduleManager) {
-  //   // create the ModuleManager and
-  //   // automatically register some additional modules
-  //   moduleManager = createModuleManager();
-  //
-  //   // add a BatchedUpdatesModule for rendering optimizations
-  //   moduleManager.registerModule(BatchedUpdatesModule, null, 'BatchedUpdatesModule');
-  // }
-  // return moduleManager;
 }
 
 /**
@@ -566,23 +578,6 @@ export function createDependencyWatcher<T extends object>(watchedObject: T) {
   return { watcherProxy, getDependentFields, getDependentValues };
 }
 
-// export function getModule<T extends new (...args: any) => any>(ModuleClass: T, contextId = 'default'): InstanceType<T> {
-//   const moduleManager = getModuleManager();
-//   const moduleName = ModuleClass.prototype.constructor.name;
-//   let moduleMetadata = moduleManager.registeredModules[moduleName][contextId];
-//   if (!moduleMetadata) {
-//     moduleMetadata = moduleManager.registerModule(ModuleClass);
-//   }
-//   if (!moduleMetadata.module) {
-//     return moduleManager.initModule(moduleName, contextId);
-//   }
-//   return moduleMetadata.module as any;
-// }
-//
-// export function getService<T extends new (...args: any) => any>(ModuleClass: T): InstanceType<T> {
-//   return getModule(ModuleClass, 'service');
-// }
-
 export function assertIsDefined<T>(val: T): asserts val is NonNullable<T> {
   if (val === undefined || val === null) {
     throw new Error(`Expected 'val' to be defined, but received ${val}`);
@@ -643,9 +638,35 @@ export function generateId() {
   return (idCounter++).toString();
 }
 
-type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
+export type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
   [P in keyof T]: InstanceType<T[P]>;
 };
+
+type GetInjectReturnType<Type> = Type extends new (...args: any) => any
+  ? InstanceType<Type>
+  : Type extends { [key: string]: new (...args: any) => any } ? TInstances<Type> :
+    never;
+export type TInjector = <T>(injectedObject: T) => GetInjectReturnType<T>
+
+export type TServiceConstructor = new (...args: any) => any;
+export type TServiceConstructorMap = { [key: string]: TServiceConstructor }
+
+
+/**
+ * Makes all functions return a Promise and sets other types to never
+ */
+export type TPromisifyFunctions<T> = {
+  [P in keyof T]: T[P] extends (...args: any[]) => any ? TPromisifyFunction<T[P]> : never;
+};
+
+/**
+ * Wraps the return type in a promise if it doesn't already return a promise
+ */
+export type TPromisifyFunction<T> = T extends (...args: infer P) => infer R
+  ? T extends (...args: any) => Promise<any>
+    ? (...args: P) => R
+    : (...args: P) => Promise<R>
+  : T;
 
 type TModuleManagerHooks = {
   onModuleRegister(context: any): void;

@@ -1,24 +1,26 @@
-import { Services } from './service-provider';
 import { mutation } from '../../../lib';
+import { Service } from '../../../lib/service';
+import { EditorService } from './editor';
 
-export type TAppPageId = 'editor' | 'about';
-
-export class AppService {
+export class AppService extends Service {
   state = {
     activePage: 'editor',
+    pages: [
+      { title: 'Editor', id: 'editor' },
+      { title: 'About', id: 'about' },
+    ],
+  };
+
+  dependencies = {
+    EditorService,
   };
 
   init() {
-    Services.EditorService.load();
+    this.deps.EditorService.load();
   }
 
-  readonly pages: { title: string, id: TAppPageId }[] = [
-    { title: 'Editor', id: 'editor' },
-    { title: 'About', id: 'about' },
-  ];
-
   @mutation()
-  setActivePage(page: TAppPageId) {
+  setActivePage(page: string) {
     this.state.activePage = page;
   }
 }

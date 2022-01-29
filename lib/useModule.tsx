@@ -3,9 +3,10 @@ import { useOnCreate, useOnDestroy, useComponentId } from './hooks';
 import {
   IReduxModule, getModuleManager, useSelector, createDependencyWatcher,
 } from './store';
-import { merge } from './merge';
+import { merge, TMerge3 } from './merge';
 import { lockThis } from './lockThis';
 import { ReactReduxContext } from 'react-redux';
+import { createView } from './createStateView';
 
 /**
  * A hook for using ReduxModules in components
@@ -216,6 +217,16 @@ export function useService<
   TModuleClass extends new(...args: any[]) => IReduxModule<unknown, TState>
   >(ModuleClass: TModuleClass) {
   return useModuleContext(ModuleClass, null, '', true).select();
+}
+
+export function useServiceView<
+  TService extends { state: any, view: any },
+  >(ServiceClass: new(...args: any[]) => TService) {
+  const moduleManager = useModuleManager();
+  return useOnCreate(() => {
+    const service = moduleManager.inject(ServiceClass);
+    return createView(service, service.view) as TMerge3<TService['state'], TService, TService['view']>;
+  });
 }
 
 type TUseModuleReturnType<TModule extends IReduxModule<any, any>> = TModule & {
