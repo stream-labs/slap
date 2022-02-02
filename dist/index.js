@@ -384,12 +384,11 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.RedumbxApp = void 0;
 __exportStar(__webpack_require__(340), exports);
 __exportStar(__webpack_require__(971), exports);
 // export * from './serviceProvider';
-var RedumbxApp_1 = __webpack_require__(585);
-Object.defineProperty(exports, "RedumbxApp", ({ enumerable: true, get: function () { return RedumbxApp_1.RedumbxApp; } }));
+__exportStar(__webpack_require__(585), exports);
+__exportStar(__webpack_require__(149), exports);
 
 
 /***/ }),
@@ -553,6 +552,39 @@ exports.merge = merge;
 // });
 // ext.sayHello();
 // ext.sayBye();
+
+
+/***/ }),
+
+/***/ 149:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Service = exports.ReduxModule = void 0;
+class ReduxModule {
+    constructor() {
+        this.dependencies = {};
+    }
+    beforeInit(moduleManager) {
+        this.moduleManager = moduleManager;
+        if (this.dependencies)
+            this.deps = this.inject(this.dependencies);
+    }
+    inject(injectedObject) {
+        return this.moduleManager.inject(injectedObject);
+    }
+    createModule(ModuleClass, ...args) {
+        // @ts-ignore
+        const module = new ModuleClass(...args);
+        module.beforeInit && module.beforeInit(this.moduleManager);
+        return module;
+    }
+}
+exports.ReduxModule = ReduxModule;
+class Service extends ReduxModule {
+}
+exports.Service = Service;
 
 
 /***/ }),

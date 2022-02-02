@@ -1,4 +1,5 @@
 export * from './useModule';
 export * from './store';
 // export * from './serviceProvider';
-export { RedumbxApp } from './RedumbxApp';
+export * from './RedumbxApp';
+export * from './service';
