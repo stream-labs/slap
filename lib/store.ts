@@ -2,7 +2,7 @@ import { isPlainObject } from 'is-plain-object';
 import produce from 'immer';
 import { traverseClassInstance } from './traverseClassInstance';
 
-class ReactiveStore {
+export class ReactiveStore {
   constructor(public readonly storeId: string) {
   }
 
@@ -554,7 +554,7 @@ export interface IReduxModule<TInitParams, TState> {
   destroy?: () => unknown;
 }
 
-interface IReduxModuleMetadata {
+export interface IReduxModuleMetadata {
   moduleName: string;
   componentIds: string[];
   initParams: any;

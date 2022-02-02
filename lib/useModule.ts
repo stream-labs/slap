@@ -15,6 +15,8 @@ import { merge, TMerge, TMerge3 } from './merge';
 import { lockThis } from './lockThis';
 import { createViewWithActions } from './createStateView';
 import { isSimilar } from './isDeepEqual';
+import { useSelector } from './useSelector';
+import { useModuleMetadata } from './useModuleMetadata';
 
 export const StoreContext = React.createContext('1');
 
@@ -43,10 +45,6 @@ export function createModuleView<TModule>(module: TModule): TModuleView<TModule>
   return mergedModule as any as TModuleView<TModule>;
 }
 
-  type TUseModuleReturnType<TModule extends IReduxModule<any, any>> = TModule & {
-    select: () => TModule & TModule['state'] & { module: TModule };
-  };
-
 export function useSelectFrom<TModuleView extends Object, TExtendedView, TReturnType = TMerge<TModuleView, TExtendedView>,
   >(module: TModuleView, extend?: (module: TModuleView) => TExtendedView): TReturnType {
   // register the component in the ModuleManager upon component creation
@@ -65,34 +63,6 @@ export function useSelectFrom<TModuleView extends Object, TExtendedView, TReturn
   useSelector(selector as any);
 
   return dependencyWatcher.watcherProxy as any as TReturnType;
-}
-
-export function useModuleMetadata<TModule>
-(ModuleClass: new(...args: any[]) => TModule, isService: boolean, createView: (module: TModule) => any) {
-  const componentId = useComponentId();
-  const moduleManager = useModuleManager();
-
-  // register the component in the ModuleManager upon component creation
-  const {
-    moduleMetadata,
-  } = useOnCreate(() => {
-    const moduleMetadata = moduleManager.injectModule(ModuleClass, isService, createView);
-    const moduleName = moduleMetadata.moduleName;
-
-    const contextId = moduleMetadata.contextId;
-    if (!isService) moduleManager.registerComponent(moduleName, contextId, componentId);
-
-    return {
-      moduleMetadata,
-    };
-  });
-
-  // unregister the component from the module onDestroy
-  useOnDestroy(() => {
-    if (!isService) moduleManager.unRegisterComponent(moduleMetadata.moduleName, moduleMetadata.contextId, componentId);
-  });
-
-  return moduleMetadata;
 }
 
 export function useModule<
@@ -126,50 +96,10 @@ export function useServiceView<
   return selectResult as TResult;
 }
 
-function createServiceView<TService>(service: TService): TServiceView<TService> {
+export function createServiceView<TService>(service: TService): TServiceView<TService> {
   const actions = service as any;
   const getters = (service as any).view || {} as any;
   return createViewWithActions(actions, getters) as TServiceView<TService>;
-}
-
-function useSelector(cb: Function) {
-  const servicesRevisionRef = useRef<Record<string, number>>({});
-  const selectorResultRef = useRef<Record<string, any>>({});
-  const forceUpdate = useForceUpdate();
-  const moduleManager = useModuleManager();
-
-  useEffect(() => {
-    servicesRevisionRef.current = moduleManager.runAndSaveAccessors(() => {
-      selectorResultRef.current = cb();
-    });
-
-    const watcherId = moduleManager.createWatcher(() => {
-      const prevRevisions = servicesRevisionRef.current;
-      const currentRevisions = moduleManager.modulesRevisions;
-      let modulesHasChanged = false;
-      for (const moduleName in prevRevisions) {
-        if (prevRevisions[moduleName] !== currentRevisions[moduleName]) {
-          modulesHasChanged = true;
-          break;
-        }
-      }
-
-      if (!modulesHasChanged) return;
-
-      const prevSelectorResult = selectorResultRef.current;
-
-      servicesRevisionRef.current = moduleManager.runAndSaveAccessors(() => {
-        selectorResultRef.current = cb();
-      });
-
-      if (!isSimilar(prevSelectorResult, selectorResultRef.current)) {
-        forceUpdate();
-      }
-    });
-    return () => {
-      moduleManager.removeWatcher(watcherId);
-    };
-  }, []);
 }
 
 export type TServiceView<

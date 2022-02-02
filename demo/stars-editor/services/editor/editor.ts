@@ -2,7 +2,7 @@ import { SceneItemState, SceneState } from '../../interfeaces';
 import {
   mutation, TServiceView,
 } from '../../../../lib';
-import { ReduxModule, Service } from '../../../../lib/service';
+import { ReduxModule } from '../../../../lib/service';
 import { ApiService } from '../api';
 import { SceneController, SceneView } from './scene';
 import { createViewWithActions } from '../../../../lib/createStateView';
