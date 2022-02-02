@@ -495,7 +495,7 @@ if (true) {
 /***/ 251:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
-/** @license React v17.0.2
+/** @license React vundefined
  * react-jsx-runtime.production.min.js
  *
  * Copyright (c) Facebook, Inc. and its affiliates.
@@ -503,8 +503,8 @@ if (true) {
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-__webpack_require__(418);var f=__webpack_require__(359),g=60103;exports.Fragment=60107;if("function"===typeof Symbol&&Symbol.for){var h=Symbol.for;g=h("react.element");exports.Fragment=h("react.fragment")}var m=f.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner,n=Object.prototype.hasOwnProperty,p={key:!0,ref:!0,__self:!0,__source:!0};
-function q(c,a,k){var b,d={},e=null,l=null;void 0!==k&&(e=""+k);void 0!==a.key&&(e=""+a.key);void 0!==a.ref&&(l=a.ref);for(b in a)n.call(a,b)&&!p.hasOwnProperty(b)&&(d[b]=a[b]);if(c&&c.defaultProps)for(b in a=c.defaultProps,a)void 0===d[b]&&(d[b]=a[b]);return{$$typeof:g,type:c,key:e,ref:l,props:d,_owner:m.current}}exports.jsx=q;exports.jsxs=q;
+__webpack_require__(418);var f=__webpack_require__(359),g=60103;exports.Fragment=60107;if("function"===typeof Symbol&&Symbol.for){var h=Symbol.for;g=h("react.element");exports.Fragment=h("react.fragment")}var m=Object.prototype.hasOwnProperty,n=f.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner,p={key:!0,ref:!0,__self:!0,__source:!0};
+function q(c,a,k){var b,d={},e=null,l=null;void 0!==k&&(e=""+k);void 0!==a.key&&(e=""+a.key);void 0!==a.ref&&(l=a.ref);for(b in a)m.call(a,b)&&!p.hasOwnProperty(b)&&(d[b]=a[b]);if(c&&c.defaultProps)for(b in a=c.defaultProps,a)void 0===d[b]&&(d[b]=a[b]);return{$$typeof:g,type:c,key:e,ref:l,props:d,_owner:n.current}}exports.jsx=q;exports.jsxs=q;
 
 
 /***/ }),
@@ -586,7 +586,7 @@ function ModuleRoot(p) {
     const { moduleName, contextId } = (0, hooks_1.useOnCreate)(() => {
         const contextId = (0, store_1.generateId)();
         const moduleName = p.module.prototype.constructor.name;
-        moduleManager.registerModule(p.module, null, moduleName, false, contextId);
+        moduleManager.registerModule(p.module, null, moduleName, contextId);
         return { contextId, moduleName };
     });
     moduleManager.setModuleContext(moduleName, contextId);
@@ -596,6 +596,40 @@ function ModuleRoot(p) {
     return (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, { children: p.children }, void 0);
 }
 exports.ModuleRoot = ModuleRoot;
+
+
+/***/ }),
+
+/***/ 329:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createViewWithActions = void 0;
+const merge_1 = __webpack_require__(2);
+const lockThis_1 = __webpack_require__(924);
+function createViewWithActions(actions, getters) {
+    const lockedActions = (0, lockThis_1.lockThis)(actions);
+    const lockedGetters = (0, lockThis_1.lockThis)(getters);
+    const mergedView = (0, merge_1.merge)([
+        // allow to select variables from the module's state
+        () => actions.state,
+        // allow to select actions
+        lockedActions,
+        // allow to select getters
+        lockedGetters,
+    ]);
+    // const mergedView = merge(
+    //   // allow to select variables from the module's state
+    //   () => actions.state,
+    //   // allow to select actions
+    //   () => lockedActions,
+    //   // allow to select getters
+    //   () => lockedGetters,
+    // );
+    return mergedView;
+}
+exports.createViewWithActions = createViewWithActions;
 
 
 /***/ }),
@@ -764,7 +798,7 @@ exports.lockThis = lockThis;
 /***/ }),
 
 /***/ 2:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -784,58 +818,55 @@ exports.merge = void 0;
  * mergedObject.bar // 3
  * mergedObject.foo // 1
  */
-function merge(...functions) {
-    const result = functions.reduce((a, val) => mergeTwo(a, val));
-    return result;
+const traverseClassInstance_1 = __webpack_require__(820);
+function merge(dataSources) {
+    const mergeResult = {};
+    dataSources.forEach((dataSource, ind) => {
+        const dataSourceFunction = typeof dataSource === 'function' && dataSource;
+        const dataSourceObj = dataSourceFunction ? dataSourceFunction() : dataSource;
+        (0, traverseClassInstance_1.traverseClassInstance)(dataSourceObj, (propName => {
+            Object.defineProperty(mergeResult, propName, {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    return dataSourceFunction
+                        ? dataSources[ind]()[propName]
+                        : dataSources[ind][propName];
+                },
+            });
+        }));
+    });
+    return mergeResult;
 }
 exports.merge = merge;
-/**
- * This function is used by the `.merge()` function to merge 2 sources of data
- */
-function mergeTwo(target1, target2) {
-    const proxyMetadata = {
-        _proxyName: 'MergeResult',
-        get _mergedObjects() {
-            return [target1, target2];
-        },
-    };
-    function hasOwnProperty(propName) {
-        const obj = getObject(propName);
-        return obj && propName in obj;
-    }
-    function getObject(propName) {
-        if (target2._proxyName === 'MergeResult' && propName in target2) {
-            return target2;
-        }
-        if (typeof target2 === 'function') {
-            const obj2 = target2();
-            if (propName in obj2)
-                return obj2;
-        }
-        if (target1._proxyName === 'MergeResult' && propName in target1) {
-            return target1;
-        }
-        if (typeof target1 === 'function') {
-            const obj1 = target1();
-            if (propName in obj1)
-                return obj1;
-        }
-    }
-    return new Proxy(proxyMetadata, {
-        get(t, propName) {
-            if (propName === 'hasOwnProperty')
-                return hasOwnProperty;
-            if (propName in proxyMetadata)
-                return proxyMetadata[propName];
-            const obj = getObject(propName);
-            if (obj)
-                return obj[propName];
-        },
-        has(oTarget, propName) {
-            return hasOwnProperty(propName);
-        },
-    });
-}
+// function extendFn<
+//   TModuleClass extends new (...args: any[]) => any,
+//   TExtension extends InstanceType<TModuleClass> & {[key: string]: (this: InstanceType<TModuleClass>, ...args: any[]) => any},
+//   // TExtensionRemap extends {[P in keyof TExtension]: InstanceType<T[P]>;}
+//   TResult = TMerge<InstanceType<TModuleClass>, TExtension>
+//   >
+// (ModuleClass: TModuleClass, extension: TExtension): TResult {
+//   return {} as any as TResult;
+// }
+//
+// class Foo {
+//   sayHello() {
+//     return 'hello';
+//   }
+// }
+//
+// const ext = extendFn(Foo, {
+//   sayBye() {
+//     this.sayHello();
+//     console.log('bye');
+//   },
+//   sayRandom() {
+//     this.sayBye();
+//     console.log('random');
+//   },
+// });
+// ext.sayHello();
+// ext.sayBye();
 
 
 /***/ }),
@@ -860,6 +891,7 @@ const react_redux_1 = __webpack_require__(821);
 const react_1 = __webpack_require__(359);
 // eslint-disable-next-line camelcase
 const react_dom_1 = __webpack_require__(935);
+const is_plain_object_1 = __webpack_require__(57);
 const hooks_1 = __webpack_require__(886);
 const isDeepEqual_1 = __webpack_require__(723);
 const traverseClassInstance_1 = __webpack_require__(820);
@@ -909,10 +941,11 @@ function createReduxStore(appId) {
  * Redux Modules are objects that contain initialState, actions, mutations and getters
  */
 class ReduxModuleManager {
-    constructor(store, modulesSlice, appId) {
+    constructor(store, modulesSlice, appId, plugins) {
         this.store = store;
         this.modulesSlice = modulesSlice;
         this.appId = appId;
+        this.plugins = plugins;
         this.registeredModules = {};
         this.currentContext = {};
         this.actions = modulesSlice.actions;
@@ -922,9 +955,10 @@ class ReduxModuleManager {
      * @param module the module object
      * @param initParams params that will be passed in the `.init()` handler after initialization
      */
-    registerModule(ModuleClass, initParams, moduleName = '', isService = false, contextId = 'default') {
+    registerModule(ModuleClass, initParams, moduleName = '', contextId = 'default') {
         // use constructor name as a module name if other name not provided
         moduleName = moduleName || ModuleClass.prototype.constructor.name;
+        const isService = contextId === 'service';
         const shouldInitialize = !isService;
         // create a record in `registeredModules` with the newly created module
         if (!this.registeredModules[moduleName])
@@ -934,6 +968,7 @@ class ReduxModuleManager {
             moduleName,
             componentIds: [],
             module: undefined,
+            view: null,
             watchers: [],
             initParams,
             isService,
@@ -947,9 +982,12 @@ class ReduxModuleManager {
         // call `init()` method of module if exist
         (0, react_dom_1.unstable_batchedUpdates)(() => {
             const { ModuleClass, initParams } = this.registeredModules[moduleName][contextId];
-            const module = new ModuleClass();
+            const module = new ModuleClass(this);
             this.registeredModules[moduleName][contextId].module = module;
             module.name = moduleName;
+            //
+            // resolveDeps(this, module);
+            module.beforeInit && module.beforeInit(this);
             module.init && module.init(initParams);
             const initialState = module.state;
             // replace module methods with mutation calls
@@ -994,28 +1032,11 @@ class ReduxModuleManager {
         delete this.registeredModules[moduleName][contextId];
     }
     registerServices(serviceClasses) {
-        const moduleManager = this;
-        const result = {};
         Object.keys(serviceClasses).forEach(serviceName => {
             const serviceClass = serviceClasses[serviceName];
-            moduleManager.registerModule(serviceClass, null, '', true, 'service');
-            Object.defineProperty(result, serviceName, {
-                get: () => {
-                    const service = moduleManager.getService(serviceName);
-                    return service;
-                },
-                enumerable: true,
-            });
+            this.registerModule(serviceClass, null, '', 'service');
         });
-        return result;
-        // return new Proxy(
-        // {} as TInstances<T>,
-        // {
-        //   get(target, propName, receiver) {
-        //     return moduleManager.getModule(propName as string, 'service');
-        //   },
-        // },
-        // );
+        return this.inject(serviceClasses);
     }
     /**
      * Get the Module by name
@@ -1035,12 +1056,64 @@ class ReduxModuleManager {
         const { moduleName, contextId, module } = serviceMetadata;
         const shouldInit = !module;
         if (shouldInit) {
-            console.log('Should init module', moduleName);
             this.initModule(moduleName, contextId);
             return this.registeredModules[serviceName][contextId].module;
         }
-        console.log('Should NOT init module', moduleName, module);
         return module;
+    }
+    inject(injectedObject) {
+        if ((0, is_plain_object_1.isPlainObject)(injectedObject)) {
+            return this.injectManyServices(injectedObject);
+        }
+        return this.injectOneService(injectedObject);
+    }
+    injectOneService(ServiceClass) {
+        var _a;
+        const serviceName = ServiceClass.name;
+        let serviceMetadata = (_a = this.registeredModules[serviceName]) === null || _a === void 0 ? void 0 : _a.service;
+        if (!serviceMetadata) {
+            serviceMetadata = this.registerModule(ServiceClass, null, '', 'service');
+            // throw new Error(`Service "${serviceName}" is not found. Is it registered?`);
+        }
+        const { moduleName, contextId, module } = serviceMetadata;
+        const shouldInit = !module;
+        if (shouldInit) {
+            this.initModule(moduleName, contextId);
+            return this.registeredModules[serviceName][contextId].module;
+        }
+        return module;
+    }
+    injectModule(ModuleClass, isService = false, createView) {
+        var _a;
+        const moduleName = ModuleClass.name;
+        const contextId = isService ? 'service' : this.currentContext[moduleName] || 'default';
+        let moduleMetadata = (_a = this.registeredModules[moduleName]) === null || _a === void 0 ? void 0 : _a.service;
+        if (!moduleMetadata) {
+            moduleMetadata = this.registerModule(ModuleClass, null, '', contextId);
+        }
+        let { module } = moduleMetadata;
+        const shouldInit = !module;
+        if (shouldInit) {
+            this.initModule(moduleName, contextId);
+            moduleMetadata = this.registeredModules[moduleName][contextId];
+            module = moduleMetadata.module;
+        }
+        if (createView && !moduleMetadata.view) {
+            moduleMetadata.view = createView(module);
+        }
+        return moduleMetadata;
+    }
+    injectManyServices(serviceClasses) {
+        const result = {};
+        Object.keys(serviceClasses).forEach(serviceName => {
+            const serviceClass = serviceClasses[serviceName];
+            Object.defineProperty(result, serviceName, {
+                get: () => {
+                    return this.injectOneService(serviceClass);
+                },
+            });
+        });
+        return result;
     }
     // /**
     //  * Get the Module by name for the current context
@@ -1110,16 +1183,20 @@ class ReduxModuleManager {
 }
 exports.ReduxModuleManager = ReduxModuleManager;
 const moduleManagers = {};
-function createModuleManager() {
+// TODO: remove
+window.mm = moduleManagers;
+function createModuleManager(Services, plugins) {
     const appId = generateId();
     // create ReduxStore
     const { store, modulesSlice } = createReduxStore(appId);
     // create the ModuleManager and
     // automatically register some additional modules
-    const moduleManager = new ReduxModuleManager(store, modulesSlice, appId);
+    const moduleManager = new ReduxModuleManager(store, modulesSlice, appId, plugins);
     moduleManagers[appId] = moduleManager;
     // add a BatchedUpdatesModule for rendering optimizations
     moduleManager.registerModule(BatchedUpdatesModule, { appId }, 'BatchedUpdatesModule');
+    if (Services)
+        moduleManager.registerServices(Services);
     return moduleManager;
 }
 exports.createModuleManager = createModuleManager;
@@ -1133,15 +1210,6 @@ exports.destroyModuleManager = destroyModuleManager;
  */
 function getModuleManager(appId) {
     return moduleManagers[appId];
-    // if (!moduleManager) {
-    //   // create the ModuleManager and
-    //   // automatically register some additional modules
-    //   moduleManager = createModuleManager();
-    //
-    //   // add a BatchedUpdatesModule for rendering optimizations
-    //   moduleManager.registerModule(BatchedUpdatesModule, null, 'BatchedUpdatesModule');
-    // }
-    // return moduleManager;
 }
 exports.getModuleManager = getModuleManager;
 /**
@@ -1354,22 +1422,6 @@ function createDependencyWatcher(watchedObject) {
     return { watcherProxy, getDependentFields, getDependentValues };
 }
 exports.createDependencyWatcher = createDependencyWatcher;
-// export function getModule<T extends new (...args: any) => any>(ModuleClass: T, contextId = 'default'): InstanceType<T> {
-//   const moduleManager = getModuleManager();
-//   const moduleName = ModuleClass.prototype.constructor.name;
-//   let moduleMetadata = moduleManager.registeredModules[moduleName][contextId];
-//   if (!moduleMetadata) {
-//     moduleMetadata = moduleManager.registerModule(ModuleClass);
-//   }
-//   if (!moduleMetadata.module) {
-//     return moduleManager.initModule(moduleName, contextId);
-//   }
-//   return moduleMetadata.module as any;
-// }
-//
-// export function getService<T extends new (...args: any) => any>(ModuleClass: T): InstanceType<T> {
-//   return getModule(ModuleClass, 'service');
-// }
 function assertIsDefined(val) {
     if (val === undefined || val === null) {
         throw new Error(`Expected 'val' to be defined, but received ${val}`);
@@ -1405,7 +1457,7 @@ exports.generateId = generateId;
 /***/ }),
 
 /***/ 820:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
@@ -1413,12 +1465,18 @@ exports.traverseClassInstance = void 0;
 /**
  * Travers class methods and props
  */
+const toolkit_1 = __webpack_require__(509);
 function traverseClassInstance(instance, cb) {
     let entity = instance;
     const prototypes = [];
-    while (entity.constructor.name !== 'Object') {
+    if ((0, toolkit_1.isPlainObject)(entity)) {
         prototypes.push(entity);
-        entity = Object.getPrototypeOf(entity);
+    }
+    else {
+        while (entity.constructor.name !== 'Object') {
+            prototypes.push(entity);
+            entity = Object.getPrototypeOf(entity);
+        }
     }
     const alreadyTraversed = {};
     prototypes.forEach((proto) => {
@@ -1443,13 +1501,14 @@ exports.traverseClassInstance = traverseClassInstance;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useService = exports.useModuleByName = exports.useModuleManager = exports.useModuleContextByName = exports.useModuleRoot = exports.useModuleContextRoot = exports.useModule = void 0;
+exports.useServiceView = exports.useService = exports.useModule = exports.useModuleMetadata = exports.useSelectFrom = exports.createModuleView = exports.useInject = exports.useModuleManager = void 0;
 const react_1 = __webpack_require__(359);
+const react_redux_1 = __webpack_require__(821);
 const hooks_1 = __webpack_require__(886);
 const store_1 = __webpack_require__(971);
 const merge_1 = __webpack_require__(2);
 const lockThis_1 = __webpack_require__(924);
-const react_redux_1 = __webpack_require__(821);
+const createStateView_1 = __webpack_require__(329);
 /**
  * A hook for using ReduxModules in components
  *
@@ -1469,151 +1528,310 @@ const react_redux_1 = __webpack_require__(821);
  * const { foo, fooBar } = useModule(MyModule)
  *  .selectExtra(module => { fooBar: module.foo + module.bar  }))
  */
-function useModuleContext(ModuleClass, initParams, moduleName = '', isService = false) {
-    const computedPropsFnRef = (0, react_1.useRef)(null);
-    const computedPropsRef = (0, react_1.useRef)({});
-    const dependencyWatcherRef = (0, react_1.useRef)(null);
+// function useModuleContext<
+//   TInitParams,
+//   TState,
+//   TModuleClass extends new(...args: any[]) => IReduxModule<TInitParams, TState>,
+//   TReturnType extends InstanceType<TModuleClass> & {
+//     select: () => InstanceType<TModuleClass> &
+//       InstanceType<TModuleClass>['state'] & { module: InstanceType<TModuleClass> };
+//
+//     selectExtra: <TComputedProps>(
+//       fn: (module: InstanceType<TModuleClass>) => TComputedProps,
+//     ) => InstanceType<TModuleClass> & TComputedProps & { module: InstanceType<TModuleClass> };
+//   }
+// >(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '', isService = false): TReturnType {
+//   const computedPropsFnRef = useRef<null | Function>(null);
+//   const computedPropsRef = useRef<any>({});
+//   const dependencyWatcherRef = useRef<any>(null);
+//   const componentId = useComponentId();
+//   const moduleManager = useModuleManager();
+//   moduleName = moduleName || ModuleClass.name;
+//
+//   // register the component in the ModuleManager upon component creation
+//   const {
+//     module, select, selector, moduleContextId,
+//   } = useOnCreate(() => {
+//     // get existing module's instance or create a new one
+//     const moduleContextId = isService ? 'service' : moduleManager.currentContext[moduleName] || 'default';
+//
+//     let module = moduleManager.getModule(moduleName, moduleContextId);
+//     if (!module) {
+//       const moduleMetadata = moduleManager.registerModule(ModuleClass, initParams, moduleName, false, moduleContextId);
+//       if (moduleMetadata.module) {
+//         module = moduleMetadata.module;
+//       } else {
+//         moduleManager.initModule(moduleName, moduleContextId);
+//         module = moduleManager.getModule(moduleName, moduleContextId);
+//       }
+//     }
+//
+//     // register the component in the module
+//     if (!isService) moduleManager.registerComponent(moduleName, moduleContextId, componentId);
+//
+//     // lockedModule is a copy of the module where all methods have a persistent `this`
+//     // as if we called `module.methodName = module.methodName.bind(this)` for each method
+//     const lockedModule = lockThis(module);
+//
+//     // calculate computed props that were passed via `.selectExtra()` call
+//     // and save them in `computedPropsRef`
+//     function calculateComputedProps() {
+//       const compute = computedPropsFnRef.current;
+//       if (!compute) return;
+//       const computedProps = compute(module);
+//       Object.assign(computedPropsRef.current, computedProps);
+//       return computedPropsRef.current;
+//     }
+//
+//     // Create a public `.select()` method that allows to select reactive state for the component
+//     function select<TComputedProps>(
+//       fn?: (module: InstanceType<TModuleClass>) => TComputedProps,
+//     ): InstanceType<TModuleClass> & TComputedProps {
+//       // create DependencyWatcher as a source of state to select from
+//       if (!dependencyWatcherRef.current) {
+//         // calculate computed props if the function provided
+//         if (fn) {
+//           computedPropsFnRef.current = fn;
+//           calculateComputedProps();
+//         }
+//         // we have several sources of data to select from
+//         // use `merge` function to join them into a single object
+//         const mergedModule = merge(
+//           // allow to select variables from the module's state
+//           () => module.state,
+//           // allow to select getters and actions from the module
+//           () => lockedModule,
+//           // allow to select computed props
+//           () => computedPropsRef.current,
+//           // allow to select the whole module itself
+//           () => ({ module }),
+//         );
+//         dependencyWatcherRef.current = createDependencyWatcher(mergedModule);
+//       }
+//       return dependencyWatcherRef.current.watcherProxy;
+//     }
+//
+//     // Create a Redux selector.
+//     // Redux calls this method every time when component's dependencies have been changed
+//     // eslint-disable-next-line no-shadow
+//     function selector() {
+//       // recalculate computed props
+//       calculateComputedProps();
+//       // select component's dependencies
+//       return dependencyWatcherRef.current?.getDependentValues();
+//     }
+//
+//     return {
+//       module,
+//       selector,
+//       select,
+//       moduleContextId,
+//     };
+//   });
+//
+//   // unregister the component from the module onDestroy
+//   useOnDestroy(() => {
+//     if (!isService) moduleManager.unRegisterComponent(moduleName, moduleContextId, componentId);
+//   });
+//
+//   // call Redux selector to make selected props reactive
+//   useSelector(selector);
+//
+//   // return Module with extra `select` method
+//   // TODO: `.selectExtra()` is the same method as `.select()`
+//   //  and it was added here only because of typing issues related
+//   //  to multiple tsconfings in the project.
+//   //  We should use only the `.select` after resolving typing issues
+//   const mergeResult = merge(
+//     () => module,
+//     () => ({ select, selectExtra: select }),
+//   );
+//   return (mergeResult as unknown) as TReturnType;
+// }
+// /**
+//  * Get the Redux module instance from the current React context
+//  * Creates a new module instance if no instances exist
+//  */
+// export function useModule<
+//   TState,
+//   TModuleClass extends new(...args: any[]) => IReduxModule<unknown, TState>
+// >(ModuleClass: TModuleClass) {
+//   return useModuleContext(ModuleClass).select();
+// }
+// /**
+//  * Create a Redux module instance with given params
+//  */
+// export function useModuleContextRoot<
+//   TInitParams,
+//   TState,
+//   TModuleClass extends new(...args: any[]) => IReduxModule<TInitParams, TState>
+// >(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '', contextId = '') {
+//   return useModuleContext(ModuleClass, initParams, moduleName, false);
+// }
+//
+// /**
+//  * Create a Redux module instance with given params
+//  */
+// export function useModuleRoot<
+//   TInitParams,
+//   TState,
+//   TModuleClass extends new(...args: any[]) => IReduxModule<TInitParams, TState>
+//   >(ModuleClass: TModuleClass, initParams?: TInitParams, moduleName = '') {
+//   return useModuleContext(ModuleClass, initParams, moduleName).select();
+// }
+// /**
+//  * same as useModule but locates a module by name instead of a class
+//  */
+// export function useModuleContextByName<TModule extends IReduxModule<any, any>>(
+//   moduleName: string,
+//   contextId: string,
+// ): TUseModuleReturnType<TModule> {
+//   const moduleManager = useModuleManager();
+//   const module = moduleManager.getModule(moduleName, contextId);
+//   if (!module) throw new Error(`Can not find module with name "${moduleName}" `);
+//   return (useModuleContext(
+//     module.constructor as new (...args: any[]) => IReduxModule<null, unknown>,
+//     null,
+//     moduleName,
+//   ) as unknown) as TUseModuleReturnType<TModule>;
+// }
+function useModuleManager() {
+    const { store } = (0, react_1.useContext)(react_redux_1.ReactReduxContext);
+    return (0, react_1.useMemo)(() => {
+        const { appId } = store.getState().modules;
+        const moduleManager = (0, store_1.getModuleManager)(appId);
+        return moduleManager;
+    }, []);
+}
+exports.useModuleManager = useModuleManager;
+function useInject(injectedObject) {
+    return useModuleManager().inject(injectedObject);
+}
+exports.useInject = useInject;
+function createModuleView(module) {
+    const lockedModule = (0, lockThis_1.lockThis)(module);
+    const mergedModule = (0, merge_1.merge)([
+        // allow to select variables from the module's state
+        () => module.state,
+        // allow to select getters and actions from the module
+        lockedModule,
+    ]);
+    return mergedModule;
+}
+exports.createModuleView = createModuleView;
+//
+// export function useSelectFrom<TModuleView extends Object, TSelectorResult, TReturnType = TMerge<TModuleView, TSelectorResult>,
+//   >(module: TModuleView, selectorFn?: (module: TModuleView) => TSelectorResult): TReturnType {
+//   const computedPropsFnRef = useRef<null | Function>(null);
+//   const computedPropsRef = useRef<any>({});
+//   const dependencyWatcherRef = useRef<any>(null);
+//   // register the component in the ModuleManager upon component creation
+//   const { selector } = useOnCreate(() => {
+//     // lockedModule is a copy of the module where all methods have a persistent `this`
+//     // as if we called `module.methodName = module.methodName.bind(this)` for each method
+//     const lockedModule = lockThis(module);
+//
+//     // calculate computed props that were passed via `.selectExtra()` call
+//     // and save them in `computedPropsRef`
+//     function calculateComputedProps() {
+//       const compute = computedPropsFnRef.current;
+//       if (!compute) return;
+//       const computedProps = compute(module);
+//       Object.assign(computedPropsRef.current, computedProps);
+//       return computedPropsRef.current;
+//     }
+//
+//     if (!dependencyWatcherRef.current) {
+//       // calculate computed props if the function provided
+//       if (selectorFn) {
+//         computedPropsFnRef.current = selectorFn;
+//         calculateComputedProps();
+//       }
+//       // we have several sources of data to select from
+//       // use `merge` function to join them into a single object
+//       const mergedModule = merge([
+//         lockedModule,
+//         // allow to select computed props
+//         () => computedPropsRef.current,
+//       ]);
+//       dependencyWatcherRef.current = createDependencyWatcher(mergedModule);
+//     }
+//
+//     // Create a Redux selector.
+//     // Redux calls this method every time when component's dependencies have been changed
+//     // eslint-disable-next-line no-shadow
+//     function selector() {
+//       // recalculate computed props
+//       calculateComputedProps();
+//       // select component's dependencies
+//       return dependencyWatcherRef.current?.getDependentValues();
+//     }
+//
+//     return { selector };
+//   });
+//
+//   // call Redux selector to make selected props reactive
+//   useSelector(selector);
+//   return dependencyWatcherRef.current.watcherProxy;
+// }
+function useSelectFrom(module, extend) {
+    // register the component in the ModuleManager upon component creation
+    const { selector, dependencyWatcher } = (0, hooks_1.useOnCreate)(() => {
+        const observableObject = extend ? (0, merge_1.merge)([module, extend(module)]) : module;
+        const dependencyWatcher = (0, store_1.createDependencyWatcher)(observableObject);
+        function selector() {
+            return dependencyWatcher.getDependentValues();
+        }
+        return { selector, dependencyWatcher };
+    });
+    // call Redux selector to make selected props reactive
+    (0, store_1.useSelector)(selector);
+    return dependencyWatcher.watcherProxy;
+}
+exports.useSelectFrom = useSelectFrom;
+function useModuleMetadata(ModuleClass, isService, createView) {
     const componentId = (0, hooks_1.useComponentId)();
     const moduleManager = useModuleManager();
-    moduleName = moduleName || ModuleClass.name;
     // register the component in the ModuleManager upon component creation
-    const { module, select, selector, moduleContextId, } = (0, hooks_1.useOnCreate)(() => {
-        // get existing module's instance or create a new one
-        const moduleContextId = isService ? 'service' : moduleManager.currentContext[moduleName] || 'default';
-        let module = moduleManager.getModule(moduleName, moduleContextId);
-        if (!module) {
-            const moduleMetadata = moduleManager.registerModule(ModuleClass, initParams, moduleName, false, moduleContextId);
-            if (moduleMetadata.module) {
-                module = moduleMetadata.module;
-            }
-            else {
-                moduleManager.initModule(moduleName, moduleContextId);
-                module = moduleManager.getModule(moduleName, moduleContextId);
-            }
-        }
-        // register the component in the module
+    const { moduleMetadata, } = (0, hooks_1.useOnCreate)(() => {
+        const moduleMetadata = moduleManager.injectModule(ModuleClass, isService, createView);
+        const moduleName = moduleMetadata.moduleName;
+        const contextId = moduleMetadata.contextId;
         if (!isService)
-            moduleManager.registerComponent(moduleName, moduleContextId, componentId);
-        // lockedModule is a copy of the module where all methods have a persistent `this`
-        // as if we called `module.methodName = module.methodName.bind(this)` for each method
-        const lockedModule = (0, lockThis_1.lockThis)(module);
-        // calculate computed props that were passed via `.selectExtra()` call
-        // and save them in `computedPropsRef`
-        function calculateComputedProps() {
-            const compute = computedPropsFnRef.current;
-            if (!compute)
-                return;
-            const computedProps = compute(module);
-            Object.assign(computedPropsRef.current, computedProps);
-            return computedPropsRef.current;
-        }
-        // Create a public `.select()` method that allows to select reactive state for the component
-        function select(fn) {
-            // create DependencyWatcher as a source of state to select from
-            if (!dependencyWatcherRef.current) {
-                // calculate computed props if the function provided
-                if (fn) {
-                    computedPropsFnRef.current = fn;
-                    calculateComputedProps();
-                }
-                // we have several sources of data to select from
-                // use `merge` function to join them into a single object
-                const mergedModule = (0, merge_1.merge)(
-                // allow to select variables from the module's state
-                () => module.state, 
-                // allow to select getters and actions from the module
-                () => lockedModule, 
-                // allow to select computed props
-                () => computedPropsRef.current, 
-                // allow to select the whole module itself
-                () => ({ module }));
-                dependencyWatcherRef.current = (0, store_1.createDependencyWatcher)(mergedModule);
-            }
-            return dependencyWatcherRef.current.watcherProxy;
-        }
-        // Create a Redux selector.
-        // Redux calls this method every time when component's dependencies have been changed
-        // eslint-disable-next-line no-shadow
-        function selector() {
-            var _a;
-            // recalculate computed props
-            calculateComputedProps();
-            // select component's dependencies
-            return (_a = dependencyWatcherRef.current) === null || _a === void 0 ? void 0 : _a.getDependentValues();
-        }
+            moduleManager.registerComponent(moduleName, contextId, componentId);
         return {
-            module,
-            selector,
-            select,
-            moduleContextId,
+            moduleMetadata,
         };
     });
     // unregister the component from the module onDestroy
     (0, hooks_1.useOnDestroy)(() => {
         if (!isService)
-            moduleManager.unRegisterComponent(moduleName, moduleContextId, componentId);
+            moduleManager.unRegisterComponent(moduleMetadata.moduleName, moduleMetadata.contextId, componentId);
     });
-    // call Redux selector to make selected props reactive
-    (0, store_1.useSelector)(selector);
-    // return Module with extra `select` method
-    // TODO: `.selectExtra()` is the same method as `.select()`
-    //  and it was added here only because of typing issues related
-    //  to multiple tsconfings in the project.
-    //  We should use only the `.select` after resolving typing issues
-    const mergeResult = (0, merge_1.merge)(() => module, () => ({ select, selectExtra: select }));
-    return mergeResult;
+    return moduleMetadata;
 }
-/**
- * Get the Redux module instance from the current React context
- * Creates a new module instance if no instances exist
- */
-function useModule(ModuleClass) {
-    return useModuleContext(ModuleClass).select();
+exports.useModuleMetadata = useModuleMetadata;
+function useModule(ModuleClass, selectorFn = () => ({}), isService = false) {
+    const moduleMetadata = useModuleMetadata(ModuleClass, isService, createModuleView);
+    const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
+    return selectResult;
 }
 exports.useModule = useModule;
-/**
- * Create a Redux module instance with given params
- */
-function useModuleContextRoot(ModuleClass, initParams, moduleName = '', contextId = '') {
-    return useModuleContext(ModuleClass, initParams, moduleName, false);
-}
-exports.useModuleContextRoot = useModuleContextRoot;
-/**
- * Create a Redux module instance with given params
- */
-function useModuleRoot(ModuleClass, initParams, moduleName = '') {
-    return useModuleContext(ModuleClass, initParams, moduleName).select();
-}
-exports.useModuleRoot = useModuleRoot;
-/**
- * same as useModule but locates a module by name instead of a class
- */
-function useModuleContextByName(moduleName, contextId) {
-    const moduleManager = useModuleManager();
-    const module = moduleManager.getModule(moduleName, contextId);
-    if (!module)
-        throw new Error(`Can not find module with name "${moduleName}" `);
-    return useModuleContext(module.constructor, null, moduleName);
-}
-exports.useModuleContextByName = useModuleContextByName;
-function useModuleManager() {
-    const { store } = (0, react_1.useContext)(react_redux_1.ReactReduxContext);
-    const { appId } = store.getState().modules;
-    const moduleManager = (0, store_1.getModuleManager)(appId);
-    return moduleManager;
-}
-exports.useModuleManager = useModuleManager;
-/**
- * same as useModule but locates a module by name instead of a class
- */
-function useModuleByName(moduleName, contextId) {
-    return useModuleContextByName(moduleName, contextId).select();
-}
-exports.useModuleByName = useModuleByName;
-function useService(ModuleClass) {
-    return useModuleContext(ModuleClass, null, '', true).select();
+function useService(ModuleClass, selectorFn = () => ({})) {
+    return useModule(ModuleClass, selectorFn, true);
 }
 exports.useService = useService;
+function useServiceView(ModuleClass, selectorFn = () => ({})) {
+    const moduleMetadata = useModuleMetadata(ModuleClass, true, createServiceView);
+    const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
+    return selectResult;
+}
+exports.useServiceView = useServiceView;
+function createServiceView(service) {
+    const actions = service;
+    const getters = service.view || {};
+    return (0, createStateView_1.createViewWithActions)(actions, getters);
+}
 
 
 /***/ }),

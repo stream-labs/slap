@@ -1,62 +1,28 @@
-import {
-  configureStore, createSlice, PayloadAction,
-} from '@reduxjs/toolkit';
-import { batch, useSelector as useReduxSelector } from 'react-redux';
-import React, { useEffect, useRef } from 'react';
-// eslint-disable-next-line camelcase
-import { unstable_batchedUpdates } from 'react-dom';
-import { Store } from 'redux';
 import { isPlainObject } from 'is-plain-object';
-import { useOnCreate } from './hooks';
-import { isSimilar } from './isDeepEqual';
+import produce from 'immer';
 import { traverseClassInstance } from './traverseClassInstance';
-import { useModuleManager } from './useModule';
 
-/*
- * This file provides Redux integration in a modular way
- */
+class ReactiveStore {
+  constructor(public readonly storeId: string) {
+  }
 
-// INITIALIZE REDUX STORE
+  state = {
+    storeId: this.storeId,
+    modules: {} as Record<string, Record<string, any>>,
+  };
 
-function createReduxStore(appId: string) {
-  const modulesSlice = createSlice({
-    name: 'modules',
-    initialState: {
-      appId,
-    },
-    reducers: {
-      initModule: (state, action) => {
-        const { moduleName, contextId, initialState } = action.payload;
-        const moduleId = moduleName + '_' + contextId;
-        (state as any)[moduleId] = initialState;
-      },
-      destroyModule: (state, action) => {
-        const { moduleName, contextId } = action.payload;
-        const moduleId = moduleName + '_' + contextId;
-        delete (state as any)[moduleId];
-      },
-      mutateModule: (state, action) => {
-        const {
-          moduleName, contextId, methodName, args,
-        } = action.payload;
-        const moduleManager = getModuleManager(appId);
-        const module = moduleManager.getModule(moduleName, contextId);
-        moduleManager.setImmerState(state);
-        (module as any)[methodName](...args);
-        moduleManager.setImmerState(null);
-      },
-    },
-  });
+  initModule(moduleName: string, contextId: string, initialState: any) {
+    if (!this.state.modules[moduleName]) this.state.modules[moduleName] = {};
+    this.state.modules[moduleName][contextId] = initialState;
+  }
 
-  const store = configureStore({
-    reducer: {
-      modules: modulesSlice.reducer,
-    },
-  });
+  destroyModule(moduleName: string, contextId: string) {
+    delete this.state.modules[moduleName][contextId];
+  }
 
-  const { actions } = modulesSlice;
-
-  return { store, modulesSlice, actions };
+  mutateModule(moduleName: string, contextId: string, mutation: Function) {
+    mutation();
+  }
 }
 
 /**
@@ -65,22 +31,20 @@ function createReduxStore(appId: string) {
  * Redux Modules are objects that contain initialState, actions, mutations and getters
  */
 export class ReduxModuleManager {
-  public immerState: any;
-
   registeredModules: Record<string, Record<string, IReduxModuleMetadata>> = {};
 
   currentContext: Record<string, string> = {};
 
-  actions: any;
+  isMutationRunning = false;
 
-  constructor(
-    public store: Store,
-    public modulesSlice: any,
-    public appId: string,
-    public plugins?: TModuleManagerHooks[],
-  ) {
-    this.actions = modulesSlice.actions;
-  }
+  isRecordingAccessors = false;
+
+  recordedAccessors: Record<string, number> = {};
+
+  modulesRevisions: Record<string, number> = {};
+
+
+  constructor(public store: ReactiveStore, public plugins: any[] = []) {}
 
   /**
    * Register a new Redux Module and initialize it
@@ -111,6 +75,7 @@ export class ReduxModuleManager {
       isService,
       ModuleClass,
     };
+    this.modulesRevisions[moduleName + contextId] = 1;
 
     if (shouldInitialize) this.initModule(moduleName, contextId);
 
@@ -118,52 +83,40 @@ export class ReduxModuleManager {
   }
 
   initModule(moduleName: string, contextId: string): void {
-    // call `init()` method of module if exist
-    unstable_batchedUpdates(() => {
-      const { ModuleClass, initParams } = this.registeredModules[moduleName][contextId];
-      const module = new ModuleClass(this);
-      this.registeredModules[moduleName][contextId].module = module as any;
-      module.name = moduleName;
-      //
-      // resolveDeps(this, module);
+    const { ModuleClass, initParams } = this.registeredModules[moduleName][contextId];
+    const module = new ModuleClass(this);
+    this.registeredModules[moduleName][contextId].module = module as any;
+    module.name = moduleName;
 
-      module.beforeInit && module.beforeInit(this);
-      module.init && module.init(initParams);
-      const initialState = module.state;
+    module.beforeInit && module.beforeInit(this);
+    module.init && module.init(initParams);
+    const initialState = module.state;
 
-      // replace module methods with mutation calls
-      replaceMethodsWithMutations(module, contextId, this.appId);
+    this.store.initModule(moduleName, contextId, initialState);
+    const moduleManager = this;
 
-      // prevent usage of destroyed modules
-      catchDestroyedModuleCalls(module);
-
-      const moduleManager = moduleManagers[this.appId];
-
-      // Re-define the `state` variable of the module
-      // It should be linked to the global Redux state after module initialization
-      // But when mutation is running it should be linked to a special Proxy from the Immer library
-      Object.defineProperty(module, 'state', {
-        get: () => {
-          // prevent accessing state on destroyed module
-          if (!moduleManager.getModule(moduleName, contextId)) {
-            throw new Error('ReduxModule_is_destroyed');
-          }
-          const moduleId = moduleName + '_' + contextId;
-          if (this.immerState) return this.immerState[moduleId];
-          const globalState = this.store.getState() as any;
-          return globalState.modules[moduleId];
-        },
-        set: (newState: unknown) => {
-          const isMutationRunning = !!this.immerState;
-          if (!isMutationRunning) throw new Error('Can not change the state outside of mutation');
-          const moduleId = moduleName + '_' + contextId;
-          this.immerState[moduleId] = newState;
-        },
-      });
-
-      // call the `initModule` mutation to initialize the module's initial state
-      this.store.dispatch(this.actions.initModule({ moduleName, contextId, initialState }));
+    Object.defineProperty(module, 'state', {
+      get: () => {
+        // prevent accessing state on destroyed module
+        if (!moduleManager.getModule(moduleName, contextId)) {
+          throw new Error('ReduxModule_is_destroyed');
+        }
+        if (moduleManager.isRecordingAccessors) {
+          const revision = moduleManager.modulesRevisions[moduleName + contextId];
+          this.recordedAccessors[moduleName + contextId] = revision;
+        }
+        return moduleManager.isMutationRunning ? this.immerState : moduleManager.store.state.modules[moduleName][contextId];
+      },
+      set: (newState: unknown) => {
+        if (!moduleManager.isMutationRunning) throw new Error('Can not change the state outside of mutation');
+      },
     });
+
+    // // replace module methods with mutation calls
+    this.replaceMethodsWithMutations(module, contextId);
+
+    // prevent usage of destroyed modules
+    catchDestroyedModuleCalls(module);
   }
 
   /**
@@ -172,7 +125,7 @@ export class ReduxModuleManager {
   unregisterModule(moduleName: string, contextId: string) {
     const module = this.getModule(moduleName, contextId);
     module.destroy && module.destroy();
-    this.store.dispatch(this.actions.destroyModule({ moduleName, contextId }));
+    this.store.destroyModule(moduleName, contextId);
     delete this.registeredModules[moduleName][contextId];
   }
 
@@ -183,6 +136,15 @@ export class ReduxModuleManager {
       this.registerModule(serviceClass as any, null, '', 'service');
     });
     return this.inject(serviceClasses);
+  }
+
+  runAndSaveAccessors(cb: Function) {
+    this.isRecordingAccessors = true;
+    cb();
+    const result = this.recordedAccessors;
+    this.isRecordingAccessors = false;
+    this.recordedAccessors = {};
+    return result;
   }
 
   /**
@@ -277,25 +239,6 @@ export class ReduxModuleManager {
     return result as TInstances<T>;
   }
 
-  // /**
-  //  * Get the Module by name for the current context
-  //  * Create the module if not exist
-  //  */
-  // getModuleForCurrentContext<TModule extends IReduxModule<any, any>>(ModuleClass: any, moduleName: string): TModule {
-  //   const contextId = this.currentContext[moduleName] || 'default';
-  //   const module = this.getModule(moduleName, contextId);
-  //   if (!module) {
-  //     const moduleMetadata = moduleManager.registerModule(ModuleClass, initParams, moduleName);
-  //     if (moduleMetadata.module) {
-  //       module = moduleMetadata.module;
-  //     } else {
-  //       module = moduleManager.initModule(moduleName, contextId);
-  //     }
-  //   }
-  //
-  //   return this.getModule(moduleName, contextId);
-  // }
-
   /**
      * Register a component that is using the module
      */
@@ -313,32 +256,84 @@ export class ReduxModuleManager {
     if (!moduleMetadata.componentIds.length) this.unregisterModule(moduleName, contextId);
   }
 
-  /**
-     * When Redux is running mutation it replaces the state object with a special Proxy object from
-     * the Immer library. Keep this object in the `immerState` property
-     */
-  setImmerState(immerState: unknown) {
-    this.immerState = immerState;
+  watchers = {} as Record<string, Function>;
+
+  watchersOrder = [] as string[];
+
+  createWatcher(cb: Function) {
+    const watcherId = generateId();
+    this.watchersOrder.push(watcherId);
+    this.watchers[watcherId] = cb;
+    return watcherId;
   }
 
-  /**
-     * Run watcher functions registered in modules
-     */
+  removeWatcher(watcherId: string) {
+    const ind = this.watchersOrder.findIndex(id => watcherId);
+    this.watchersOrder.splice(ind, 1);
+    delete this.watchers[watcherId];
+  }
+
   runWatchers() {
-    Object.keys(this.registeredModules).forEach((moduleName) => {
-      Object.keys(this.registeredModules[moduleName]).forEach(contextId => {
-        const { watchers } = this.registeredModules[moduleName][contextId];
-        watchers.forEach((watcher) => {
-          const newVal = watcher.selector();
-          const prevVal = watcher.prevValue;
-          watcher.prevValue = newVal;
-          if (newVal !== prevVal) {
-            watcher.onChange(newVal, prevVal);
-          }
+    const watchersIds = [...this.watchersOrder];
+    watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
+  }
+
+  replaceMethodsWithMutations(module: IReduxModule<unknown, unknown>, contextId: string) {
+    const moduleName = getDefined(module.name);
+    const mutationNames: string[] = Object.getPrototypeOf(module).mutations || [];
+    const moduleManager = this;
+
+    mutationNames.forEach(mutationName => {
+      const originalMethod = (module as any)[mutationName];
+
+      // override the original Module method to dispatch mutations
+      (module as any)[mutationName] = function (...args: any[]) {
+        // if this method was called from another mutation
+        // we don't need to dispatch a new mutation again
+        // just call the original method
+        if (moduleManager.isMutationRunning) return originalMethod.apply(module, args);
+
+        // prevent accessing state on deleted module
+        if (!moduleManager.getModule(moduleName, contextId)) {
+          throw new Error('Module_is_destroyed');
+        }
+
+
+        const nextState = produce(module.state, draftState => {
+          moduleManager.isMutationRunning = true;
+          moduleManager.immerState = draftState;
+          console.log('run mutation', mutationName);
+          originalMethod.apply(module, args);
+          moduleManager.modulesRevisions[moduleName + contextId]++;
         });
-      });
+        moduleManager.immerState = null;
+        moduleManager.store.state.modules[moduleName][contextId] = nextState;
+        moduleManager.isMutationRunning = false;
+        moduleManager.runWatchers();
+      };
     });
   }
+
+  immerState: any = null;
+
+  // /**
+  //    * Run watcher functions registered in modules
+  //    */
+  // runWatchers() {
+  //   Object.keys(this.registeredModules).forEach((moduleName) => {
+  //     Object.keys(this.registeredModules[moduleName]).forEach(contextId => {
+  //       const { watchers } = this.registeredModules[moduleName][contextId];
+  //       watchers.forEach((watcher) => {
+  //         const newVal = watcher.selector();
+  //         const prevVal = watcher.prevValue;
+  //         watcher.prevValue = newVal;
+  //         if (newVal !== prevVal) {
+  //           watcher.onChange(newVal, prevVal);
+  //         }
+  //       });
+  //     });
+  //   });
+  // }
 
   setModuleContext(moduleName: string, contextId: string) {
     this.currentContext[moduleName] = contextId;
@@ -357,17 +352,14 @@ const moduleManagers: Record<string, ReduxModuleManager> = {};
 export function createModuleManager(Services?: TServiceConstructorMap, plugins?: TModuleManagerHooks[]) {
   const appId = generateId();
 
-  // create ReduxStore
-  const { store, modulesSlice } = createReduxStore(appId);
+  // create ReactiveStore
+  const store = new ReactiveStore(appId);
 
   // create the ModuleManager and
   // automatically register some additional modules
-  const moduleManager = new ReduxModuleManager(store, modulesSlice, appId, plugins);
+  const moduleManager = new ReduxModuleManager(store);
 
   moduleManagers[appId] = moduleManager;
-
-  // add a BatchedUpdatesModule for rendering optimizations
-  moduleManager.registerModule(BatchedUpdatesModule, { appId }, 'BatchedUpdatesModule');
 
   if (Services) moduleManager.registerServices(Services);
 
@@ -387,51 +379,6 @@ export function getModuleManager(appId: string) {
 }
 
 /**
- * This module introduces a simple implementation of batching updates
- * for the performance optimization
- * It prevents components from being re-rendered in a not-ready state
- * and reduces an overall amount of redundant re-renderings
- *
- * React 18 introduced automated batched updates.
- * So most likely we can remove this module after the migration to the new version of React
- * https://github.com/reactwg/react-18/discussions/21
- */
-class BatchedUpdatesModule {
-  state = {
-    appId: '',
-    isRenderingDisabled: false,
-  };
-
-  init(params: { appId: string }) {
-    this.state.appId = params.appId;
-  }
-
-  /**
-     * Temporary disables rendering for components when multiple mutations are being applied
-     */
-  temporaryDisableRendering() {
-    // if rendering is already disabled just ignore
-    if (this.state.isRenderingDisabled) return;
-
-    // disable rendering
-    this.setIsRenderingDisabled(true);
-
-    const appId = this.state.appId;
-
-    // enable rendering again when Javascript processes the current queue of tasks
-    setTimeout(() => {
-      this.setIsRenderingDisabled(false);
-      getModuleManager(appId).runWatchers();
-    });
-  }
-
-  @mutation()
-  private setIsRenderingDisabled(disabled: boolean) {
-    this.state.isRenderingDisabled = disabled;
-  }
-}
-
-/**
  * A decorator that registers the object method as an mutation
  */
 export function mutation() {
@@ -442,51 +389,51 @@ export function mutation() {
   };
 }
 
-function replaceMethodsWithMutations(module: IReduxModule<unknown, unknown>, contextId: string, appId: string) {
-  const moduleName = getDefined(module.name);
-  const mutationNames: string[] = Object.getPrototypeOf(module).mutations || [];
-  const moduleManager = moduleManagers[appId];
-
-  mutationNames.forEach((mutationName) => {
-    const originalMethod = (module as any)[mutationName];
-
-    // override the original Module method to dispatch mutations
-    (module as any)[mutationName] = function (...args: any[]) {
-      // if this method was called from another mutation
-      // we don't need to dispatch a new mutation again
-      // just call the original method
-      const mutationIsRunning = !!moduleManager.immerState;
-      if (mutationIsRunning) return originalMethod.apply(module, args);
-
-      // prevent accessing state on deleted module
-      if (!moduleManager.getModule(moduleName, contextId)) {
-        throw new Error('ReduxModule_is_destroyed');
-      }
-
-      const batchedUpdatesModule = moduleManager.getModule<BatchedUpdatesModule>(
-        'BatchedUpdatesModule',
-        'default',
-      );
-
-      // clear unserializable events from arguments
-      args = args.map((arg) => {
-        const isReactEvent = arg && arg._reactName;
-        if (isReactEvent) return { _reactName: arg._reactName };
-        return arg;
-      });
-
-      // dispatch reducer and call `temporaryDisableRendering()`
-      // so next mutation in the javascript queue
-      // will not cause redundant re-renderings in components
-      batch(() => {
-        if (moduleName !== 'BatchedUpdatesModule') batchedUpdatesModule.temporaryDisableRendering();
-        moduleManager.store.dispatch(moduleManager.actions.mutateModule({
-          moduleName, contextId, methodName: mutationName, args,
-        }));
-      });
-    };
-  });
-}
+// function replaceMethodsWithMutations(module: IReduxModule<unknown, unknown>, contextId: string, appId: string) {
+//   const moduleName = getDefined(module.name);
+//   const mutationNames: string[] = Object.getPrototypeOf(module).mutations || [];
+//   const moduleManager = moduleManagers[appId];
+//
+//   mutationNames.forEach((mutationName) => {
+//     const originalMethod = (module as any)[mutationName];
+//
+//     // override the original Module method to dispatch mutations
+//     (module as any)[mutationName] = function (...args: any[]) {
+//       // if this method was called from another mutation
+//       // we don't need to dispatch a new mutation again
+//       // just call the original method
+//       const mutationIsRunning = !!moduleManager.immerState;
+//       if (mutationIsRunning) return originalMethod.apply(module, args);
+//
+//       // prevent accessing state on deleted module
+//       if (!moduleManager.getModule(moduleName, contextId)) {
+//         throw new Error('ReduxModule_is_destroyed');
+//       }
+//
+//       const batchedUpdatesModule = moduleManager.getModule<BatchedUpdatesModule>(
+//         'BatchedUpdatesModule',
+//         'default',
+//       );
+//
+//       // clear unserializable events from arguments
+//       args = args.map((arg) => {
+//         const isReactEvent = arg && arg._reactName;
+//         if (isReactEvent) return { _reactName: arg._reactName };
+//         return arg;
+//       });
+//
+//       // dispatch reducer and call `temporaryDisableRendering()`
+//       // so next mutation in the javascript queue
+//       // will not cause redundant re-renderings in components
+//       batch(() => {
+//         if (moduleName !== 'BatchedUpdatesModule') batchedUpdatesModule.temporaryDisableRendering();
+//         moduleManager.store.dispatch(moduleManager.actions.mutateModule({
+//           moduleName, contextId, methodName: mutationName, args,
+//         }));
+//       });
+//     };
+//   });
+// }
 
 /**
  * Add try/catch that silently stops all method calls for a destroyed module
@@ -507,56 +454,6 @@ function catchDestroyedModuleCalls(module: any) {
       }
     };
   });
-}
-
-/**
- * This `useSelector` is a wrapper for the original `useSelector` method from Redux
- * - Optimizes component re-rendering via batched updates from Redux and Vuex
- * - Uses isDeepEqual with depth 2 as a default comparison function
- */
-export function useSelector<T extends Object>(fn: () => T): T {
-  const moduleManager = useModuleManager();
-  const batchedUpdatesModule = moduleManager.getModule<BatchedUpdatesModule>(
-    'BatchedUpdatesModule',
-    'default',
-  );
-  const cachedSelectedResult = useRef<any>(null);
-  const isMountedRef = useRef(false);
-
-  // save the selector function and update it each component re-rendering
-  // this prevents having staled closure variables in the selector
-  const selectorFnRef = useRef(fn);
-  selectorFnRef.current = fn;
-
-  // create the selector function
-  const selector = useOnCreate(() => () => {
-    // if `isRenderingDisabled=true` selector will return previously cached values
-    if (batchedUpdatesModule.state.isRenderingDisabled && isMountedRef.current) {
-      return cachedSelectedResult.current;
-    }
-
-    // otherwise execute the selector
-    cachedSelectedResult.current = selectorFnRef.current();
-    return cachedSelectedResult.current;
-  });
-
-  useEffect(() => {
-    isMountedRef.current = true;
-  });
-
-  return useReduxSelector(selector, (prevState, newState) => {
-    // there is no reason to compare prevState and newState if
-    // the rendering is disabled for components
-    if (batchedUpdatesModule.state.isRenderingDisabled) {
-      return true;
-    }
-
-    // use `isSimilar` function to compare 2 states
-    if (!isSimilar(prevState, newState)) {
-      return false;
-    }
-    return true;
-  }) as T;
 }
 
 /**

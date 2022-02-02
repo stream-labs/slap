@@ -11,6 +11,7 @@ const wrapperStyle: CSSProperties = {
 
 const canvasStyle: CSSProperties = {
   position: 'relative',
+  overflow: 'hidden',
   width: '500px',
   height: '400px',
   margin: '0 auto',
@@ -41,14 +42,16 @@ export function EditorCanvas() {
         {items.map(item => (
           <Rnd
             key={item.id}
-            style={{ color: item.color, border: `1px solid ${item.color}`, outline: '1px solid green' }}
-            size={{ width: 100, height: 100 }}
+            style={{ color: item.color, border: item.isSelected ? '1px solid green' : '1px solid rgba(0,255,255, 0.3)' }}
+            size={{ width: item.width, height: item.height }}
             position={item.position}
+            enableResizing={false}
+            onMouseDown={() => item.selectItem()}
             onDragStop={(e, d) => { item.move({ x: d.x, y: d.y }); }}
             // onResizeStop={(e, direction, ref, delta, position) => {
-            //   this.setState({
-            //     width: ref.style.width,
-            //     height: ref.style.height,
+            //   item.update({
+            //     width: parseInt(ref.style.width, 10),
+            //     height: parseInt(ref.style.height, 10),
             //     ...position,
             //   });
             // }}

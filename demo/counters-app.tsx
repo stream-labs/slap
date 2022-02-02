@@ -40,6 +40,7 @@ export function Counter() {
     },
   }));
 
+  console.log('update root counter');
   // const { counter } = useModule(CounterModule);
   return (
     <div>
@@ -54,6 +55,7 @@ export function Counter() {
 
 export function CounterButtons() {
   const { increment, decrement } = useModule(CounterModule);
+  console.log('update buttons');
   return (
     <>
       <button onClick={decrement}>Decrement</button>

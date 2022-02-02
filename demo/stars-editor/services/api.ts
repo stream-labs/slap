@@ -16,13 +16,13 @@ const scenesData: SceneState[] = [
     selectedItemId: 'star1',
     items: [
       {
-        id: 'star1', color: 'yellow', angle: 0, position: { x: 0, y: 0 },
+        id: 'star1', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 0, y: 0 },
       },
       {
-        id: 'star2', color: 'yellow', angle: 0, position: { x: 100, y: 100 },
+        id: 'star2', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 100, y: 100 },
       },
       {
-        id: 'star3', color: 'yellow', angle: 0, position: { x: 200, y: 200 },
+        id: 'star3', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 200, y: 200 },
       },
     ],
   },
@@ -34,13 +34,13 @@ const scenesData: SceneState[] = [
     selectedItemId: 'star4',
     items: [
       {
-        id: 'star4', color: 'yellow', angle: 0, position: { x: 0, y: 0 },
+        id: 'star4', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 0, y: 0 },
       },
       {
-        id: 'star5', color: 'yellow', angle: 0, position: { x: 100, y: 100 },
+        id: 'star5', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 100, y: 100 },
       },
       {
-        id: 'star6', color: 'yellow', angle: 0, position: { x: 200, y: 200 },
+        id: 'star6', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 200, y: 200 },
       },
     ],
   },

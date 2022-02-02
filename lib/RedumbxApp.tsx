@@ -1,4 +1,3 @@
-import { Provider, ReactReduxContext } from 'react-redux';
 import React, {
   ReactNode, useEffect, useState,
 } from 'react';
@@ -8,17 +7,20 @@ import {
   ReduxModuleManager,
 } from './store';
 import { useOnCreate, useOnDestroy } from './hooks';
-import { useModuleManager } from './useModule';
+import { useModuleManager, StoreContext } from './useModule';
 
 export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?: ReduxModuleManager}) {
   const [moduleManager] = useState(() => p.moduleManager || createModuleManager());
-  const { store } = moduleManager;
 
   useOnDestroy(() => {
-    destroyModuleManager(moduleManager.appId);
+    destroyModuleManager(moduleManager.store.storeId);
   });
 
-  return <Provider store={store} context={ReactReduxContext}>{p.children}</Provider>;
+  return (
+    <StoreContext.Provider value={moduleManager.store.storeId}>
+      {p.children}
+    </StoreContext.Provider>
+  );
 }
 
 export function ModuleRoot(p: {children: ReactNode | ReactNode[], module: any }) {
