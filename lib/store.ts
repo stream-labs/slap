@@ -43,7 +43,6 @@ export class ReduxModuleManager {
 
   modulesRevisions: Record<string, number> = {};
 
-
   constructor(public store: ReactiveStore, public plugins: any[] = []) {}
 
   /**
@@ -297,7 +296,6 @@ export class ReduxModuleManager {
         if (!moduleManager.getModule(moduleName, contextId)) {
           throw new Error('Module_is_destroyed');
         }
-
 
         const nextState = produce(module.state, draftState => {
           moduleManager.isMutationRunning = true;
