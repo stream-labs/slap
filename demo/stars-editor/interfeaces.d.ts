@@ -1,4 +1,4 @@
-export interface StarState {
+export interface SceneItemState {
   id: string,
   color: string,
   angle: number,
@@ -12,6 +12,6 @@ export interface SceneState {
   id: string;
   name: string;
   backgroundColor: string;
-  items: StarState[];
+  items: SceneItemState[];
   selectedItemId: string;
 }

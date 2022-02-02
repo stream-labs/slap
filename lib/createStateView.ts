@@ -1,30 +1,32 @@
 import { merge, TMerge3 } from './merge';
 import { lockThis } from './lockThis';
+import { TPromisifyFunctions } from './store';
 
-export function createView<
+export function createViewWithActions<
   TStateType,
-  TService extends { state: TStateType },
+  TActions extends { state: TStateType },
   TGetters extends Object,
   >
-(service: TService, view: TGetters) {
-  // const actions = {} as TPromisifyFunctions<TService>;
-  // const getters = view;
-  // const originalState = {} as any as TService['state'];
-  // const combinedView = {} as any as typeof actions & typeof getters & TService['state'];
-  // return combinedView;
-
-  const actions = lockThis(service);
-  const getters = lockThis(view);
-
-  const mergedView = merge(
+(actions: TActions, getters: TGetters) {
+  const lockedActions = lockThis(actions);
+  const lockedGetters = lockThis(getters);
+  const mergedView = merge([
     // allow to select variables from the module's state
-    () => service.state,
+    () => actions.state,
     // allow to select actions
-    () => actions,
+    lockedActions,
     // allow to select getters
-    () => getters,
-  );
+    lockedGetters,
+  ]);
 
-  // return mergedView as TMerge3<typeof service['state'], typeof service, typeof view>;
-  return mergedView as TMerge3<TService['state'], TService, TGetters>;
+
+  // const mergedView = merge(
+  //   // allow to select variables from the module's state
+  //   () => actions.state,
+  //   // allow to select actions
+  //   () => lockedActions,
+  //   // allow to select getters
+  //   () => lockedGetters,
+  // );
+  return mergedView as TMerge3<TActions['state'], TPromisifyFunctions<TActions>, TGetters>;
 }

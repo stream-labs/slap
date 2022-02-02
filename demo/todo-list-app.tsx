@@ -44,30 +44,20 @@ export function TodoItems() {
   const { tasks, setCompleted, removeTask } = useModule(TodoModule);
   return (
     <ul className="todo-items">
-      {tasks.map((task) => {
-        function done() {
-          setCompleted(task.id, true);
-        }
+      {tasks.map((task) => (
+        <li key={task.id} style={{ textDecoration: task.isCompleted ? 'line-through' : 'none' }}>
+          {task.name}
+          <div className="todo-actions">
+            <button className="danger" onClick={() => removeTask(task.id)}>Delete</button>
 
-        function undone() {
-          setCompleted(task.id, false);
-        }
+            {!task.isCompleted
+              && (<button onClick={() => setCompleted(task.id, true)}>Done</button>)}
 
-        function remove() {
-          removeTask(task.id);
-        }
-
-        return (
-          <li key={task.id} style={{ textDecoration: task.isCompleted ? 'line-through' : 'none' }}>
-            {task.name}
-            <div className="todo-actions">
-              <button className="danger" onClick={remove}>Delete</button>
-              {!task.isCompleted && <button onClick={done}>Done</button>}
-              {task.isCompleted && <button onClick={undone}>Undone</button>}
-            </div>
-          </li>
-        );
-      })}
+            {task.isCompleted
+              && (<button onClick={() => setCompleted(task.id, false)}>Undone</button>)}
+          </div>
+        </li>
+      ))}
     </ul>
   );
 }

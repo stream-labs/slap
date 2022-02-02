@@ -45,5 +45,6 @@ module.exports = {
     'prefer-destructuring': 0,
     'class-methods-use-this': 0,
     'no-useless-constructor': 0,
+    'react/jsx-no-bind': 0,
   },
 };

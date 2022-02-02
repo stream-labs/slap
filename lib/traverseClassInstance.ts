@@ -1,15 +1,22 @@
 /**
  * Travers class methods and props
  */
+import { isPlainObject } from '@reduxjs/toolkit';
+
 export function traverseClassInstance<T extends object>(
   instance: T,
   cb: (propName: string, descriptor: PropertyDescriptor) => unknown,
 ) {
   let entity = instance;
   const prototypes = [];
-  while (entity.constructor.name !== 'Object') {
+
+  if (isPlainObject(entity)) {
     prototypes.push(entity);
-    entity = Object.getPrototypeOf(entity);
+  } else {
+    while (entity.constructor.name !== 'Object') {
+      prototypes.push(entity);
+      entity = Object.getPrototypeOf(entity);
+    }
   }
 
   const alreadyTraversed: Record<string, boolean> = {};

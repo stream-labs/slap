@@ -27,7 +27,7 @@ export function ModuleRoot(p: {children: ReactNode | ReactNode[], module: any })
   const { moduleName, contextId } = useOnCreate(() => {
     const contextId = generateId();
     const moduleName = p.module.prototype.constructor.name;
-    moduleManager.registerModule(p.module, null, moduleName, false, contextId);
+    moduleManager.registerModule(p.module, null, moduleName, contextId);
     return { contextId, moduleName };
   });
 

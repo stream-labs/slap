@@ -15,7 +15,7 @@ function main() {
   });
 
   const app = moduleManager.inject(AppService);
-  app.init();
+  app.start();
 
   ReactDOM.render(
     <RedumbxApp moduleManager={moduleManager}>

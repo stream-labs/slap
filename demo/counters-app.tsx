@@ -34,11 +34,19 @@ class CounterModule {
 }
 
 export function Counter() {
-  const { counter } = useModule(CounterModule);
+  const { counter, bigCounter } = useModule(CounterModule, view => ({
+    get bigCounter() {
+      return view.counter + 10;
+    },
+  }));
+
+  // const { counter } = useModule(CounterModule);
   return (
     <div>
       Counter Value =
       {counter}
+      BigCounter Value =
+      {bigCounter}
       <CounterButtons />
     </div>
   );

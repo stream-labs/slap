@@ -13,75 +13,113 @@
  * mergedObject.bar // 3
  * mergedObject.foo // 1
  */
+import { traverseClassInstance } from './traverseClassInstance';
+
 export function merge<
   T1 extends Object,
   T2 extends Object,
   T3 extends Object,
   T4 extends Object,
-  FN3 extends () => T3,
-  FN4 extends () => T4,
-  TReturnType = FN4 extends undefined
-    ? FN3 extends undefined
+  TReturnType = T4 extends undefined
+    ? T3 extends undefined
       ? TMerge<T1, T2>
       : TMerge3<T1, T2, T3>
     : TMerge4<T1, T2, T3, T4>
-  >(...functions: [() => T1, () => T2, FN3?, FN4?]): TReturnType {
-  const result = functions.reduce((a, val) => mergeTwo(a as any, val as any));
-  return (result as unknown) as TReturnType;
+  >(dataSources: [T1, T2, T3?, T4?]): TReturnType {
+  const mergeResult = {};
+
+  dataSources.forEach((dataSource, ind) => {
+    const dataSourceFunction = typeof dataSource === 'function' && (dataSource as Function);
+    const dataSourceObj = dataSourceFunction ? dataSourceFunction() : dataSource;
+
+    traverseClassInstance(dataSourceObj!, (propName => {
+      Object.defineProperty(mergeResult, propName, {
+        configurable: true,
+        enumerable: true,
+        get() {
+          return dataSourceFunction
+            ? (dataSources[ind] as any)()[propName]
+            : (dataSources[ind] as any)[propName];
+        },
+      });
+    }));
+  });
+
+  return mergeResult as TReturnType;
 }
 
-/**
- * This function is used by the `.merge()` function to merge 2 sources of data
- */
-function mergeTwo<T1 extends Object, T2 extends Object, TReturnType = TMerge<T1, T2>>(
-  target1: (() => T1) | T1,
-  target2: (() => T2) | T2,
-): TReturnType {
-  const proxyMetadata = {
-    _proxyName: 'MergeResult',
-    get _mergedObjects() {
-      return [target1, target2];
-    },
-  };
+// export function merge<
+//   T1 extends Object,
+//   T2 extends Object,
+//   T3 extends Object,
+//   T4 extends Object,
+//   FN3 extends () => T3,
+//   FN4 extends () => T4,
+//   TReturnType = FN4 extends undefined
+//     ? FN3 extends undefined
+//       ? TMerge<T1, T2>
+//       : TMerge3<T1, T2, T3>
+//     : TMerge4<T1, T2, T3, T4>
+//   >(...functions: [() => T1, () => T2, FN3?, FN4?]): TReturnType {
+//   const result = functions.reduce((a, val) => mergeTwo(a as any, val as any));
+//   return (result as unknown) as TReturnType;
+// }
 
-  function hasOwnProperty(propName: string) {
-    const obj = getObject(propName);
-    return obj && propName in obj;
-  }
-
-  function getObject(propName: string) {
-    if ((target2 as any)._proxyName === 'MergeResult' && propName in target2) {
-      return target2;
-    }
-
-    if (typeof target2 === 'function') {
-      const obj2 = (target2 as Function)();
-      if (propName in obj2) return obj2;
-    }
-
-    if ((target1 as any)._proxyName === 'MergeResult' && propName in target1) {
-      return target1;
-    }
-
-    if (typeof target1 === 'function') {
-      const obj1 = (target1 as Function)();
-      if (propName in obj1) return obj1;
-    }
-  }
-
-  return (new Proxy(proxyMetadata, {
-    get(t, propName: string) {
-      if (propName === 'hasOwnProperty') return hasOwnProperty;
-      if (propName in proxyMetadata) return (proxyMetadata as any)[propName];
-      const obj = getObject(propName);
-      if (obj) return obj[propName];
-    },
-
-    has(oTarget, propName: string) {
-      return hasOwnProperty(propName);
-    },
-  }) as unknown) as TReturnType;
-}
+// /**
+//  * This function is used by the `.merge()` function to merge 2 sources of data
+//  */
+// function mergeTwo<T1 extends Object, T2 extends Object, TReturnType = TMerge<T1, T2>>(
+//   target1: (() => T1) | T1,
+//   target2: (() => T2) | T2,
+// ): TReturnType {
+//   const proxyMetadata = {
+//     _proxyName: 'MergeResult',
+//     get json() {
+//       return JSON.stringify(this._mergedObjects);
+//     },
+//     get _mergedObjects() {
+//       return [target1, target2];
+//     },
+//   };
+//
+//   function hasOwnProperty(propName: string) {
+//     const obj = getObject(propName);
+//     return obj && propName in obj;
+//   }
+//
+//   function getObject(propName: string) {
+//     if ((target2 as any)._proxyName === 'MergeResult' && propName in target2) {
+//       return target2;
+//     }
+//
+//     if (typeof target2 === 'function') {
+//       const obj2 = (target2 as Function)();
+//       if (propName in obj2) return obj2;
+//     }
+//
+//     if ((target1 as any)._proxyName === 'MergeResult' && propName in target1) {
+//       return target1;
+//     }
+//
+//     if (typeof target1 === 'function') {
+//       const obj1 = (target1 as Function)();
+//       if (propName in obj1) return obj1;
+//     }
+//   }
+//
+//   return (new Proxy(proxyMetadata, {
+//     get(t, propName: string) {
+//       if (propName === 'hasOwnProperty') return hasOwnProperty;
+//       if (propName in proxyMetadata) return (proxyMetadata as any)[propName];
+//       const obj = getObject(propName);
+//       if (obj) return obj[propName];
+//     },
+//
+//     has(oTarget, propName: string) {
+//       return hasOwnProperty(propName);
+//     },
+//   }) as unknown) as TReturnType;
+// }
 
 export type TMerge<
   T1,
@@ -93,3 +131,32 @@ export type TMerge<
 
 export type TMerge3<T1, T2, T3> = TMerge<TMerge<T1, T2>, T3>;
 export type TMerge4<T1, T2, T3, T4> = TMerge<TMerge3<T1, T2, T3>, T4>;
+
+// function extendFn<
+//   TModuleClass extends new (...args: any[]) => any,
+//   TExtension extends InstanceType<TModuleClass> & {[key: string]: (this: InstanceType<TModuleClass>, ...args: any[]) => any},
+//   // TExtensionRemap extends {[P in keyof TExtension]: InstanceType<T[P]>;}
+//   TResult = TMerge<InstanceType<TModuleClass>, TExtension>
+//   >
+// (ModuleClass: TModuleClass, extension: TExtension): TResult {
+//   return {} as any as TResult;
+// }
+//
+// class Foo {
+//   sayHello() {
+//     return 'hello';
+//   }
+// }
+//
+// const ext = extendFn(Foo, {
+//   sayBye() {
+//     this.sayHello();
+//     console.log('bye');
+//   },
+//   sayRandom() {
+//     this.sayBye();
+//     console.log('random');
+//   },
+// });
+// ext.sayHello();
+// ext.sayBye();

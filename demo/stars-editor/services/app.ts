@@ -15,7 +15,7 @@ export class AppService extends Service {
     EditorService,
   };
 
-  init() {
+  start() {
     this.deps.EditorService.load();
   }
 

@@ -1,26 +1,44 @@
-import { TInjector } from '../../../../lib';
+import { ReduxModule } from '../../../../lib/service';
 import { EditorService } from './editor';
-import { SceneItem } from './scene-item';
+import { SceneItemController, SceneItemView } from './scene-item';
+import { createViewWithActions } from '../../../../lib/createStateView';
 
-export class SceneView {
-  protected services = this.inject({ EditorService });
+export class SceneView extends ReduxModule {
+  dependencies = { EditorService };
 
   get state() {
-    return this.services.EditorService.state.scenes.find(scene => scene.id === this.sceneId)!;
+    return this.deps.EditorService.state.scenes.find(scene => scene.id === this.id)!;
   }
 
-  getItem(itemId: string) {
-    return new SceneItem(this.inject, this.sceneId, itemId);
+  get isActive() {
+    return this.id === this.deps.EditorService.state.activeSceneId;
   }
 
-  constructor(protected inject: TInjector, public sceneId: string) {
+  getItemView(itemId: string) {
+    const actions = this.deps.EditorService.getScene(this.id).getItem(itemId);
+    const getters = this.createModule(SceneItemView, this.id, itemId);
+    return createViewWithActions(actions, getters);
+  }
+
+  get itemViews() {
+    return this.state.items.map(item => this.getItemView(item.id));
+  }
+
+  constructor(public id: string) {
+    super();
   }
 }
 
-export class Scene extends SceneView {
-  makeActive(sceneId: string) {
-    this.services.EditorService.setActiveScene(sceneId);
+export class SceneController extends SceneView {
+  makeActive() {
+    this.deps.EditorService.setActiveScene(this.id);
+  }
+
+  selectItem(itemId: string) {
+    this.deps.EditorService.selectItem(this.id, itemId);
+  }
+
+  getItem(id: string) {
+    return this.createModule(SceneItemController, this.id, id);
   }
 }
-
-

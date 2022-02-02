@@ -11,7 +11,6 @@ import { useOnCreate } from './hooks';
 import { isSimilar } from './isDeepEqual';
 import { traverseClassInstance } from './traverseClassInstance';
 import { useModuleManager } from './useModule';
-import { Service } from './service';
 
 /*
  * This file provides Redux integration in a modular way
@@ -92,12 +91,11 @@ export class ReduxModuleManager {
     ModuleClass: any,
     initParams?: TInitParams,
     moduleName = '',
-    isService = false,
     contextId = 'default',
   ) {
     // use constructor name as a module name if other name not provided
     moduleName = moduleName || ModuleClass.prototype.constructor.name;
-
+    const isService = contextId === 'service';
     const shouldInitialize = !isService;
 
     // create a record in `registeredModules` with the newly created module
@@ -107,6 +105,7 @@ export class ReduxModuleManager {
       moduleName,
       componentIds: [],
       module: undefined,
+      view: null,
       watchers: [],
       initParams,
       isService,
@@ -125,7 +124,10 @@ export class ReduxModuleManager {
       const module = new ModuleClass(this);
       this.registeredModules[moduleName][contextId].module = module as any;
       module.name = moduleName;
-      module.beforeInit && module.beforeInit();
+      //
+      // resolveDeps(this, module);
+
+      module.beforeInit && module.beforeInit(this);
       module.init && module.init(initParams);
       const initialState = module.state;
 
@@ -178,7 +180,7 @@ export class ReduxModuleManager {
   (serviceClasses: T): TInstances<T> {
     Object.keys(serviceClasses).forEach(serviceName => {
       const serviceClass = serviceClasses[serviceName];
-      this.registerModule(serviceClass as any, null, '', true, 'service');
+      this.registerModule(serviceClass as any, null, '', 'service');
     });
     return this.inject(serviceClasses);
   }
@@ -208,18 +210,22 @@ export class ReduxModuleManager {
 
   inject<T>(injectedObject: T): GetInjectReturnType<T> {
     if (isPlainObject(injectedObject)) {
-      return this.injectMany(injectedObject as any) as GetInjectReturnType<T>;
+      return this.injectManyServices(injectedObject as any) as GetInjectReturnType<T>;
     }
-    return this.injectOne(injectedObject as any) as GetInjectReturnType<T>;
+    return this.injectOneService(injectedObject as any) as GetInjectReturnType<T>;
   }
 
-  private injectOne<
+  private injectOneService<
     TServiceClass extends new (...args: any) => any
     >(ServiceClass: TServiceClass): InstanceType<TServiceClass> {
     const serviceName = ServiceClass.name;
 
-    const serviceMetadata = this.registeredModules[serviceName].service;
-    if (!serviceMetadata) throw new Error(`Service "${serviceName}" is not found. Is it registered?`);
+    let serviceMetadata = this.registeredModules[serviceName]?.service;
+    if (!serviceMetadata) {
+      serviceMetadata = this.registerModule(ServiceClass, null, '', 'service');
+      // throw new Error(`Service "${serviceName}" is not found. Is it registered?`);
+    }
+
     const { moduleName, contextId, module } = serviceMetadata;
     const shouldInit = !module;
     if (shouldInit) {
@@ -229,14 +235,42 @@ export class ReduxModuleManager {
     return module as any as InstanceType<TServiceClass>;
   }
 
-  private injectMany<T extends { [key: string]: new (...args: any) => any }>
+  injectModule<
+    TModuleClass extends new (
+...args: any) => any
+    >(ModuleClass: TModuleClass,
+    isService = false,
+    createView?: (module: InstanceType<TModuleClass>) => any,
+  ) {
+    const moduleName = ModuleClass.name;
+    const contextId = isService ? 'service' : this.currentContext[moduleName] || 'default';
+
+    let moduleMetadata = this.registeredModules[moduleName]?.service;
+    if (!moduleMetadata) {
+      moduleMetadata = this.registerModule(ModuleClass, null, '', contextId);
+    }
+
+    let { module } = moduleMetadata;
+    const shouldInit = !module;
+    if (shouldInit) {
+      this.initModule(moduleName, contextId);
+      moduleMetadata = this.registeredModules[moduleName][contextId];
+      module = moduleMetadata.module as any as InstanceType<TModuleClass>;
+    }
+    if (createView && !moduleMetadata.view) {
+      moduleMetadata.view = createView(module as any);
+    }
+    return moduleMetadata;
+  }
+
+  private injectManyServices<T extends { [key: string]: new (...args: any) => any }>
   (serviceClasses: T): TInstances<T> {
     const result = {};
     Object.keys(serviceClasses).forEach(serviceName => {
       const serviceClass = serviceClasses[serviceName];
       Object.defineProperty(result, serviceName, {
         get: () => {
-          return this.injectOne(serviceClass);
+          return this.injectOneService(serviceClass);
         },
       });
     });
@@ -316,6 +350,9 @@ export class ReduxModuleManager {
 }
 
 const moduleManagers: Record<string, ReduxModuleManager> = {};
+
+// TODO: remove
+(window as any).mm = moduleManagers;
 
 export function createModuleManager(Services?: TServiceConstructorMap, plugins?: TModuleManagerHooks[]) {
   const appId = generateId();
@@ -627,6 +664,7 @@ interface IReduxModuleMetadata {
   componentIds: string[];
   initParams: any;
   module?: IReduxModule<any, any>;
+  view: any,
   ModuleClass?: any;
   watchers: IWatcher<unknown>[];
   isService: boolean;
@@ -642,7 +680,7 @@ export type TInstances<T extends { [key: string]: new (...args: any) => any }> =
   [P in keyof T]: InstanceType<T[P]>;
 };
 
-type GetInjectReturnType<Type> = Type extends new (...args: any) => any
+export type GetInjectReturnType<Type> = Type extends new (...args: any) => any
   ? InstanceType<Type>
   : Type extends { [key: string]: new (...args: any) => any } ? TInstances<Type> :
     never;
@@ -650,7 +688,6 @@ export type TInjector = <T>(injectedObject: T) => GetInjectReturnType<T>
 
 export type TServiceConstructor = new (...args: any) => any;
 export type TServiceConstructorMap = { [key: string]: TServiceConstructor }
-
 
 /**
  * Makes all functions return a Promise and sets other types to never

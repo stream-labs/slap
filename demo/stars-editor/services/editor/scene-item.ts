@@ -1,21 +1,59 @@
-import { TInjector } from '../../../../lib';
 import { EditorService } from './editor';
+import { ReduxModule } from '../../../../lib/service';
+import { SceneItemState } from '../../interfeaces';
 
-export class SceneItem {
-  constructor(private inject: TInjector, public sceneId: string, public sceneItemId: string) {
+export class SceneItemView extends ReduxModule {
+  dependencies = { EditorService };
+
+  constructor(public sceneId: string, public id: string) {
+    super();
   }
 
-  private services = this.inject({ EditorService });
+  get editorView() {
+    return this.deps.EditorService.view;
+  }
 
   get state() {
-    return this.scene.items.find(item => item.id === this.sceneItemId);
+    return this.scene.state.items.find(item => item.id === this.id)!;
   }
 
   get scene() {
-    return this.services.EditorService.getSceneState(this.sceneId)!;
+    return this.editorView.getScene(this.sceneId);
   }
 
-  selectItem(itemId: string) {
-    this.services.EditorService.selectItem(this.sceneId, itemId);
+  get isSelected() {
+    return this.scene.selectedItemId === this.id;
+  }
+}
+
+export class SceneItemController extends ReduxModule {
+  dependencies = { EditorService };
+
+  constructor(public sceneId: string, public id: string) {
+    super();
+  }
+
+  get editor() {
+    return this.deps.EditorService;
+  }
+
+  get scene() {
+    return this.editor.getScene(this.sceneId);
+  }
+
+  get state() {
+    return this.scene.state.items.find(item => item.id === this.id)!;
+  }
+
+  selectItem() {
+    this.scene.selectItem(this.id);
+  }
+
+  update(patch: Partial<Omit<SceneItemState, 'id'>>) {
+    this.editor.updateItem(this.sceneId, this.id, patch);
+  }
+
+  move(position: {x: number, y: number}) {
+    this.update({ position });
   }
 }
