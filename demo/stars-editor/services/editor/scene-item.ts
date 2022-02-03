@@ -1,9 +1,10 @@
 import { EditorService } from './editor';
 import { ReduxModule } from '../../../../lib/service';
 import { SceneItemState } from '../../interfeaces';
+import { SceneView } from './scene';
 
 export class SceneItemView extends ReduxModule {
-  dependencies = { EditorService };
+  dependencies = { EditorService, SceneView };
 
   constructor(public sceneId: string, public id: string) {
     super();
@@ -27,7 +28,9 @@ export class SceneItemView extends ReduxModule {
 }
 
 export class SceneItemController extends ReduxModule {
-  dependencies = { EditorService };
+  dependencies = {
+    EditorService,
+  };
 
   constructor(public sceneId: string, public id: string) {
     super();

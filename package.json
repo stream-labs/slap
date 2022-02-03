@@ -1,6 +1,6 @@
 {
   "name": "redumbx",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Simple and Scalable Redux Configuration",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

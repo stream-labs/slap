@@ -4,7 +4,7 @@ import { Scope, TModuleClass } from './service';
 const moduleManagers: Record<string, ModuleManager> = {};
 
 // TODO: remove
-(window as any).mm = moduleManagers;
+// (window as any).mm = moduleManagers;
 
 export function createModuleManager(Services?: TModuleConstructorMap) {
   const appId = generateId();

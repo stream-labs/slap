@@ -6715,7 +6715,7 @@ const store_1 = __webpack_require__(971);
 const service_1 = __webpack_require__(149);
 const moduleManagers = {};
 // TODO: remove
-window.mm = moduleManagers;
+// (window as any).mm = moduleManagers;
 function createModuleManager(Services) {
     const appId = (0, store_1.generateId)();
     const moduleManager = new ModuleManager(appId, Services);
