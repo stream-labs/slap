@@ -25,22 +25,6 @@ export declare class ReactiveStore {
  * A decorator that registers the object method as an mutation
  */
 export declare function mutation(): (target: any, methodName: string) => void;
-/**
- * Wraps the given object in a Proxy for watching read operations on this object
- *
- * @example
- *
- * const myObject = { foo: 1, bar: 2, qux: 3};
- * const { watcherProxy, getDependentFields } = createDependencyWatcher(myObject);
- * const { foo, bar } = watcherProxy;
- * getDependentFields(); // returns ['foo', 'bar'];
- *
- */
-export declare function createDependencyWatcher<T extends object>(watchedObject: T): {
-    watcherProxy: T;
-    getDependentFields: () => string[];
-    getDependentValues: () => Partial<T>;
-};
 export declare function assertIsDefined<T>(val: T): asserts val is NonNullable<T>;
 export declare function getDefined<T>(val: T): NonNullable<T>;
 export declare function generateId(): string;

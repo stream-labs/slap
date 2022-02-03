@@ -1,5 +1,5 @@
 import { generateId, ReactiveStore, TModuleConstructorMap } from './store';
-import { Scope, Service, TModuleClass } from './service';
+import { Scope, TModuleClass } from './service';
 
 const moduleManagers: Record<string, ModuleManager> = {};
 

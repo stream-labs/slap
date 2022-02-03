@@ -5,7 +5,6 @@ import {
   useOnCreate,
 } from './hooks';
 import {
-  createDependencyWatcher,
   TPromisifyFunctions,
 } from './store';
 import { merge, TMerge, TMerge3 } from './merge';
@@ -14,6 +13,7 @@ import { createViewWithActions } from './createStateView';
 import { useSelector } from './useSelector';
 import { useModuleMetadata } from './useModuleMetadata';
 import { getModuleManager } from './module-manager';
+import { createDependencyWatcher } from './dependency-watcher';
 
 export const StoreContext = React.createContext('1');
 
@@ -24,10 +24,6 @@ export function useModuleManager() {
     return moduleManager;
   }, []);
 }
-
-// export function useInject<T>(injectedObject: T): GetInjectReturnType<T> {
-//   return useModuleManager().inject(injectedObject);
-// }
 
 export type TModuleView<TModule extends Object, TState = TModule extends { state?: any } ? TModule['state'] : null> = TMerge<TState, TModule>;
 

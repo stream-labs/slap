@@ -6404,6 +6404,67 @@ exports.createViewWithActions = createViewWithActions;
 
 /***/ }),
 
+/***/ 407:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createDependencyWatcher = void 0;
+/**
+ * Wraps the given object in a Proxy for watching read operations on this object
+ *
+ * @example
+ *
+ * const myObject = { foo: 1, bar: 2, qux: 3};
+ * const { watcherProxy, getDependentFields } = createDependencyWatcher(myObject);
+ * const { foo, bar } = watcherProxy;
+ * getDependentFields(); // returns ['foo', 'bar'];
+ *
+ */
+function createDependencyWatcher(watchedObject) {
+    const dependencies = {};
+    const watcherProxy = new Proxy({
+        _proxyName: 'DependencyWatcher',
+        _watchedObject: watchedObject,
+        _dependencies: dependencies,
+    }, {
+        get: (target, propName) => {
+            // if (propName === 'hasOwnProperty') return watchedObject.hasOwnProperty;
+            if (propName in target)
+                return target[propName];
+            const value = watchedObject[propName];
+            dependencies[propName] = value;
+            return value;
+            // }
+        },
+    });
+    function getDependentFields() {
+        return Object.keys(dependencies);
+    }
+    function getDependentValues() {
+        const values = {};
+        Object.keys(dependencies).forEach((propName) => {
+            const value = dependencies[propName];
+            // if one of the dependencies is a Binding then expose its internal dependencies
+            if (value && value._proxyName === 'Binding') {
+                const bindingMetadata = value._binding;
+                Object.keys(bindingMetadata.dependencies).forEach((bindingPropName) => {
+                    values[`${bindingPropName}__binding-${bindingMetadata.id}`] = dependencies[propName][bindingPropName].value;
+                });
+                return;
+            }
+            // if it's not a Binding then just take the value from the watchedObject
+            values[propName] = watchedObject[propName];
+        });
+        return values;
+    }
+    return { watcherProxy, getDependentFields, getDependentValues };
+}
+exports.createDependencyWatcher = createDependencyWatcher;
+
+
+/***/ }),
+
 /***/ 886:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -6501,7 +6562,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(603), exports);
 __exportStar(__webpack_require__(971), exports);
-// export * from './serviceProvider';
+__exportStar(__webpack_require__(10), exports);
 __exportStar(__webpack_require__(585), exports);
 __exportStar(__webpack_require__(149), exports);
 __exportStar(__webpack_require__(599), exports);
@@ -6640,34 +6701,6 @@ function merge(dataSources) {
     return mergeResult;
 }
 exports.merge = merge;
-// function extendFn<
-//   TModuleClass extends new (...args: any[]) => any,
-//   TExtension extends InstanceType<TModuleClass> & {[key: string]: (this: InstanceType<TModuleClass>, ...args: any[]) => any},
-//   // TExtensionRemap extends {[P in keyof TExtension]: InstanceType<T[P]>;}
-//   TResult = TMerge<InstanceType<TModuleClass>, TExtension>
-//   >
-// (ModuleClass: TModuleClass, extension: TExtension): TResult {
-//   return {} as any as TResult;
-// }
-//
-// class Foo {
-//   sayHello() {
-//     return 'hello';
-//   }
-// }
-//
-// const ext = extendFn(Foo, {
-//   sayBye() {
-//     this.sayHello();
-//     console.log('bye');
-//   },
-//   sayRandom() {
-//     this.sayBye();
-//     console.log('random');
-//   },
-// });
-// ext.sayHello();
-// ext.sayBye();
 
 
 /***/ }),
@@ -6937,7 +6970,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateId = exports.getDefined = exports.assertIsDefined = exports.createDependencyWatcher = exports.mutation = exports.ReactiveStore = void 0;
+exports.generateId = exports.getDefined = exports.assertIsDefined = exports.mutation = exports.ReactiveStore = void 0;
 const immer_1 = __importDefault(__webpack_require__(172));
 const traverseClassInstance_1 = __webpack_require__(820);
 class ReactiveStore {
@@ -7077,57 +7110,6 @@ function catchDestroyedModuleCalls(module) {
         };
     });
 }
-/**
- * Wraps the given object in a Proxy for watching read operations on this object
- *
- * @example
- *
- * const myObject = { foo: 1, bar: 2, qux: 3};
- * const { watcherProxy, getDependentFields } = createDependencyWatcher(myObject);
- * const { foo, bar } = watcherProxy;
- * getDependentFields(); // returns ['foo', 'bar'];
- *
- */
-function createDependencyWatcher(watchedObject) {
-    const dependencies = {};
-    const watcherProxy = new Proxy({
-        _proxyName: 'DependencyWatcher',
-        _watchedObject: watchedObject,
-        _dependencies: dependencies,
-    }, {
-        get: (target, propName) => {
-            // if (propName === 'hasOwnProperty') return watchedObject.hasOwnProperty;
-            if (propName in target)
-                return target[propName];
-            const value = watchedObject[propName];
-            dependencies[propName] = value;
-            return value;
-            // }
-        },
-    });
-    function getDependentFields() {
-        return Object.keys(dependencies);
-    }
-    function getDependentValues() {
-        const values = {};
-        Object.keys(dependencies).forEach((propName) => {
-            const value = dependencies[propName];
-            // if one of the dependencies is a Binding then expose its internal dependencies
-            if (value && value._proxyName === 'Binding') {
-                const bindingMetadata = value._binding;
-                Object.keys(bindingMetadata.dependencies).forEach((bindingPropName) => {
-                    values[`${bindingPropName}__binding-${bindingMetadata.id}`] = dependencies[propName][bindingPropName].value;
-                });
-                return;
-            }
-            // if it's not a Binding then just take the value from the watchedObject
-            values[propName] = watchedObject[propName];
-        });
-        return values;
-    }
-    return { watcherProxy, getDependentFields, getDependentValues };
-}
-exports.createDependencyWatcher = createDependencyWatcher;
 function assertIsDefined(val) {
     if (val === undefined || val === null) {
         throw new Error(`Expected 'val' to be defined, but received ${val}`);
@@ -7215,13 +7197,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createServiceView = exports.useServiceView = exports.useService = exports.useModule = exports.useSelectFrom = exports.createModuleView = exports.useModuleManager = exports.StoreContext = void 0;
 const react_1 = __importStar(__webpack_require__(359));
 const hooks_1 = __webpack_require__(886);
-const store_1 = __webpack_require__(971);
 const merge_1 = __webpack_require__(2);
 const lockThis_1 = __webpack_require__(924);
 const createStateView_1 = __webpack_require__(329);
 const useSelector_1 = __webpack_require__(599);
 const useModuleMetadata_1 = __webpack_require__(871);
 const module_manager_1 = __webpack_require__(10);
+const dependency_watcher_1 = __webpack_require__(407);
 exports.StoreContext = react_1.default.createContext('1');
 function useModuleManager() {
     const storeId = (0, react_1.useContext)(exports.StoreContext);
@@ -7246,7 +7228,7 @@ function useSelectFrom(module, extend) {
     // register the component in the ModuleManager upon component creation
     const { selector, dependencyWatcher } = (0, hooks_1.useOnCreate)(() => {
         const observableObject = extend ? (0, merge_1.merge)([module, extend(module)]) : module;
-        const dependencyWatcher = (0, store_1.createDependencyWatcher)(observableObject);
+        const dependencyWatcher = (0, dependency_watcher_1.createDependencyWatcher)(observableObject);
         function selector() {
             return dependencyWatcher.getDependentValues();
         }

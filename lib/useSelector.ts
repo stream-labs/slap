@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useComponentId, useForceUpdate, useOnCreate, useOnDestroy } from './hooks';
+import { useForceUpdate } from './hooks';
 import { isSimilar } from './isDeepEqual';
 import { useModuleManager } from './useModule';
 
