@@ -12,7 +12,8 @@ function CountersApp() {
       <Counter />
       <MultipleCounters />
       <MultipleIndependentCounters />
-      <MultiplePersistentCounters />
+      TODO
+      {/* <MultiplePersistentCounters /> */}
     </RedumbxApp>
   );
 }

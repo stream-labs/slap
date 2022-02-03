@@ -1,7 +1,8 @@
 import { sleep } from '../utils/sleep';
 import { SceneState } from '../interfeaces';
+import { Service } from '../../../lib';
 
-export class ApiService {
+export class ApiService extends Service {
   async fetchScenes(): Promise<SceneState[]> {
     await sleep(1000);
     return scenesData;

@@ -1,5 +1,4 @@
-import { mutation } from '../../../lib';
-import { Service } from '../../../lib/service';
+import { mutation, Service } from '../../../lib';
 import { EditorService } from './editor';
 
 export class AppService extends Service {

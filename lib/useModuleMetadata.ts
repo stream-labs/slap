@@ -10,10 +10,14 @@ export function useModuleMetadata<TModule>
   const {
     moduleMetadata,
   } = useOnCreate(() => {
-    const moduleMetadata = moduleManager.injectModule(ModuleClass, isService, createView);
-    const moduleName = moduleMetadata.moduleName;
+    const moduleName = ModuleClass.name;
+    const contextId = isService ? 'service' : moduleManager.currentContext[moduleName] || 'default';
+    const module = moduleManager.resolve(ModuleClass, contextId);
+    let moduleMetadata = moduleManager.getModuleMetadata(ModuleClass, contextId);
+    if (!moduleMetadata.view) {
+      moduleMetadata = moduleManager.updateModuleMetadata(moduleName,contextId, { createView, view: createView(module) })
+    }
 
-    const contextId = moduleMetadata.contextId;
     if (!isService) moduleManager.registerComponent(moduleName, contextId, componentId);
 
     return {

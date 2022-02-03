@@ -8,15 +8,16 @@ export function useSelector(cb: Function) {
   const selectorResultRef = useRef<Record<string, any>>({});
   const forceUpdate = useForceUpdate();
   const moduleManager = useModuleManager();
+  const store = moduleManager.store;
 
   useEffect(() => {
-    servicesRevisionRef.current = moduleManager.runAndSaveAccessors(() => {
+    servicesRevisionRef.current = store.runAndSaveAccessors(() => {
       selectorResultRef.current = cb();
     });
 
-    const watcherId = moduleManager.createWatcher(() => {
+    const watcherId = store.createWatcher(() => {
       const prevRevisions = servicesRevisionRef.current;
-      const currentRevisions = moduleManager.modulesRevisions;
+      const currentRevisions = store.modulesRevisions;
       let modulesHasChanged = false;
       for (const moduleName in prevRevisions) {
         if (prevRevisions[moduleName] !== currentRevisions[moduleName]) {
@@ -29,7 +30,7 @@ export function useSelector(cb: Function) {
 
       const prevSelectorResult = selectorResultRef.current;
 
-      servicesRevisionRef.current = moduleManager.runAndSaveAccessors(() => {
+      servicesRevisionRef.current = store.runAndSaveAccessors(() => {
         selectorResultRef.current = cb();
       });
 
@@ -38,7 +39,7 @@ export function useSelector(cb: Function) {
       }
     });
     return () => {
-      moduleManager.removeWatcher(watcherId);
+      store.removeWatcher(watcherId);
     };
   }, []);
 }

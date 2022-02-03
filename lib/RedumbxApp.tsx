@@ -2,22 +2,29 @@ import React, {
   ReactNode, useEffect, useState,
 } from 'react';
 import {
-  createModuleManager, destroyModuleManager,
-  generateId,
-  ReduxModuleManager,
+  generateId, TModuleConstructorMap,
 } from './store';
 import { useOnCreate, useOnDestroy } from './hooks';
 import { useModuleManager, StoreContext } from './useModule';
+import { createModuleManager, destroyModuleManager, ModuleManager } from './module-manager';
 
-export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?: ReduxModuleManager}) {
-  const [moduleManager] = useState(() => p.moduleManager || createModuleManager());
+export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?: ModuleManager, services?: TModuleConstructorMap}) {
+  const [moduleManager] = useState(() => {
+    const { moduleManager, services } = p;
+
+    if (moduleManager) {
+      if (services) moduleManager.registerServices(services);
+      return moduleManager;
+    }
+    return services ? createModuleManager(services) : createModuleManager();
+  });
 
   useOnDestroy(() => {
-    destroyModuleManager(moduleManager.store.storeId);
+    destroyModuleManager(moduleManager.id);
   });
 
   return (
-    <StoreContext.Provider value={moduleManager.store.storeId}>
+    <StoreContext.Provider value={moduleManager.id}>
       {p.children}
     </StoreContext.Provider>
   );
@@ -29,7 +36,7 @@ export function ModuleRoot(p: {children: ReactNode | ReactNode[], module: any })
   const { moduleName, contextId } = useOnCreate(() => {
     const contextId = generateId();
     const moduleName = p.module.prototype.constructor.name;
-    moduleManager.registerModule(p.module, null, moduleName, contextId);
+    moduleManager.registerDependency(p.module, contextId);
     return { contextId, moduleName };
   });
 

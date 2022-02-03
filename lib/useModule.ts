@@ -1,22 +1,19 @@
 import React, {
-  useContext, useEffect, useMemo, useRef,
+  useContext, useMemo,
 } from 'react';
 import {
-  useOnCreate, useOnDestroy, useComponentId, useForceUpdate,
+  useOnCreate,
 } from './hooks';
 import {
-  IReduxModule,
-  getModuleManager,
   createDependencyWatcher,
-  GetInjectReturnType,
   TPromisifyFunctions,
 } from './store';
 import { merge, TMerge, TMerge3 } from './merge';
 import { lockThis } from './lockThis';
 import { createViewWithActions } from './createStateView';
-import { isSimilar } from './isDeepEqual';
 import { useSelector } from './useSelector';
 import { useModuleMetadata } from './useModuleMetadata';
+import { getModuleManager } from './module-manager';
 
 export const StoreContext = React.createContext('1');
 
@@ -28,9 +25,9 @@ export function useModuleManager() {
   }, []);
 }
 
-export function useInject<T>(injectedObject: T): GetInjectReturnType<T> {
-  return useModuleManager().inject(injectedObject);
-}
+// export function useInject<T>(injectedObject: T): GetInjectReturnType<T> {
+//   return useModuleManager().inject(injectedObject);
+// }
 
 export type TModuleView<TModule extends Object, TState = TModule extends { state?: any } ? TModule['state'] : null> = TMerge<TState, TModule>;
 

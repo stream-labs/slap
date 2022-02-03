@@ -1,13 +1,13 @@
 import { SceneItemState, SceneState } from '../../interfeaces';
 import {
-  mutation, TServiceView,
+  mutation, Service, TServiceView,
 } from '../../../../lib';
 import { ReduxModule } from '../../../../lib/service';
 import { ApiService } from '../api';
 import { SceneController, SceneView } from './scene';
 import { createViewWithActions } from '../../../../lib/createStateView';
 
-export class EditorService extends ReduxModule {
+export class EditorService extends Service {
   dependencies = { ApiService };
 
   state = {
@@ -29,6 +29,7 @@ export class EditorService extends ReduxModule {
   }
 
   getScene(id: string) {
+    // todo id
     return this.createModule(SceneController, id);
   }
 
@@ -67,9 +68,10 @@ export class EditorService extends ReduxModule {
   }
 
   get view() {
-    const actions = this;
-    const getters = this.createModule(EditorServiceView);
-    return createViewWithActions(actions, getters);
+    return this.createModule(EditorServiceView);
+    // const actions = this;
+    // const getters = this.createModule(EditorServiceView);
+    // return createViewWithActions(actions, getters);
   }
 }
 

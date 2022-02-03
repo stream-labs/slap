@@ -1,10 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { createModuleManager, RedumbxApp, ReduxModuleManager } from '../lib';
+import { RedumbxApp } from '../lib';
 import './index.css';
 import { CounterService, MultiplePersistentCounters } from './counters-app';
+import { createModuleManager, ModuleManager } from '../lib/module-manager';
 
-export function TwoApps(p: { moduleManager: ReduxModuleManager }) {
+export function TwoApps(p: { moduleManager: ModuleManager }) {
   return (
     <>
       <RedumbxApp>
@@ -19,7 +20,7 @@ export function TwoApps(p: { moduleManager: ReduxModuleManager }) {
 
 function main() {
   const moduleManager = createModuleManager({ CounterService });
-  const counterService = moduleManager.inject(CounterService);
+  const counterService = moduleManager.getService(CounterService);
   counterService.increment();
   ReactDOM.render(<TwoApps moduleManager={moduleManager} />, document.getElementById('app'));
 }

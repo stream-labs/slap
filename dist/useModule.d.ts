@@ -1,9 +1,8 @@
 import React from 'react';
-import { GetInjectReturnType, TPromisifyFunctions } from './store';
+import { TPromisifyFunctions } from './store';
 import { TMerge, TMerge3 } from './merge';
 export declare const StoreContext: React.Context<string>;
-export declare function useModuleManager(): import("./store").ReduxModuleManager;
-export declare function useInject<T>(injectedObject: T): GetInjectReturnType<T>;
+export declare function useModuleManager(): import("./module-manager").ModuleManager;
 export declare type TModuleView<TModule extends Object, TState = TModule extends {
     state?: any;
 } ? TModule['state'] : null> = TMerge<TState, TModule>;
