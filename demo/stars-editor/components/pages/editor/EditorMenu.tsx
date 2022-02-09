@@ -1,8 +1,8 @@
 import { Menu } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
 import React from 'react';
-import { useServiceView } from '../../../../../lib';
-import { EditorService } from '../../../services/editor';
+import { useModule } from '../../../../../lib';
+import { EditorView } from '../../../services/editor';
 
 export function EditorMenu() {
   const {
@@ -11,7 +11,7 @@ export function EditorMenu() {
     onItemClick,
     onSceneClick,
     activeSceneId,
-  } = useServiceView(EditorService, editor => ({
+  } = useModule(EditorView, editor => ({
 
     get selectedItemId() {
       return editor.activeScene.selectedItemId;
@@ -39,8 +39,13 @@ export function EditorMenu() {
         onSelect={onItemClick}
       >
         {scenes.map(scene => (
-          <Menu.SubMenu key={scene.id} icon={<UserOutlined />} title={scene.name} onTitleClick={onSceneClick}>
-            {scene.state.items.map(item => (
+          <Menu.SubMenu
+            key={scene.id}
+            icon={<UserOutlined />}
+            title={scene.name}
+            onTitleClick={onSceneClick}
+          >
+            {scene.items.map(item => (
               <Menu.Item key={item.id}>{item.id}</Menu.Item>
             ))}
           </Menu.SubMenu>

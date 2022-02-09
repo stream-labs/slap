@@ -1,7 +1,7 @@
 import React, { CSSProperties } from 'react';
 import { Rnd } from 'react-rnd';
-import { useServiceView } from '../../../../../lib';
-import { EditorService } from '../../../services/editor';
+import { useModule, useServiceView } from '../../../../../lib';
+import { EditorService, EditorView } from '../../../services/editor';
 
 const wrapperStyle: CSSProperties = {
   height: '100%',
@@ -30,9 +30,9 @@ const canvasStyle: CSSProperties = {
 // }
 
 export function EditorCanvas() {
-  const { items } = useServiceView(EditorService, editor => ({
+  const { items } = useModule(EditorView, editor => ({
     get items() {
-      return editor.activeScene.itemViews;
+      return editor.activeScene.items;
     },
   }));
 

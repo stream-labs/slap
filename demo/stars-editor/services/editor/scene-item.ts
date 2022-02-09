@@ -1,62 +1,51 @@
-import { EditorService } from './editor';
-import { ReduxModule } from '../../../../lib/service';
-import { SceneItemState } from '../../interfeaces';
-import { SceneView } from './scene';
+import { EditorService, EditorView } from './editor';
+import { inject } from '../../../../lib/scope';
+import { ISceneItemState } from '../../interfeaces';
 
-export class SceneItemView extends ReduxModule {
-  dependencies = { EditorService, SceneView };
+export class SceneItemState {
+  services = inject({ EditorService });
 
-  constructor(public sceneId: string, public id: string) {
-    super();
-  }
+  constructor(public sceneId: string, public id: string) {}
 
-  get editorView() {
-    return this.deps.EditorService.view;
+  get serviceState() {
+    return this.services.EditorService.state;
   }
 
   get state() {
-    return this.scene.state.items.find(item => item.id === this.id)!;
-  }
-
-  get scene() {
-    return this.editorView.getScene(this.sceneId);
+    return this.serviceState.scenes[this.sceneId].items[this.id];
   }
 
   get isSelected() {
-    return this.scene.selectedItemId === this.id;
+    return this.serviceState.scenes[this.sceneId].selectedItemId === this.id;
   }
 }
 
-export class SceneItemController extends ReduxModule {
-  dependencies = {
-    EditorService,
-  };
-
-  constructor(public sceneId: string, public id: string) {
-    super();
-  }
-
-  get editor() {
-    return this.deps.EditorService;
-  }
+export class SceneItemController extends SceneItemState {
+  services = inject({ EditorService });
 
   get scene() {
-    return this.editor.getScene(this.sceneId);
-  }
-
-  get state() {
-    return this.scene.state.items.find(item => item.id === this.id)!;
+    return this.services.EditorService.getScene(this.sceneId);
   }
 
   selectItem() {
-    this.scene.selectItem(this.id);
+    this.services.EditorService.selectItem(this.sceneId, this.id);
   }
 
-  update(patch: Partial<Omit<SceneItemState, 'id'>>) {
-    this.editor.updateItem(this.sceneId, this.id, patch);
+  update(patch: Partial<Omit<ISceneItemState, 'id'>>) {
+    this.services.EditorService.updateItem(this.sceneId, this.id, patch);
   }
 
   move(position: {x: number, y: number}) {
     this.update({ position });
   }
+}
+
+export class SceneItemView extends SceneItemState {
+  views = inject({ EditorView });
+
+  get scene() {
+    return this.views.EditorView.getScene(this.sceneId);
+  }
+
+  // select next
 }

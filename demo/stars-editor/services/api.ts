@@ -1,49 +1,88 @@
 import { sleep } from '../utils/sleep';
-import { SceneState } from '../interfeaces';
-import { Service } from '../../../lib';
+import { ISceneState } from '../interfeaces';
 
-export class ApiService extends Service {
-  async fetchScenes(): Promise<SceneState[]> {
+export class ApiService {
+  async fetchScenes() {
     await sleep(1000);
     return scenesData;
   }
 }
 
-const scenesData: SceneState[] = [
-  {
-    id: 'scene1',
+const scenesData: Record<string, ISceneState> = {
+  scene1: {
     name: 'Scene 1',
     backgroundColor: 'blue',
     selectedItemId: 'star1',
-    items: [
-      {
-        id: 'star1', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 0, y: 0 },
+    items: {
+      star1: {
+        color: 'yellow',
+        angle: 0,
+        width: 100,
+        height: 100,
+        position: {
+          x: 0,
+          y: 0,
+        },
       },
-      {
-        id: 'star2', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 100, y: 100 },
+      star2: {
+        color: 'yellow',
+        angle: 0,
+        width: 100,
+        height: 100,
+        position: {
+          x: 100,
+          y: 100,
+        },
       },
-      {
-        id: 'star3', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 200, y: 200 },
+      star3: {
+        color: 'yellow',
+        angle: 0,
+        width: 100,
+        height: 100,
+        position: {
+          x: 200,
+          y: 200,
+        },
       },
-    ],
+    },
   },
 
-  {
-    id: 'scene2',
+  scene2: {
     name: 'Scene 2',
     backgroundColor: 'black',
     selectedItemId: 'star4',
-    items: [
-      {
-        id: 'star4', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 0, y: 0 },
+    items: {
+      star4: {
+        color: 'yellow',
+        angle: 0,
+        width: 100,
+        height: 100,
+        position: {
+          x: 0,
+          y: 0,
+        },
       },
-      {
-        id: 'star5', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 100, y: 100 },
+      star5: {
+        color: 'yellow',
+        angle: 0,
+        width: 100,
+        height: 100,
+        position: {
+          x: 100,
+          y: 100,
+        },
       },
-      {
-        id: 'star6', color: 'yellow', angle: 0, width: 100, height: 100, position: { x: 200, y: 200 },
+      star6: {
+        color: 'yellow',
+        angle: 0,
+        width: 100,
+        height: 100,
+        position: {
+          x: 200,
+          y: 200,
+        },
       },
-    ],
+    },
   },
 
-];
+};

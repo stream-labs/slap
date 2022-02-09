@@ -12,6 +12,7 @@ export function lockThis<T extends object>(instance: T): T {
   traverseClassInstance(instance, (propName, descriptor) => {
     if (descriptor.get || typeof (instance as any)[propName] !== 'function') {
       Object.defineProperty(result, propName, {
+        configurable: true,
         get: () => {
           return (instance as any)[propName];
         },

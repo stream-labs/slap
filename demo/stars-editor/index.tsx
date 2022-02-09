@@ -15,7 +15,7 @@ function main() {
     EditorService,
   });
 
-  const app = moduleManager.getService(AppService);
+  const app = moduleManager.resolve(AppService);
   app.start();
 
   ReactDOM.render(

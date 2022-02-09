@@ -2,20 +2,21 @@ import { useEffect, useRef } from 'react';
 import { useForceUpdate } from './hooks';
 import { isSimilar } from './isDeepEqual';
 import { useModuleManager } from './useModule';
+import { ReactiveStore } from './store';
 
 export function useSelector(cb: Function) {
   const servicesRevisionRef = useRef<Record<string, number>>({});
   const selectorResultRef = useRef<Record<string, any>>({});
   const forceUpdate = useForceUpdate();
   const moduleManager = useModuleManager();
-  const store = moduleManager.store;
+  const store = moduleManager.resolve(ReactiveStore);
 
   useEffect(() => {
     servicesRevisionRef.current = store.runAndSaveAccessors(() => {
       selectorResultRef.current = cb();
     });
 
-    const watcherId = store.createWatcher(() => {
+    const watcherId = store.watchers.create(() => {
       const prevRevisions = servicesRevisionRef.current;
       const currentRevisions = store.modulesRevisions;
       let modulesHasChanged = false;
@@ -39,7 +40,7 @@ export function useSelector(cb: Function) {
       }
     });
     return () => {
-      store.removeWatcher(watcherId);
+      store.watchers.remove(watcherId);
     };
   }, []);
 }

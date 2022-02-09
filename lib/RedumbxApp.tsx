@@ -2,18 +2,20 @@ import React, {
   ReactNode, useEffect, useState,
 } from 'react';
 import {
-  generateId, TModuleConstructorMap,
+  ReactiveStore,
+  TModuleConstructorMap,
 } from './store';
 import { useOnCreate, useOnDestroy } from './hooks';
-import { useModuleManager, StoreContext } from './useModule';
-import { createModuleManager, destroyModuleManager, ModuleManager } from './module-manager';
+import { StoreContext, useModule, useModuleManager } from './useModule';
+import { createModuleManager, destroyModuleManager } from './module-manager';
+import { Scope } from './scope';
 
-export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?: ModuleManager, services?: TModuleConstructorMap}) {
+export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?: Scope, services?: TModuleConstructorMap}) {
   const [moduleManager] = useState(() => {
     const { moduleManager, services } = p;
 
     if (moduleManager) {
-      if (services) moduleManager.registerServices(services);
+      if (services) moduleManager.registerMany(services);
       return moduleManager;
     }
     return services ? createModuleManager(services) : createModuleManager();
@@ -33,16 +35,21 @@ export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?
 export function ModuleRoot(p: {children: ReactNode | ReactNode[], module: any }) {
   const moduleManager = useModuleManager();
 
-  const { moduleName, contextId } = useOnCreate(() => {
-    const contextId = generateId();
+  const { moduleName, scope, store } = useOnCreate(() => {
+    const store = moduleManager.resolve(ReactiveStore);
     const moduleName = p.module.prototype.constructor.name;
-    moduleManager.registerDependency(p.module, contextId);
-    return { contextId, moduleName };
+    const scope = moduleManager.registerScope({ [moduleName]: p.module });
+    return { scope, moduleName, store };
   });
 
-  moduleManager.setModuleContext(moduleName, contextId);
+  store.setModuleContext(moduleName, scope);
   useEffect(() => {
-    moduleManager.resetModuleContext(moduleName);
+    store.resetModuleContext(moduleName);
   });
   return <>{p.children}</>;
 }
+
+// export function Module(p: {children: ReactNode | ReactNode[], module: any }) {
+//   useModule(p.module);
+//   return <>{p.children}</>;
+// }

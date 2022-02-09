@@ -9,7 +9,6 @@ import {
 } from './store';
 import { merge, TMerge, TMerge3 } from './merge';
 import { lockThis } from './lockThis';
-import { createViewWithActions } from './createStateView';
 import { useSelector } from './useSelector';
 import { useModuleMetadata } from './useModuleMetadata';
 import { getModuleManager } from './module-manager';
@@ -29,12 +28,12 @@ export type TModuleView<TModule extends Object, TState = TModule extends { state
 
 export function createModuleView<TModule>(module: TModule): TModuleView<TModule> {
   const lockedModule = lockThis(module as any);
-  const mergedModule = merge([
+  const mergedModule = (module as any).state ? merge([
     // allow to select variables from the module's state
     () => (module as any).state,
     // allow to select getters and actions from the module
     lockedModule,
-  ]);
+  ]) : lockedModule;
   return mergedModule as any as TModuleView<TModule>;
 }
 
@@ -69,14 +68,14 @@ export function useModule<
   return selectResult as TResult;
 }
 
-export function useService<
-  TModule,
-  TSelectorResult,
-  TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
-  >
-(ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
-  return useModule(ModuleClass, selectorFn, true);
-}
+// export function useService<
+//   TModule,
+//   TSelectorResult,
+//   TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
+//   >
+// (ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
+//   return useModule(ModuleClass, selectorFn, true);
+// }
 
 export function useServiceView<
   TService,
@@ -89,10 +88,12 @@ export function useServiceView<
   return selectResult as TResult;
 }
 
-export function createServiceView<TService>(service: TService): TServiceView<TService> {
-  const actions = service as any;
-  const getters = (service as any).view || {} as any;
-  return createViewWithActions(actions, getters) as TServiceView<TService>;
+export function createServiceView<TService>(service: TService) {
+  // const actions = service as any;
+  // const getters = (service as any).view || {} as any;
+  // return createViewWithActions(actions, getters) as TServiceView<TService>;
+  const moduleView = createModuleView(service); // createModuleView((service as any).view);
+  return moduleView;
 }
 
 export type TServiceView<

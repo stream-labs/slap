@@ -1,9 +1,9 @@
 import { ReactNode } from 'react';
 import { TModuleConstructorMap } from './store';
-import { ModuleManager } from './module-manager';
+import { Scope } from './scope';
 export declare function RedumbxApp(p: {
     children: ReactNode | ReactNode[];
-    moduleManager?: ModuleManager;
+    moduleManager?: Scope;
     services?: TModuleConstructorMap;
 }): JSX.Element;
 export declare function ModuleRoot(p: {

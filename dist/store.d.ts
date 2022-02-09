@@ -1,3 +1,5 @@
+import { TModuleClass } from './scope';
+import { IModuleMetadata } from './module-manager';
 export declare class ReactiveStore {
     readonly storeId: string;
     constructor(storeId: string);
@@ -5,21 +7,30 @@ export declare class ReactiveStore {
         storeId: string;
         modules: Record<string, Record<string, any>>;
     };
+    scope: import("./scope").Scope;
     isMutationRunning: boolean;
     modulesRevisions: Record<string, number>;
     immerState: any;
+    watchers: StoreWatchers;
+    modulesMetadata: Record<string, Record<string, IModuleMetadata>>;
+    init(): void;
     initModule(module: any, moduleName: string, contextId: string): void;
     destroyModule(moduleName: string, contextId: string): void;
     mutateModule(moduleName: string, contextId: string, mutation: Function): void;
-    watchers: Record<string, Function>;
-    watchersOrder: string[];
-    createWatcher(cb: Function): string;
-    removeWatcher(watcherId: string): void;
-    runWatchers(): void;
     isRecordingAccessors: boolean;
     recordedAccessors: Record<string, number>;
     runAndSaveAccessors(cb: Function): Record<string, number>;
+    private createModuleMetadata;
+    updateModuleMetadata(moduleName: string, scopeId: string, patch: Partial<IModuleMetadata>): IModuleMetadata & Partial<IModuleMetadata>;
+    getModuleMetadata(ModuleClass: TModuleClass, scopeId: string): IModuleMetadata | null;
     replaceMethodsWithMutations(module: any, moduleName: string, contextId: string): void;
+}
+declare class StoreWatchers {
+    watchers: Record<string, Function>;
+    watchersOrder: string[];
+    create(cb: Function): string;
+    remove(watcherId: string): void;
+    run(): void;
 }
 /**
  * A decorator that registers the object method as an mutation
@@ -51,3 +62,4 @@ export declare type TPromisifyFunctions<T> = {
  * Wraps the return type in a promise if it doesn't already return a promise
  */
 export declare type TPromisifyFunction<T> = T extends (...args: infer P) => infer R ? T extends (...args: any) => Promise<any> ? (...args: P) => R : (...args: P) => Promise<R> : T;
+export {};

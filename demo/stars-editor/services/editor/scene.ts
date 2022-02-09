@@ -1,44 +1,49 @@
-import { ReduxModule } from '../../../../lib/service';
+import { inject, injectScope } from '../../../../lib/scope';
 import { EditorService } from './editor';
 import { SceneItemController, SceneItemView } from './scene-item';
 import { createViewWithActions } from '../../../../lib/createStateView';
 
-export class SceneView extends ReduxModule {
-  dependencies = { EditorService };
+export class SceneState {
+  services = inject({ EditorService });
 
   get state() {
-    return this.deps.EditorService.state.scenes.find(scene => scene.id === this.id)!;
+    return this.services.EditorService.state.scenes[this.id];
   }
 
   get isActive() {
-    return this.id === this.deps.EditorService.state.activeSceneId;
+    return this.id === this.services.EditorService.state.activeSceneId;
   }
 
-  getItemView(itemId: string) {
-    const actions = this.deps.EditorService.getScene(this.id).getItem(itemId);
-    const getters = this.createModule(SceneItemView, this.id, itemId);
-    return createViewWithActions(actions, getters);
-  }
-
-  get itemViews() {
-    return this.state.items.map(item => this.getItemView(item.id));
-  }
-
-  constructor(public id: string) {
-    super();
-  }
+  constructor(public id: string) {}
 }
 
-export class SceneController extends SceneView {
+export class SceneController extends SceneState {
+  scope = injectScope();
+
   makeActive() {
-    this.deps.EditorService.setActiveScene(this.id);
+    this.services.EditorService.setActiveScene(this.id);
   }
 
   selectItem(itemId: string) {
-    this.deps.EditorService.selectItem(this.id, itemId);
+    this.services.EditorService.selectItem(this.id, itemId);
   }
 
   getItem(id: string) {
-    return this.createModule(SceneItemController, this.id, id);
+    return this.scope.createModule(SceneItemController, this.id, id);
+  }
+}
+
+export class SceneView extends SceneState {
+  scope = injectScope();
+
+  getItem(itemId: string) {
+    const getters = this.scope.createModule(SceneItemView, this.id, itemId);
+    const controler = this.scope.createModule(SceneItemController, this.id, itemId);
+    const result = createViewWithActions(getters, controler);
+    return result;
+  }
+
+  get items() {
+    return Object.keys(this.state.items).map(id => this.getItem(id));
   }
 }

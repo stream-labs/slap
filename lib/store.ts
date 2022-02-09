@@ -1,5 +1,7 @@
 import produce from 'immer';
 import { traverseClassInstance } from './traverseClassInstance';
+import { injectScope, Scope, TModuleClass } from './scope';
+import { IModuleMetadata } from './module-manager';
 
 export class ReactiveStore {
   constructor(public readonly storeId: string) {
@@ -10,6 +12,7 @@ export class ReactiveStore {
     modules: {} as Record<string, Record<string, any>>,
   };
 
+  scope = injectScope();
 
   isMutationRunning = false;
 
@@ -17,9 +20,40 @@ export class ReactiveStore {
 
   immerState: any = null;
 
+  watchers = new StoreWatchers();
+
+  modulesMetadata: Record<string, Record<string, IModuleMetadata>> = {};
+
+  init() {
+    Object.keys(this.scope.dependencies).forEach(moduleName => {
+      if (moduleName === 'ReactiveStore') return;
+      this.createModuleMetadata(moduleName, this.scope.id);
+    });
+
+    this.scope.afterRegister.subscribe(moduleInfo => {
+      this.createModuleMetadata(moduleInfo.moduleName, this.scope.id);
+    });
+
+    this.scope.afterInit.subscribe(moduleInfo => {
+      if (moduleInfo.moduleName === 'ReactiveStore') return;
+      const instance = moduleInfo.instance as any;
+      const scopeId = instance.scope.id;
+      const metadata = this.getModuleMetadata(moduleInfo.ModuleClass, scopeId) || this.createModuleMetadata(moduleInfo.moduleName, scopeId);
+      metadata.instance = instance;
+      const stateDescriptor = typeof Object.getOwnPropertyDescriptor(instance, 'state')?.get;
+      const isStatefull = stateDescriptor && typeof stateDescriptor !== 'function' && !instance.state?._isStateProxy;
+      if (!isStatefull) return;
+
+      console.log('start init store for ', moduleInfo.moduleName, 'in scope', scopeId);
+      this.initModule(instance, metadata.moduleName, scopeId);
+      console.log('finish init state for ', moduleInfo.moduleName, 'in scope', scopeId);
+    });
+  }
+
   initModule(module: any, moduleName: string, contextId: string) {
     if (!this.state.modules[moduleName]) this.state.modules[moduleName] = {};
     this.state.modules[moduleName][contextId] = module.state;
+    this.modulesRevisions[moduleName + contextId] = 1;
     const store = this;
 
     Object.defineProperty(module, 'state', {
@@ -54,29 +88,6 @@ export class ReactiveStore {
     mutation();
   }
 
-
-  watchers = {} as Record<string, Function>;
-
-  watchersOrder = [] as string[];
-
-  createWatcher(cb: Function) {
-    const watcherId = generateId();
-    this.watchersOrder.push(watcherId);
-    this.watchers[watcherId] = cb;
-    return watcherId;
-  }
-
-  removeWatcher(watcherId: string) {
-    const ind = this.watchersOrder.findIndex(id => watcherId);
-    this.watchersOrder.splice(ind, 1);
-    delete this.watchers[watcherId];
-  }
-
-  runWatchers() {
-    const watchersIds = [...this.watchersOrder];
-    watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
-  }
-
   isRecordingAccessors = false;
 
   recordedAccessors: Record<string, number> = {};
@@ -88,6 +99,44 @@ export class ReactiveStore {
     this.isRecordingAccessors = false;
     this.recordedAccessors = {};
     return result;
+  }
+
+  private createModuleMetadata(moduleName: string, scopeId: string) {
+    console.log('create module metadata for', moduleName, scopeId);
+
+    if (!this.modulesMetadata[moduleName]) {
+      this.modulesMetadata[moduleName] = {};
+    }
+    // eslint-disable-next-line no-multi-assign
+    const metadata = this.modulesMetadata[moduleName][scopeId] = {
+      scopeId,
+      moduleName,
+      instance: null,
+      createView: null,
+      view: null,
+      componentIds: [],
+    };
+    return metadata!;
+  }
+
+  updateModuleMetadata(moduleName: string, scopeId: string, patch: Partial<IModuleMetadata>) {
+    const metadata = this.modulesMetadata[moduleName][scopeId];
+    return Object.assign(metadata, patch);
+  }
+
+  getModuleMetadata(ModuleClass: TModuleClass, scopeId: string): IModuleMetadata | null {
+    const moduleName = ModuleClass.name;
+    return this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName][scopeId];
+  }
+
+  currentContext: Record<string, Scope> = {};
+
+  setModuleContext(moduleName: string, scope: Scope) {
+    this.currentContext[moduleName] = scope;
+  }
+
+  resetModuleContext(moduleName: string) {
+    delete this.currentContext[moduleName];
   }
 
   replaceMethodsWithMutations(module: any, moduleName: string, contextId: string) {
@@ -119,12 +168,35 @@ export class ReactiveStore {
         store.immerState = null;
         store.state.modules[moduleName][contextId] = nextState;
         store.isMutationRunning = false;
-        store.runWatchers();
+        store.watchers.run();
       };
     });
   }
 }
 
+class StoreWatchers {
+  watchers = {} as Record<string, Function>;
+
+  watchersOrder = [] as string[];
+
+  create(cb: Function) {
+    const watcherId = generateId();
+    this.watchersOrder.push(watcherId);
+    this.watchers[watcherId] = cb;
+    return watcherId;
+  }
+
+  remove(watcherId: string) {
+    const ind = this.watchersOrder.findIndex(id => watcherId === id);
+    this.watchersOrder.splice(ind, 1);
+    delete this.watchers[watcherId];
+  }
+
+  run() {
+    const watchersIds = [...this.watchersOrder];
+    watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
+  }
+}
 
 /**
  * A decorator that registers the object method as an mutation

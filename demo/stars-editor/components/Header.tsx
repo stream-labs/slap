@@ -1,10 +1,10 @@
 import React from 'react';
 import { Layout, Menu } from 'antd';
-import { useService } from '../../../lib';
+import { useModule } from '../../../lib';
 import { AppService } from '../services/app';
 
 export function Header() {
-  const { pages, activePage, setActivePage } = useService(AppService);
+  const { pages, activePage, setActivePage } = useModule(AppService);
 
   return (
     <Layout.Header className="header">

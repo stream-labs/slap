@@ -1,5 +1,5 @@
-export interface SceneItemState {
-  id: string,
+
+export interface ISceneItemState {
   color: string,
   angle: number,
   width: number,
@@ -10,10 +10,9 @@ export interface SceneItemState {
   }
 }
 
-export interface SceneState {
-  id: string;
+export interface ISceneState {
   name: string;
   backgroundColor: string;
-  items: SceneItemState[];
+  items: Record<string, ISceneItemState>;
   selectedItemId: string;
 }

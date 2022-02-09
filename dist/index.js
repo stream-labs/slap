@@ -6331,7 +6331,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ModuleRoot = exports.RedumbxApp = void 0;
 const jsx_runtime_1 = __webpack_require__(893);
 const react_1 = __webpack_require__(359);
-const store_1 = __webpack_require__(971);
 const hooks_1 = __webpack_require__(886);
 const useModule_1 = __webpack_require__(603);
 const module_manager_1 = __webpack_require__(10);
@@ -6340,7 +6339,7 @@ function RedumbxApp(p) {
         const { moduleManager, services } = p;
         if (moduleManager) {
             if (services)
-                moduleManager.registerServices(services);
+                moduleManager.registerMany(services);
             return moduleManager;
         }
         return services ? (0, module_manager_1.createModuleManager)(services) : (0, module_manager_1.createModuleManager)();
@@ -6352,54 +6351,22 @@ function RedumbxApp(p) {
 }
 exports.RedumbxApp = RedumbxApp;
 function ModuleRoot(p) {
-    const moduleManager = (0, useModule_1.useModuleManager)();
-    const { moduleName, contextId } = (0, hooks_1.useOnCreate)(() => {
-        const contextId = (0, store_1.generateId)();
-        const moduleName = p.module.prototype.constructor.name;
-        moduleManager.registerDependency(p.module, contextId);
-        return { contextId, moduleName };
-    });
-    moduleManager.setModuleContext(moduleName, contextId);
-    (0, react_1.useEffect)(() => {
-        moduleManager.resetModuleContext(moduleName);
-    });
+    // const moduleManager = useModuleManager();
+    //
+    // const { moduleName, contextId } = useOnCreate(() => {
+    //   const contextId = generateId();
+    //   const moduleName = p.module.prototype.constructor.name;
+    //   moduleManager.registerDependency(p.module, contextId);
+    //   return { contextId, moduleName };
+    // });
+    //
+    // moduleManager.setModuleContext(moduleName, contextId);
+    // useEffect(() => {
+    //   moduleManager.resetModuleContext(moduleName);
+    // });
     return (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, { children: p.children }, void 0);
 }
 exports.ModuleRoot = ModuleRoot;
-
-
-/***/ }),
-
-/***/ 329:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createViewWithActions = void 0;
-const merge_1 = __webpack_require__(2);
-const lockThis_1 = __webpack_require__(924);
-function createViewWithActions(actions, getters) {
-    const lockedActions = (0, lockThis_1.lockThis)(actions);
-    const lockedGetters = (0, lockThis_1.lockThis)(getters);
-    const mergedView = (0, merge_1.merge)([
-        // allow to select variables from the module's state
-        () => actions.state,
-        // allow to select actions
-        lockedActions,
-        // allow to select getters
-        lockedGetters,
-    ]);
-    // const mergedView = merge(
-    //   // allow to select variables from the module's state
-    //   () => actions.state,
-    //   // allow to select actions
-    //   () => lockedActions,
-    //   // allow to select getters
-    //   () => lockedGetters,
-    // );
-    return mergedView;
-}
-exports.createViewWithActions = createViewWithActions;
 
 
 /***/ }),
@@ -6564,7 +6531,7 @@ __exportStar(__webpack_require__(603), exports);
 __exportStar(__webpack_require__(971), exports);
 __exportStar(__webpack_require__(10), exports);
 __exportStar(__webpack_require__(585), exports);
-__exportStar(__webpack_require__(149), exports);
+__exportStar(__webpack_require__(284), exports);
 __exportStar(__webpack_require__(599), exports);
 
 
@@ -6643,6 +6610,7 @@ function lockThis(instance) {
     (0, traverseClassInstance_1.traverseClassInstance)(instance, (propName, descriptor) => {
         if (descriptor.get || typeof instance[propName] !== 'function') {
             Object.defineProperty(result, propName, {
+                configurable: true,
                 get: () => {
                     return instance[propName];
                 },
@@ -6664,7 +6632,7 @@ exports.lockThis = lockThis;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.merge = void 0;
+exports.unwrapState = exports.merge = void 0;
 /**
  * Merges multiple sources of data into a single Proxy object
  * The result object is read-only
@@ -6701,6 +6669,21 @@ function merge(dataSources) {
     return mergeResult;
 }
 exports.merge = merge;
+function unwrapState(obj) {
+    Object.keys(obj.state).forEach(stateKey => {
+        if (stateKey in obj)
+            return;
+        Object.defineProperty(obj, stateKey, {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return obj.state[stateKey];
+            },
+        });
+    });
+    return obj;
+}
+exports.unwrapState = unwrapState;
 
 
 /***/ }),
@@ -6710,16 +6693,16 @@ exports.merge = merge;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ModuleManager = exports.destroyModuleManager = exports.getModuleManager = exports.createModuleManager = void 0;
+exports.destroyModuleManager = exports.getModuleManager = exports.createModuleManager = void 0;
 const store_1 = __webpack_require__(971);
-const service_1 = __webpack_require__(149);
+const scope_1 = __webpack_require__(284);
 const moduleManagers = {};
 // TODO: remove
 // (window as any).mm = moduleManagers;
-function createModuleManager(Services) {
-    const appId = (0, store_1.generateId)();
-    const moduleManager = new ModuleManager(appId, Services);
-    moduleManagers[appId] = moduleManager;
+function createModuleManager(Services = {}) {
+    // const moduleManager = new ModuleManager(Services);
+    const moduleManager = new scope_1.Scope(Object.assign(Object.assign({}, Services), { ReactiveStore: store_1.ReactiveStore }));
+    moduleManagers[moduleManager.id] = moduleManager;
     return moduleManager;
 }
 exports.createModuleManager = createModuleManager;
@@ -6735,229 +6718,161 @@ function destroyModuleManager(appId) {
     delete moduleManagers[appId];
 }
 exports.destroyModuleManager = destroyModuleManager;
-class ModuleManager {
-    constructor(id, Services) {
-        this.id = id;
-        this.modulesMetadata = {};
-        this.currentContext = {};
-        if (Services)
-            this.registerServices(Services);
-        this.store = new store_1.ReactiveStore(id);
-        this.scopes = {
-            services: this.createScope('services', Services),
-            default: this.createScope('default'),
-        };
-    }
-    registerServices(Services) {
-        Object.keys(Services).forEach(serviceName => {
-            this.createModuleMetadata(serviceName, 'service');
-        });
-    }
-    createScope(id, Services) {
-        const scope = new service_1.Scope(Services, null, id);
-        scope.onInstantiate.subscribe(moduleInfo => {
-            var _a;
-            const instance = moduleInfo.instance;
-            const contextId = instance.scope.id;
-            const metadata = this.getModuleMetadata(moduleInfo.ModuleClass, contextId);
-            metadata.instance = instance;
-            instance.init && instance.init();
-            const stateDescriptor = typeof ((_a = Object.getOwnPropertyDescriptor(instance, 'state')) === null || _a === void 0 ? void 0 : _a.get);
-            const isStatefull = stateDescriptor && typeof stateDescriptor !== 'function';
-            if (isStatefull)
-                this.store.initModule(instance, metadata.moduleName, contextId);
-            return instance;
-        });
-        return scope;
-    }
-    resolve(ModuleClass, contextId) {
-        const scope = this.resolveScope(contextId);
-        if (!scope.isRegistered(ModuleClass)) {
-            this.registerDependency(ModuleClass, contextId);
-        }
-        return scope.resolve(ModuleClass);
-    }
-    getService(ModuleClass) {
-        return this.resolve(ModuleClass, 'service');
-    }
-    resolveScope(contextId) {
-        if (!this.scopes[contextId]) {
-            this.scopes[contextId] = this.createScope(contextId);
-        }
-        return this.scopes[contextId];
-    }
-    createModuleMetadata(moduleName, contextId) {
-        if (!this.modulesMetadata[moduleName]) {
-            this.modulesMetadata[moduleName] = {};
-        }
-        this.modulesMetadata[moduleName][contextId] = {
-            contextId,
-            moduleName,
-            instance: null,
-            createView: null,
-            view: null,
-            componentIds: [],
-        };
-    }
-    updateModuleMetadata(moduleName, contextId, patch) {
-        const metadata = this.modulesMetadata[moduleName][contextId];
-        return Object.assign(metadata, patch);
-    }
-    registerDependency(ModuleClass, contextId) {
-        const scope = this.resolveScope(contextId);
-        scope.registerDependency(ModuleClass);
-        const moduleName = ModuleClass.name;
-        this.createModuleMetadata(moduleName, contextId);
-    }
-    getModuleMetadata(ModuleClass, contextId) {
-        const moduleName = ModuleClass.name;
-        return this.modulesMetadata[moduleName][contextId];
-    }
-    setModuleContext(moduleName, contextId) {
-        this.currentContext[moduleName] = contextId;
-    }
-    resetModuleContext(moduleName) {
-        delete this.currentContext[moduleName];
-    }
-    /**
-       * Register a component that is using the module
-       */
-    registerComponent(moduleName, contextId, componentId) {
-        this.modulesMetadata[moduleName][contextId].componentIds.push(componentId);
-    }
-    /**
-       * Un-register a component that is using the module.
-       * If the module doesnt have registered components it will be destroyed
-       */
-    unRegisterComponent(moduleName, contextId, componentId) {
-        const moduleMetadata = this.modulesMetadata[moduleName][contextId];
-        moduleMetadata.componentIds = moduleMetadata.componentIds.filter((id) => id !== componentId);
-        if (!moduleMetadata.componentIds.length)
-            this.removeInstance(moduleName, contextId);
-    }
-    removeInstance(moduleName, contextId) {
-        const metadata = this.modulesMetadata[moduleName][contextId];
-        const instance = metadata.instance;
-        instance.destroy && instance.destroy();
-        // this.store.destroyModule(moduleName, contextId);
-        delete this.modulesMetadata[moduleName][contextId];
-        if (contextId !== 'default' && contextId !== 'service') {
-            this.scopes[contextId].destroy();
-            delete this.scopes[contextId];
-        }
-    }
-}
-exports.ModuleManager = ModuleManager;
 
 
 /***/ }),
 
-/***/ 149:
+/***/ 284:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Service = exports.ReduxModule = exports.Scope = void 0;
+exports.injectScope = exports.injectState = exports.inject = exports.Scope = void 0;
 const rxjs_1 = __webpack_require__(698);
 const store_1 = __webpack_require__(971);
+let currentScope = null;
 class Scope {
     constructor(dependencies = {}, parentScope = null, id) {
         this.dependencies = dependencies;
         this.parentScope = parentScope;
-        this.id = id;
+        this.childScopes = {};
         this.instances = {};
-        // onRegister = new Subject<typeof ReduxModule>();
+        // afterCreate() {
+        // }
+        // afterInit(moduleInfo: { instance: any, moduleName: string, ModuleClass: any }) {
+        // }
         //
-        this.onInstantiate = new rxjs_1.Subject();
-        if (!id)
-            this.id = (0, store_1.generateId)();
+        // afterRegister(moduleInfo: { ModuleClass: any, moduleName: string }) {
+        // }
+        this.afterInit = new rxjs_1.Subject();
+        this.afterRegister = new rxjs_1.Subject();
+        if (!id) {
+            this.id = parentScope ? `${parentScope.id}__${(0, store_1.generateId)()}` : 'root';
+        }
+        else {
+            this.id = id;
+        }
     }
     resolve(ModuleClass) {
-        const scope = this.getModuleScope(ModuleClass);
+        const scope = this.getScope(ModuleClass);
         const moduleName = ModuleClass.name;
         const instance = scope === null || scope === void 0 ? void 0 : scope.instances[moduleName];
         if (instance)
             return instance;
+        if (!scope)
+            this.register(ModuleClass);
         return this.instantiate(ModuleClass);
     }
-    getModuleScope(ModuleClass) {
+    getScope(ModuleClass) {
         const moduleName = ModuleClass.name;
         if (this.dependencies[moduleName])
             return this;
         if (this.parentScope)
-            return this.parentScope.getModuleScope(ModuleClass);
+            return this.parentScope.getScope(ModuleClass);
         return null;
     }
-    registerDependency(ModuleClass) {
+    register(ModuleClass) {
         const moduleName = ModuleClass.name;
         if (this.dependencies[moduleName]) {
             throw new Error(`${moduleName} already registered`);
         }
         this.dependencies[moduleName] = ModuleClass;
-        // this.onRegister.next(ModuleClass);
+        this.afterRegister.next({ ModuleClass, moduleName, scopeId: this.id });
+    }
+    registerMany(dependencies) {
+        Object.keys(dependencies).forEach(depName => this.register(dependencies[depName]));
+    }
+    unregister(ModuleClass) {
+        // TODO
     }
     isRegistered(ModuleClass) {
-        return !!this.getModuleScope(ModuleClass);
+        return !!this.getScope(ModuleClass);
     }
     hasInstance(ModuleClass) {
         if (!this.isRegistered(ModuleClass))
             return false;
-        return !!this.getModuleScope(ModuleClass);
-    }
-    getInstance(ModuleClass) {
-        var _a;
-        const moduleName = ModuleClass.name;
-        return (_a = this.getModuleScope(ModuleClass)) === null || _a === void 0 ? void 0 : _a.instances[moduleName];
+        return !!this.getScope(ModuleClass);
     }
     instantiate(ModuleClass, ...args) {
         const moduleName = ModuleClass.name;
-        const instance = new ModuleClass(...args);
-        this.instances[moduleName] = instance;
+        const instance = this.exec(() => new ModuleClass(...args));
+        instance._scope = this;
         instance.scope = this;
-        // inject lazy dependencies
-        const dependencies = instance.dependencies;
-        if (dependencies) {
-            const depsProxy = {};
-            Object.keys(dependencies).forEach(moduleName => {
-                const ModuleClass = dependencies[moduleName];
-                Object.defineProperty(depsProxy, moduleName, {
-                    get: () => {
-                        return instance.scope.resolve(ModuleClass);
-                    },
-                });
-            });
-            instance.deps = depsProxy;
-        }
-        this.onInstantiate.next({ instance, moduleName, ModuleClass });
+        this.instances[moduleName] = instance;
+        instance.init && instance.init();
+        this.afterInit.next({ instance, moduleName, ModuleClass, scopeId: this.id });
         return instance;
+    }
+    exec(cb) {
+        const prevScope = currentScope;
+        currentScope = this;
+        const result = cb();
+        currentScope = prevScope;
+        return result;
+    }
+    createScope(dependencies, id) {
+        return new Scope(dependencies, this, id);
+    }
+    registerScope(dependencies, id) {
+        const scope = this.createScope({}, id);
+        scope.afterRegister = this.afterRegister;
+        scope.afterInit = this.afterInit;
+        if (dependencies)
+            Object.keys(dependencies).forEach(name => scope.register(dependencies[name]));
+        this.childScopes[scope.id] = scope;
+        return scope;
+    }
+    unregisterScope(id) {
+        const childScope = this.childScopes[id];
+        childScope.destroy();
+        delete this.childScopes[id];
+    }
+    destroy() {
+        this.afterInit.unsubscribe();
+        this.afterRegister.unsubscribe();
+        // TODO unregister
     }
     removeInstance(ModuleClass) {
         const moduleName = ModuleClass.name;
         const instance = this.instances[moduleName];
         delete this.instances[moduleName];
-        // this.onRemove.next({ instance, ModuleClass, moduleName });
-    }
-    //
-    // onRemove = new Subject<{ instance: ReduxModule, moduleName: string, ModuleClass: typeof ReduxModule }>();
-    destroy() {
-        this.onInstantiate.unsubscribe();
     }
 }
 exports.Scope = Scope;
-class ReduxModule {
-    constructor() {
-        this.dependencies = {};
-    }
-    createModule(ModuleClass, ...args) {
-        const scope = new Scope({}, this.scope);
-        // @ts-ignore
-        return scope.instantiate(ModuleClass, ...args);
-    }
+function inject(dependencies) {
+    const scope = currentScope;
+    const depsProxy = { _scope: currentScope };
+    Object.keys(dependencies).forEach(moduleName => {
+        const ModuleClass = dependencies[moduleName];
+        Object.defineProperty(depsProxy, moduleName, {
+            get: () => {
+                // @ts-ignore
+                return scope.resolve(ModuleClass);
+            },
+        });
+    });
+    return depsProxy;
 }
-exports.ReduxModule = ReduxModule;
-class Service extends ReduxModule {
+exports.inject = inject;
+function injectState(StatefulModule) {
+    const module = currentScope.resolve(StatefulModule);
+    const proxy = { _isStateProxy: true };
+    Object.keys(module.state).forEach(stateKey => {
+        Object.defineProperty(proxy, stateKey, {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return module.state[stateKey];
+            },
+        });
+    });
+    return proxy;
 }
-exports.Service = Service;
+exports.injectState = injectState;
+function injectScope() {
+    return currentScope;
+}
+exports.injectScope = injectScope;
 
 
 /***/ }),
@@ -6973,6 +6888,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.generateId = exports.getDefined = exports.assertIsDefined = exports.mutation = exports.ReactiveStore = void 0;
 const immer_1 = __importDefault(__webpack_require__(172));
 const traverseClassInstance_1 = __webpack_require__(820);
+const scope_1 = __webpack_require__(284);
 class ReactiveStore {
     constructor(storeId) {
         this.storeId = storeId;
@@ -6980,18 +6896,42 @@ class ReactiveStore {
             storeId: this.storeId,
             modules: {},
         };
+        this.scope = (0, scope_1.injectScope)();
         this.isMutationRunning = false;
         this.modulesRevisions = {};
         this.immerState = null;
-        this.watchers = {};
-        this.watchersOrder = [];
+        this.watchers = new StoreWatchers();
+        this.modulesMetadata = {};
         this.isRecordingAccessors = false;
         this.recordedAccessors = {};
+    }
+    init() {
+        Object.keys(this.scope.dependencies).forEach(moduleName => {
+            this.createModuleMetadata(moduleName, this.scope.id);
+        });
+        this.scope.afterRegister.subscribe(moduleInfo => {
+            this.createModuleMetadata(moduleInfo.moduleName, this.scope.id);
+        });
+        this.scope.afterInit.subscribe(moduleInfo => {
+            var _a, _b;
+            const instance = moduleInfo.instance;
+            const scopeId = instance.scope.id;
+            const metadata = this.getModuleMetadata(moduleInfo.ModuleClass, scopeId) || this.createModuleMetadata(moduleInfo.moduleName, scopeId);
+            metadata.instance = instance;
+            const stateDescriptor = typeof ((_a = Object.getOwnPropertyDescriptor(instance, 'state')) === null || _a === void 0 ? void 0 : _a.get);
+            const isStatefull = stateDescriptor && typeof stateDescriptor !== 'function' && !((_b = instance.state) === null || _b === void 0 ? void 0 : _b._isStateProxy);
+            if (!isStatefull)
+                return;
+            console.log('start init store for ', moduleInfo.moduleName, 'in scope', scopeId);
+            this.initModule(instance, metadata.moduleName, scopeId);
+            console.log('finish init state for ', moduleInfo.moduleName, 'in scope', scopeId);
+        });
     }
     initModule(module, moduleName, contextId) {
         if (!this.state.modules[moduleName])
             this.state.modules[moduleName] = {};
         this.state.modules[moduleName][contextId] = module.state;
+        this.modulesRevisions[moduleName + contextId] = 1;
         const store = this;
         Object.defineProperty(module, 'state', {
             get: () => {
@@ -7022,21 +6962,6 @@ class ReactiveStore {
     mutateModule(moduleName, contextId, mutation) {
         mutation();
     }
-    createWatcher(cb) {
-        const watcherId = generateId();
-        this.watchersOrder.push(watcherId);
-        this.watchers[watcherId] = cb;
-        return watcherId;
-    }
-    removeWatcher(watcherId) {
-        const ind = this.watchersOrder.findIndex(id => watcherId);
-        this.watchersOrder.splice(ind, 1);
-        delete this.watchers[watcherId];
-    }
-    runWatchers() {
-        const watchersIds = [...this.watchersOrder];
-        watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
-    }
     runAndSaveAccessors(cb) {
         this.isRecordingAccessors = true;
         cb();
@@ -7044,6 +6969,36 @@ class ReactiveStore {
         this.isRecordingAccessors = false;
         this.recordedAccessors = {};
         return result;
+    }
+    createModuleMetadata(moduleName, scopeId) {
+        console.log('create module metadata for', moduleName, scopeId);
+        if (!this.modulesMetadata[moduleName]) {
+            this.modulesMetadata[moduleName] = {};
+        }
+        // eslint-disable-next-line no-multi-assign
+        const metadata = this.modulesMetadata[moduleName][scopeId] = {
+            scopeId,
+            moduleName,
+            instance: null,
+            createView: null,
+            view: null,
+            componentIds: [],
+        };
+        return metadata;
+    }
+    updateModuleMetadata(moduleName, scopeId, patch) {
+        const metadata = this.modulesMetadata[moduleName][scopeId];
+        return Object.assign(metadata, patch);
+    }
+    // registerDependency(ModuleClass: TModuleClass, contextId: string) {
+    //   const scope = this.resolveScope(contextId);
+    //   scope.register(ModuleClass);
+    //   const moduleName = ModuleClass.name;
+    //   this.createModuleMetadata(moduleName, contextId);
+    // }
+    getModuleMetadata(ModuleClass, scopeId) {
+        const moduleName = ModuleClass.name;
+        return this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName][scopeId];
     }
     replaceMethodsWithMutations(module, moduleName, contextId) {
         const mutationNames = Object.getPrototypeOf(module).mutations || [];
@@ -7071,12 +7026,33 @@ class ReactiveStore {
                 store.immerState = null;
                 store.state.modules[moduleName][contextId] = nextState;
                 store.isMutationRunning = false;
-                store.runWatchers();
+                store.watchers.run();
             };
         });
     }
 }
 exports.ReactiveStore = ReactiveStore;
+class StoreWatchers {
+    constructor() {
+        this.watchers = {};
+        this.watchersOrder = [];
+    }
+    create(cb) {
+        const watcherId = generateId();
+        this.watchersOrder.push(watcherId);
+        this.watchers[watcherId] = cb;
+        return watcherId;
+    }
+    remove(watcherId) {
+        const ind = this.watchersOrder.findIndex(id => watcherId === id);
+        this.watchersOrder.splice(ind, 1);
+        delete this.watchers[watcherId];
+    }
+    run() {
+        const watchersIds = [...this.watchersOrder];
+        watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
+    }
+}
 /**
  * A decorator that registers the object method as an mutation
  */
@@ -7199,7 +7175,6 @@ const react_1 = __importStar(__webpack_require__(359));
 const hooks_1 = __webpack_require__(886);
 const merge_1 = __webpack_require__(2);
 const lockThis_1 = __webpack_require__(924);
-const createStateView_1 = __webpack_require__(329);
 const useSelector_1 = __webpack_require__(599);
 const useModuleMetadata_1 = __webpack_require__(871);
 const module_manager_1 = __webpack_require__(10);
@@ -7215,12 +7190,12 @@ function useModuleManager() {
 exports.useModuleManager = useModuleManager;
 function createModuleView(module) {
     const lockedModule = (0, lockThis_1.lockThis)(module);
-    const mergedModule = (0, merge_1.merge)([
+    const mergedModule = module.state ? (0, merge_1.merge)([
         // allow to select variables from the module's state
         () => module.state,
         // allow to select getters and actions from the module
         lockedModule,
-    ]);
+    ]) : lockedModule;
     return mergedModule;
 }
 exports.createModuleView = createModuleView;
@@ -7256,9 +7231,11 @@ function useServiceView(ModuleClass, selectorFn = () => ({})) {
 }
 exports.useServiceView = useServiceView;
 function createServiceView(service) {
-    const actions = service;
-    const getters = service.view || {};
-    return (0, createStateView_1.createViewWithActions)(actions, getters);
+    // const actions = service as any;
+    // const getters = (service as any).view || {} as any;
+    // return createViewWithActions(actions, getters) as TServiceView<TService>;
+    const moduleView = createModuleView(service); // createModuleView((service as any).view);
+    return moduleView;
 }
 exports.createServiceView = createServiceView;
 
@@ -7273,28 +7250,28 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.useModuleMetadata = void 0;
 const hooks_1 = __webpack_require__(886);
 const useModule_1 = __webpack_require__(603);
+const store_1 = __webpack_require__(971);
 function useModuleMetadata(ModuleClass, isService, createView) {
     const componentId = (0, hooks_1.useComponentId)();
     const moduleManager = (0, useModule_1.useModuleManager)();
     // register the component in the ModuleManager upon component creation
     const { moduleMetadata, } = (0, hooks_1.useOnCreate)(() => {
         const moduleName = ModuleClass.name;
-        const contextId = isService ? 'service' : moduleManager.currentContext[moduleName] || 'default';
-        const module = moduleManager.resolve(ModuleClass, contextId);
-        let moduleMetadata = moduleManager.getModuleMetadata(ModuleClass, contextId);
+        const scope = moduleManager.isRegistered(ModuleClass) ? moduleManager : moduleManager.registerScope({ ModuleClass });
+        const moduleInstance = scope.resolve(ModuleClass);
+        const store = moduleManager.resolve(store_1.ReactiveStore);
+        let moduleMetadata = store.getModuleMetadata(ModuleClass, scope.id);
         if (!moduleMetadata.view) {
-            moduleMetadata = moduleManager.updateModuleMetadata(moduleName, contextId, { createView, view: createView(module) });
+            moduleMetadata = store.updateModuleMetadata(moduleName, scope.id, { createView, view: createView(moduleInstance) });
         }
-        if (!isService)
-            moduleManager.registerComponent(moduleName, contextId, componentId);
+        // if (!isService) moduleManager.registerComponent(moduleName, contextId, componentId);
         return {
             moduleMetadata,
         };
     });
     // unregister the component from the module onDestroy
     (0, hooks_1.useOnDestroy)(() => {
-        if (!isService)
-            moduleManager.unRegisterComponent(moduleMetadata.moduleName, moduleMetadata.contextId, componentId);
+        // if (!isService) moduleManager.unRegisterComponent(moduleMetadata.moduleName, moduleMetadata.contextId, componentId);
     });
     return moduleMetadata;
 }
@@ -7313,17 +7290,18 @@ const react_1 = __webpack_require__(359);
 const hooks_1 = __webpack_require__(886);
 const isDeepEqual_1 = __webpack_require__(723);
 const useModule_1 = __webpack_require__(603);
+const store_1 = __webpack_require__(971);
 function useSelector(cb) {
     const servicesRevisionRef = (0, react_1.useRef)({});
     const selectorResultRef = (0, react_1.useRef)({});
     const forceUpdate = (0, hooks_1.useForceUpdate)();
     const moduleManager = (0, useModule_1.useModuleManager)();
-    const store = moduleManager.store;
+    const store = moduleManager.resolve(store_1.ReactiveStore);
     (0, react_1.useEffect)(() => {
         servicesRevisionRef.current = store.runAndSaveAccessors(() => {
             selectorResultRef.current = cb();
         });
-        const watcherId = store.createWatcher(() => {
+        const watcherId = store.watchers.create(() => {
             const prevRevisions = servicesRevisionRef.current;
             const currentRevisions = store.modulesRevisions;
             let modulesHasChanged = false;
@@ -7344,7 +7322,7 @@ function useSelector(cb) {
             }
         });
         return () => {
-            store.removeWatcher(watcherId);
+            store.watchers.remove(watcherId);
         };
     }, []);
 }

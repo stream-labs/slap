@@ -1,7 +1,7 @@
-import { mutation, Service } from '../../../lib';
+import { inject, mutation } from '../../../lib';
 import { EditorService } from './editor';
 
-export class AppService extends Service {
+export class AppService {
   state = {
     activePage: 'editor',
     pages: [
@@ -10,12 +10,12 @@ export class AppService extends Service {
     ],
   };
 
-  dependencies = {
+  services = inject({
     EditorService,
-  };
+  });
 
   start() {
-    this.deps.EditorService.load();
+    this.services.EditorService.load();
   }
 
   @mutation()

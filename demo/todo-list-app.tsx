@@ -6,12 +6,14 @@ import './index.css';
 export function TodoListApp() {
   return (
     <RedumbxApp>
-      <section className="todo-list">
-        <h2>Todo List</h2>
-        <TodoInput />
-        <TodoItems />
-        <TodoCompleteButton />
-      </section>
+      {/* <Module module={TodoModule}> */}
+        <section className="todo-list">
+          <h2>Todo List</h2>
+          <TodoInput />
+          <TodoItems />
+          <TodoCompleteButton />
+        </section>
+      {/* </Module> */}
     </RedumbxApp>
   );
 }

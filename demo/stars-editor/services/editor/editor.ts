@@ -1,50 +1,59 @@
-import { SceneItemState, SceneState } from '../../interfeaces';
+import { ISceneItemState, ISceneState } from '../../interfeaces';
 import {
-  mutation, Service, TServiceView,
+  inject, injectScope, injectState,
+  mutation,
 } from '../../../../lib';
-import { ReduxModule } from '../../../../lib/service';
 import { ApiService } from '../api';
 import { SceneController, SceneView } from './scene';
 import { createViewWithActions } from '../../../../lib/createStateView';
 
-export class EditorService extends Service {
-  dependencies = { ApiService };
-
+export class EditorState {
   state = {
     activeSceneId: '',
-    scenes: [] as SceneState[],
+    scenes: {} as Record<string, ISceneState>,
     isLoaded: false,
   };
 
+  get scenesCount() {
+    return Object.keys(this.state.scenes);
+  }
+
+  get firstSceneId() {
+    const ids = Object.keys(this.state.scenes);
+    return ids[0];
+  }
+}
+
+export class EditorService extends EditorState {
+  services = inject({ ApiService });
+  scope = injectScope();
+
   async load() {
-    const scenes = await this.deps.ApiService.fetchScenes();
-    const activeSceneId = scenes[0].id;
+    const scenes = await this.services.ApiService.fetchScenes();
     this.setScenes(scenes);
-    this.setActiveScene(activeSceneId);
+    this.setActiveScene(this.firstSceneId);
     this.setIsLoaded();
   }
 
   get scenes() {
-    return this.state.scenes.map(scene => this.getScene(scene.id));
+    return Object.keys(this.state.scenes).map(id => this.getScene(id));
   }
 
   getScene(id: string) {
-    // todo id
-    return this.createModule(SceneController, id);
+    return this.scope.createModule(SceneController, id);
   }
 
   getSceneState(id: string) {
-    return this.state.scenes.find(scene => scene.id === id);
+    return this.state.scenes[id];
   }
 
   @mutation()
-  private setScenes(scenes: SceneState[]) {
+  private setScenes(scenes: Record<string, ISceneState>) {
     this.state.scenes = scenes;
   }
 
   @mutation()
   setActiveScene(sceneId: string) {
-    console.log('set active scene', sceneId);
     this.state.activeSceneId = sceneId;
   }
 
@@ -62,38 +71,29 @@ export class EditorService extends Service {
   }
 
   @mutation()
-  updateItem(sceneId: string, itemId: string, patch: Partial<SceneItemState>) {
+  updateItem(sceneId: string, itemId: string, patch: Partial<ISceneItemState>) {
     const itemState = this.getScene(sceneId).getItem(itemId).state;
     Object.assign(itemState, patch);
   }
-
-  get view() {
-    return this.createModule(EditorServiceView);
-    // const actions = this;
-    // const getters = this.createModule(EditorServiceView);
-    // return createViewWithActions(actions, getters);
-  }
 }
 
-export class EditorServiceView extends ReduxModule {
-  dependencies = { EditorService };
+export class EditorView extends EditorState {
+  state = injectState(EditorService);
 
-  get state() {
-    return this.deps.EditorService.state;
+  scope = injectScope();
+
+  getScene(sceneId: string) {
+    const view = this.scope.createModule(SceneView, sceneId);
+    const controller = this.scope.createModule(SceneController, sceneId);
+    const result = createViewWithActions(view, controller);
+    return result;
+  }
+
+  get scenes() {
+    return Object.keys(this.state.scenes).map(sceneId => this.getScene(sceneId));
   }
 
   get activeScene() {
     return this.getScene(this.state.activeSceneId);
-  }
-
-  getScene(sceneId: string) {
-    const actions = this.deps.EditorService.getScene(sceneId);
-    const getters = this.createModule(SceneView, sceneId);
-    const sceneView = createViewWithActions(actions, getters);
-    return sceneView;
-  }
-
-  get scenes() {
-    return this.state.scenes.map(sceneState => this.getScene(sceneState.id));
   }
 }

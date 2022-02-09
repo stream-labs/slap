@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useComponentId, useOnCreate, useOnDestroy } from './hooks';
 import { useModuleManager } from './useModule';
+import { ReactiveStore } from './store';
 
 export function useModuleMetadata<TModule>
 (ModuleClass: new(...args: any[]) => TModule, isService: boolean, createView: (module: TModule) => any) {
@@ -9,25 +11,50 @@ export function useModuleMetadata<TModule>
   // register the component in the ModuleManager upon component creation
   const {
     moduleMetadata,
+    scope,
+    isRoot,
+    store,
   } = useOnCreate(() => {
     const moduleName = ModuleClass.name;
-    const contextId = isService ? 'service' : moduleManager.currentContext[moduleName] || 'default';
-    const module = moduleManager.resolve(ModuleClass, contextId);
-    let moduleMetadata = moduleManager.getModuleMetadata(ModuleClass, contextId);
-    if (!moduleMetadata.view) {
-      moduleMetadata = moduleManager.updateModuleMetadata(moduleName,contextId, { createView, view: createView(module) })
+    const store = moduleManager.resolve(ReactiveStore);
+
+    let scope = store.currentContext[moduleName];
+
+    let isRoot = false;
+
+    if (!scope) {
+      if (moduleManager.isRegistered(ModuleClass)) {
+        scope = moduleManager;
+      } else {
+        scope = moduleManager.registerScope({ ModuleClass });
+        isRoot = true;
+      }
     }
 
-    if (!isService) moduleManager.registerComponent(moduleName, contextId, componentId);
+    const moduleInstance = scope.resolve(ModuleClass);
+    let moduleMetadata = store.getModuleMetadata(ModuleClass, scope.id)!;
+    if (!moduleMetadata.view) {
+      moduleMetadata = store.updateModuleMetadata(moduleName, scope.id, { createView, view: createView(moduleInstance) });
+    }
+
+    // if (!isService) moduleManager.registerComponent(moduleName, contextId, componentId);
 
     return {
       moduleMetadata,
+      store,
+      isRoot,
+      scope,
     };
   });
 
+  isRoot && store.setModuleContext(moduleMetadata.moduleName, scope);
+  useEffect(() => {
+    isRoot && store.resetModuleContext(moduleMetadata.moduleName);
+  }, []);
+
   // unregister the component from the module onDestroy
   useOnDestroy(() => {
-    if (!isService) moduleManager.unRegisterComponent(moduleMetadata.moduleName, moduleMetadata.contextId, componentId);
+    if (!isRoot) scope.destroy();
   });
 
   return moduleMetadata;

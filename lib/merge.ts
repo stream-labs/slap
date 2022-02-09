@@ -48,6 +48,21 @@ export function merge<
   return mergeResult as TReturnType;
 }
 
+export function unwrapState<TState, T extends {state: any}>(obj: T): TMerge<T['state'], T> {
+  Object.keys(obj.state).forEach(stateKey => {
+    if (stateKey in obj) return;
+
+    Object.defineProperty(obj, stateKey, {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return (obj.state as any)[stateKey];
+      },
+    });
+  });
+  return obj as TMerge<TState, T>;
+}
+
 export type TMerge<
   T1,
   T2,
