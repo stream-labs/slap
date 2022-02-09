@@ -6331,6 +6331,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ModuleRoot = exports.RedumbxApp = void 0;
 const jsx_runtime_1 = __webpack_require__(893);
 const react_1 = __webpack_require__(359);
+const store_1 = __webpack_require__(971);
 const hooks_1 = __webpack_require__(886);
 const useModule_1 = __webpack_require__(603);
 const module_manager_1 = __webpack_require__(10);
@@ -6351,19 +6352,17 @@ function RedumbxApp(p) {
 }
 exports.RedumbxApp = RedumbxApp;
 function ModuleRoot(p) {
-    // const moduleManager = useModuleManager();
-    //
-    // const { moduleName, contextId } = useOnCreate(() => {
-    //   const contextId = generateId();
-    //   const moduleName = p.module.prototype.constructor.name;
-    //   moduleManager.registerDependency(p.module, contextId);
-    //   return { contextId, moduleName };
-    // });
-    //
-    // moduleManager.setModuleContext(moduleName, contextId);
-    // useEffect(() => {
-    //   moduleManager.resetModuleContext(moduleName);
-    // });
+    const moduleManager = (0, useModule_1.useModuleManager)();
+    const { moduleName, scope, store } = (0, hooks_1.useOnCreate)(() => {
+        const store = moduleManager.resolve(store_1.ReactiveStore);
+        const moduleName = p.module.prototype.constructor.name;
+        const scope = moduleManager.registerScope({ [moduleName]: p.module });
+        return { scope, moduleName, store };
+    });
+    store.setModuleContext(moduleName, scope);
+    (0, react_1.useEffect)(() => {
+        store.resetModuleContext(moduleName);
+    });
     return (0, jsx_runtime_1.jsx)(jsx_runtime_1.Fragment, { children: p.children }, void 0);
 }
 exports.ModuleRoot = ModuleRoot;
@@ -6703,6 +6702,7 @@ function createModuleManager(Services = {}) {
     // const moduleManager = new ModuleManager(Services);
     const moduleManager = new scope_1.Scope(Object.assign(Object.assign({}, Services), { ReactiveStore: store_1.ReactiveStore }));
     moduleManagers[moduleManager.id] = moduleManager;
+    moduleManager.resolve(store_1.ReactiveStore);
     return moduleManager;
 }
 exports.createModuleManager = createModuleManager;
@@ -6737,13 +6737,6 @@ class Scope {
         this.parentScope = parentScope;
         this.childScopes = {};
         this.instances = {};
-        // afterCreate() {
-        // }
-        // afterInit(moduleInfo: { instance: any, moduleName: string, ModuleClass: any }) {
-        // }
-        //
-        // afterRegister(moduleInfo: { ModuleClass: any, moduleName: string }) {
-        // }
         this.afterInit = new rxjs_1.Subject();
         this.afterRegister = new rxjs_1.Subject();
         if (!id) {
@@ -6761,7 +6754,7 @@ class Scope {
             return instance;
         if (!scope)
             this.register(ModuleClass);
-        return this.instantiate(ModuleClass);
+        return this.initRegisteredModule(ModuleClass);
     }
     getScope(ModuleClass) {
         const moduleName = ModuleClass.name;
@@ -6793,14 +6786,18 @@ class Scope {
             return false;
         return !!this.getScope(ModuleClass);
     }
-    instantiate(ModuleClass, ...args) {
+    initRegisteredModule(ModuleClass, ...args) {
         const moduleName = ModuleClass.name;
-        const instance = this.exec(() => new ModuleClass(...args));
-        instance._scope = this;
-        instance.scope = this;
+        const instance = this.createModule(ModuleClass, ...args);
         this.instances[moduleName] = instance;
         instance.init && instance.init();
         this.afterInit.next({ instance, moduleName, ModuleClass, scopeId: this.id });
+        return instance;
+    }
+    createModule(ModuleClass, ...args) {
+        const instance = this.exec(() => new ModuleClass(...args));
+        instance._scope = this;
+        instance.scope = this;
         return instance;
     }
     exec(cb) {
@@ -6815,11 +6812,10 @@ class Scope {
     }
     registerScope(dependencies, id) {
         const scope = this.createScope({}, id);
+        this.childScopes[scope.id] = scope;
         scope.afterRegister = this.afterRegister;
         scope.afterInit = this.afterInit;
-        if (dependencies)
-            Object.keys(dependencies).forEach(name => scope.register(dependencies[name]));
-        this.childScopes[scope.id] = scope;
+        dependencies && scope.registerMany(dependencies);
         return scope;
     }
     unregisterScope(id) {
@@ -6904,9 +6900,12 @@ class ReactiveStore {
         this.modulesMetadata = {};
         this.isRecordingAccessors = false;
         this.recordedAccessors = {};
+        this.currentContext = {};
     }
     init() {
         Object.keys(this.scope.dependencies).forEach(moduleName => {
+            if (moduleName === 'ReactiveStore')
+                return;
             this.createModuleMetadata(moduleName, this.scope.id);
         });
         this.scope.afterRegister.subscribe(moduleInfo => {
@@ -6914,6 +6913,8 @@ class ReactiveStore {
         });
         this.scope.afterInit.subscribe(moduleInfo => {
             var _a, _b;
+            if (moduleInfo.moduleName === 'ReactiveStore')
+                return;
             const instance = moduleInfo.instance;
             const scopeId = instance.scope.id;
             const metadata = this.getModuleMetadata(moduleInfo.ModuleClass, scopeId) || this.createModuleMetadata(moduleInfo.moduleName, scopeId);
@@ -6990,15 +6991,15 @@ class ReactiveStore {
         const metadata = this.modulesMetadata[moduleName][scopeId];
         return Object.assign(metadata, patch);
     }
-    // registerDependency(ModuleClass: TModuleClass, contextId: string) {
-    //   const scope = this.resolveScope(contextId);
-    //   scope.register(ModuleClass);
-    //   const moduleName = ModuleClass.name;
-    //   this.createModuleMetadata(moduleName, contextId);
-    // }
     getModuleMetadata(ModuleClass, scopeId) {
         const moduleName = ModuleClass.name;
         return this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName][scopeId];
+    }
+    setModuleContext(moduleName, scope) {
+        this.currentContext[moduleName] = scope;
+    }
+    resetModuleContext(moduleName) {
+        delete this.currentContext[moduleName];
     }
     replaceMethodsWithMutations(module, moduleName, contextId) {
         const mutationNames = Object.getPrototypeOf(module).mutations || [];
@@ -7170,7 +7171,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createServiceView = exports.useServiceView = exports.useService = exports.useModule = exports.useSelectFrom = exports.createModuleView = exports.useModuleManager = exports.StoreContext = void 0;
+exports.createServiceView = exports.useServiceView = exports.useModule = exports.useSelectFrom = exports.createModuleView = exports.useModuleManager = exports.StoreContext = void 0;
 const react_1 = __importStar(__webpack_require__(359));
 const hooks_1 = __webpack_require__(886);
 const merge_1 = __webpack_require__(2);
@@ -7220,10 +7221,14 @@ function useModule(ModuleClass, selectorFn = () => ({}), isService = false) {
     return selectResult;
 }
 exports.useModule = useModule;
-function useService(ModuleClass, selectorFn = () => ({})) {
-    return useModule(ModuleClass, selectorFn, true);
-}
-exports.useService = useService;
+// export function useService<
+//   TModule,
+//   TSelectorResult,
+//   TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
+//   >
+// (ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
+//   return useModule(ModuleClass, selectorFn, true);
+// }
 function useServiceView(ModuleClass, selectorFn = () => ({})) {
     const moduleMetadata = (0, useModuleMetadata_1.useModuleMetadata)(ModuleClass, true, createServiceView);
     const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
@@ -7248,6 +7253,7 @@ exports.createServiceView = createServiceView;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.useModuleMetadata = void 0;
+const react_1 = __webpack_require__(359);
 const hooks_1 = __webpack_require__(886);
 const useModule_1 = __webpack_require__(603);
 const store_1 = __webpack_require__(971);
@@ -7255,11 +7261,21 @@ function useModuleMetadata(ModuleClass, isService, createView) {
     const componentId = (0, hooks_1.useComponentId)();
     const moduleManager = (0, useModule_1.useModuleManager)();
     // register the component in the ModuleManager upon component creation
-    const { moduleMetadata, } = (0, hooks_1.useOnCreate)(() => {
+    const { moduleMetadata, scope, isRoot, store, } = (0, hooks_1.useOnCreate)(() => {
         const moduleName = ModuleClass.name;
-        const scope = moduleManager.isRegistered(ModuleClass) ? moduleManager : moduleManager.registerScope({ ModuleClass });
-        const moduleInstance = scope.resolve(ModuleClass);
         const store = moduleManager.resolve(store_1.ReactiveStore);
+        let scope = store.currentContext[moduleName];
+        let isRoot = false;
+        if (!scope) {
+            if (moduleManager.isRegistered(ModuleClass)) {
+                scope = moduleManager;
+            }
+            else {
+                scope = moduleManager.registerScope({ ModuleClass });
+                isRoot = true;
+            }
+        }
+        const moduleInstance = scope.resolve(ModuleClass);
         let moduleMetadata = store.getModuleMetadata(ModuleClass, scope.id);
         if (!moduleMetadata.view) {
             moduleMetadata = store.updateModuleMetadata(moduleName, scope.id, { createView, view: createView(moduleInstance) });
@@ -7267,11 +7283,19 @@ function useModuleMetadata(ModuleClass, isService, createView) {
         // if (!isService) moduleManager.registerComponent(moduleName, contextId, componentId);
         return {
             moduleMetadata,
+            store,
+            isRoot,
+            scope,
         };
     });
+    isRoot && store.setModuleContext(moduleMetadata.moduleName, scope);
+    (0, react_1.useEffect)(() => {
+        isRoot && store.resetModuleContext(moduleMetadata.moduleName);
+    }, []);
     // unregister the component from the module onDestroy
     (0, hooks_1.useOnDestroy)(() => {
-        // if (!isService) moduleManager.unRegisterComponent(moduleMetadata.moduleName, moduleMetadata.contextId, componentId);
+        if (!isRoot)
+            scope.destroy();
     });
     return moduleMetadata;
 }

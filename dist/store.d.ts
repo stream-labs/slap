@@ -1,4 +1,4 @@
-import { TModuleClass } from './scope';
+import { Scope, TModuleClass } from './scope';
 import { IModuleMetadata } from './module-manager';
 export declare class ReactiveStore {
     readonly storeId: string;
@@ -7,7 +7,7 @@ export declare class ReactiveStore {
         storeId: string;
         modules: Record<string, Record<string, any>>;
     };
-    scope: import("./scope").Scope;
+    scope: Scope;
     isMutationRunning: boolean;
     modulesRevisions: Record<string, number>;
     immerState: any;
@@ -23,6 +23,9 @@ export declare class ReactiveStore {
     private createModuleMetadata;
     updateModuleMetadata(moduleName: string, scopeId: string, patch: Partial<IModuleMetadata>): IModuleMetadata & Partial<IModuleMetadata>;
     getModuleMetadata(ModuleClass: TModuleClass, scopeId: string): IModuleMetadata | null;
+    currentContext: Record<string, Scope>;
+    setModuleContext(moduleName: string, scope: Scope): void;
+    resetModuleContext(moduleName: string): void;
     replaceMethodsWithMutations(module: any, moduleName: string, contextId: string): void;
 }
 declare class StoreWatchers {

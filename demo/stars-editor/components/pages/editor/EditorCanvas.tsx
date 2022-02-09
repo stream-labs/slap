@@ -1,7 +1,7 @@
 import React, { CSSProperties } from 'react';
 import { Rnd } from 'react-rnd';
-import { useModule, useServiceView } from '../../../../../lib';
-import { EditorService, EditorView } from '../../../services/editor';
+import { useModule } from '../../../../../lib';
+import { EditorView } from '../../../services/editor';
 
 const wrapperStyle: CSSProperties = {
   height: '100%',
@@ -17,17 +17,6 @@ const canvasStyle: CSSProperties = {
   margin: '0 auto',
   backgroundColor: 'black',
 };
-
-// class EditorCanvasModule extends ReduxModule {
-//   dependencies = { EditorService };
-//
-//   get items() {
-//     return this.deps.EditorService.view.activeScene.items;
-//   }
-//   // state: {
-//   //   items: [1, 2, 3]
-//   // };
-// }
 
 export function EditorCanvas() {
   const { items } = useModule(EditorView, editor => ({
@@ -48,13 +37,6 @@ export function EditorCanvas() {
             enableResizing={false}
             onMouseDown={() => item.selectItem()}
             onDragStop={(e, d) => { item.move({ x: d.x, y: d.y }); }}
-            // onResizeStop={(e, direction, ref, delta, position) => {
-            //   item.update({
-            //     width: parseInt(ref.style.width, 10),
-            //     height: parseInt(ref.style.height, 10),
-            //     ...position,
-            //   });
-            // }}
           >
             {item.id}
           </Rnd>
