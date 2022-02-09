@@ -36,24 +36,29 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
   },
+
   externals: {
-    react: {
-      commonjs: 'react',
-      commonjs2: 'react',
-      amd: 'react',
-      root: 'React',
-    },
-    'react-redux': {
-      commonjs: 'react-redux',
-      commonjs2: 'react-redux',
-      amd: 'react-redux',
-      root: 'ReactRedux',
-    },
-    '@reduxjs/toolkit': {
-      commonjs: '@reduxjs/toolkit',
-      commonjs2: '@reduxjs/toolkit',
-      amd: '@reduxjs/toolkit',
-      root: 'ReduxToolkit',
-    },
+    react: 'react', // Case matters here
+    'react-dom': 'reactDOM', // Case matters here
   },
+  // externals: {
+  //   react: {
+  //     commonjs: 'react',
+  //     commonjs2: 'react',
+  //     amd: 'react',
+  //     root: 'React',
+  //   },
+  // 'react-redux': {
+  //   commonjs: 'react-redux',
+  //   commonjs2: 'react-redux',
+  //   amd: 'react-redux',
+  //   root: 'ReactRedux',
+  // },
+  // '@reduxjs/toolkit': {
+  //   commonjs: '@reduxjs/toolkit',
+  //   commonjs2: '@reduxjs/toolkit',
+  //   amd: '@reduxjs/toolkit',
+  //   root: 'ReduxToolkit',
+  // },
+
 };
