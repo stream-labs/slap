@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useComponentId, useOnCreate, useOnDestroy } from './hooks';
 import { createModuleView, TModuleView, useModuleManager, useSelectFrom } from './useModule';
-import { ReactiveStore } from './store';
+import { Store } from './store';
 import { TMerge } from './merge';
 
 export function useProvider<TModule>
@@ -17,7 +17,7 @@ export function useProvider<TModule>
     store,
   } = useOnCreate(() => {
     const moduleName = ModuleClass.name;
-    const store = moduleManager.resolve(ReactiveStore);
+    const store = moduleManager.resolve(Store);
 
     let scope = store.currentContext[moduleName];
 

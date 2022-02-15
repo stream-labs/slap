@@ -4,7 +4,7 @@ import { RedumbxApp } from '../lib';
 import './index.css';
 import { CounterService, MultiplePersistentCounters } from './counters-app';
 import { createModuleManager } from '../lib/module-manager';
-import { Scope } from '../lib/scope';
+import { Scope } from '../lib/scope/scope';
 
 export function TwoApps(p: { moduleManager: Scope }) {
   return (

@@ -2644,7 +2644,7 @@ exports.RedumbxApp = RedumbxApp;
 function ModuleRoot(p) {
     const moduleManager = (0, useModule_1.useModuleManager)();
     const { moduleName, scope, store } = (0, hooks_1.useOnCreate)(() => {
-        const store = moduleManager.resolve(store_1.ReactiveStore);
+        const store = moduleManager.resolve(store_1.Store);
         const moduleName = p.module.prototype.constructor.name;
         const scope = moduleManager.registerScope({ [moduleName]: p.module });
         return { scope, moduleName, store };
@@ -2817,10 +2817,10 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(603), exports);
+__exportStar(__webpack_require__(521), exports);
 __exportStar(__webpack_require__(971), exports);
 __exportStar(__webpack_require__(10), exports);
 __exportStar(__webpack_require__(585), exports);
-__exportStar(__webpack_require__(284), exports);
 __exportStar(__webpack_require__(599), exports);
 __exportStar(__webpack_require__(834), exports);
 
@@ -2985,15 +2985,15 @@ exports.unwrapState = unwrapState;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.destroyModuleManager = exports.getModuleManager = exports.createModuleManager = void 0;
 const store_1 = __webpack_require__(971);
-const scope_1 = __webpack_require__(284);
+const scope_1 = __webpack_require__(521);
 const moduleManagers = {};
 // TODO: remove
 // (window as any).mm = moduleManagers;
 function createModuleManager(Services = {}) {
     // const moduleManager = new ModuleManager(Services);
-    const moduleManager = new scope_1.Scope(Object.assign(Object.assign({}, Services), { ReactiveStore: store_1.ReactiveStore }));
+    const moduleManager = new scope_1.Scope(Object.assign(Object.assign({}, Services), { Store: store_1.Store }));
     moduleManagers[moduleManager.id] = moduleManager;
-    moduleManager.init(store_1.ReactiveStore);
+    moduleManager.init(store_1.Store);
     return moduleManager;
 }
 exports.createModuleManager = createModuleManager;
@@ -3013,14 +3013,14 @@ exports.destroyModuleManager = destroyModuleManager;
 
 /***/ }),
 
-/***/ 284:
+/***/ 521:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.assertInjectIsAllowed = exports.injectScope = exports.injectState = exports.inject = exports.Scope = void 0;
-const store_1 = __webpack_require__(971);
+exports.assertInjectIsAllowed = exports.injectScope = exports.inject = exports.getCurrentScope = exports.Scope = void 0;
 const nanoevents_1 = __webpack_require__(111);
+const utils_1 = __webpack_require__(986);
 let currentScope = null;
 class Scope {
     constructor(dependencies = {}, parentScope = null) {
@@ -3028,7 +3028,7 @@ class Scope {
         this.childScopes = {};
         this.registry = {};
         this.events = (0, nanoevents_1.createNanoEvents)();
-        const uid = (0, store_1.generateId)();
+        const uid = (0, utils_1.generateId)();
         this.id = parentScope ? `${parentScope.id}__${uid}` : `root_${uid}`;
         if (parentScope)
             this.parent = parentScope;
@@ -3058,7 +3058,6 @@ class Scope {
         };
         this.registry[moduleName] = provider;
         this.events.emit('onModuleRegister', provider);
-        // this.afterRegister.next(provider);
     }
     registerMany(dependencies) {
         Object.keys(dependencies).forEach(depName => this.register(dependencies[depName]));
@@ -3110,8 +3109,6 @@ class Scope {
         const scope = this.createScope({});
         this.childScopes[scope.id] = scope;
         scope.events = this.events;
-        // scope.afterRegister = this.afterRegister;
-        // scope.afterInit = this.afterInit;
         dependencies && scope.registerMany(dependencies);
         return scope;
     }
@@ -3171,10 +3168,6 @@ class Scope {
             parentScope: this.parent ? this.parent.getScheme() : null,
         };
     }
-    //
-    // afterInit = new Subject<TProvider>();
-    //
-    // afterRegister = new Subject<TProvider>();
     removeInstance(moduleClassOrName) {
         const provider = this.resolveProvider(moduleClassOrName);
         if (!provider)
@@ -3191,6 +3184,10 @@ class Scope {
     }
 }
 exports.Scope = Scope;
+function getCurrentScope() {
+    return currentScope;
+}
+exports.getCurrentScope = getCurrentScope;
 function inject(dependencies) {
     assertInjectIsAllowed();
     const scope = currentScope;
@@ -3207,22 +3204,6 @@ function inject(dependencies) {
     return depsProxy;
 }
 exports.inject = inject;
-function injectState(StatefulModule) {
-    assertInjectIsAllowed();
-    const module = currentScope.resolve(StatefulModule);
-    const proxy = { _isStateProxy: true };
-    Object.keys(module.state).forEach(stateKey => {
-        Object.defineProperty(proxy, stateKey, {
-            configurable: true,
-            enumerable: true,
-            get() {
-                return module.state[stateKey];
-            },
-        });
-    });
-    return proxy;
-}
-exports.injectState = injectState;
 function injectScope() {
     assertInjectIsAllowed();
     return currentScope;
@@ -3238,6 +3219,32 @@ exports.assertInjectIsAllowed = assertInjectIsAllowed;
 
 /***/ }),
 
+/***/ 986:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getDefined = exports.assertIsDefined = exports.generateId = void 0;
+let idCounter = 1;
+function generateId() {
+    return (idCounter++).toString();
+}
+exports.generateId = generateId;
+function assertIsDefined(val) {
+    if (val === undefined || val === null) {
+        throw new Error(`Expected 'val' to be defined, but received ${val}`);
+    }
+}
+exports.assertIsDefined = assertIsDefined;
+function getDefined(val) {
+    assertIsDefined(val);
+    return val;
+}
+exports.getDefined = getDefined;
+
+
+/***/ }),
+
 /***/ 971:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -3246,15 +3253,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateId = exports.getDefined = exports.assertIsDefined = exports.mutation = exports.ReactiveStore = void 0;
+exports.injectState = exports.mutation = exports.Store = void 0;
 const immer_1 = __importDefault(__webpack_require__(172));
 const traverseClassInstance_1 = __webpack_require__(820);
-const scope_1 = __webpack_require__(284);
-class ReactiveStore {
-    constructor(storeId) {
-        this.storeId = storeId;
+const scope_1 = __webpack_require__(521);
+const utils_1 = __webpack_require__(986);
+class Store {
+    constructor() {
         this.state = {
-            storeId: this.storeId,
             modules: {},
         };
         this.scope = (0, scope_1.injectScope)();
@@ -3269,7 +3275,7 @@ class ReactiveStore {
     }
     init() {
         Object.keys(this.scope.registry).forEach(moduleName => {
-            if (moduleName === 'ReactiveStore')
+            if (moduleName === 'Store')
                 return;
             this.createModuleMetadata(moduleName, this.scope.id);
         });
@@ -3278,7 +3284,7 @@ class ReactiveStore {
         });
         this.scope.events.on('onModuleInit', moduleInfo => {
             var _a;
-            if (moduleInfo.name === 'ReactiveStore')
+            if (moduleInfo.name === 'Store')
                 return;
             const instance = moduleInfo.instance;
             const scopeId = moduleInfo.scope.id;
@@ -3301,7 +3307,7 @@ class ReactiveStore {
             get: () => {
                 // prevent accessing state on destroyed module
                 if (!store.state.modules[moduleName][contextId]) {
-                    throw new Error('ReduxModule_is_destroyed');
+                    throw new Error('Module_is_destroyed');
                 }
                 if (store.isRecordingAccessors) {
                     const revision = store.modulesRevisions[moduleName + contextId];
@@ -3395,14 +3401,14 @@ class ReactiveStore {
         });
     }
 }
-exports.ReactiveStore = ReactiveStore;
+exports.Store = Store;
 class StoreWatchers {
     constructor() {
         this.watchers = {};
         this.watchersOrder = [];
     }
     create(cb) {
-        const watcherId = generateId();
+        const watcherId = (0, utils_1.generateId)();
         this.watchersOrder.push(watcherId);
         this.watchers[watcherId] = cb;
         return watcherId;
@@ -3444,28 +3450,28 @@ function catchDestroyedModuleCalls(module) {
             }
             catch (e) {
                 // silently stop execution if module is destroyed
-                if (e.message !== 'ReduxModule_is_destroyed')
+                if (e.message !== 'Module_is_destroyed')
                     throw e;
             }
         };
     });
 }
-function assertIsDefined(val) {
-    if (val === undefined || val === null) {
-        throw new Error(`Expected 'val' to be defined, but received ${val}`);
-    }
+function injectState(StatefulModule) {
+    (0, scope_1.assertInjectIsAllowed)();
+    const module = (0, scope_1.getCurrentScope)().resolve(StatefulModule);
+    const proxy = { _isStateProxy: true };
+    Object.keys(module.state).forEach(stateKey => {
+        Object.defineProperty(proxy, stateKey, {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return module.state[stateKey];
+            },
+        });
+    });
+    return proxy;
 }
-exports.assertIsDefined = assertIsDefined;
-function getDefined(val) {
-    assertIsDefined(val);
-    return val;
-}
-exports.getDefined = getDefined;
-let idCounter = 1;
-function generateId() {
-    return (idCounter++).toString();
-}
-exports.generateId = generateId;
+exports.injectState = injectState;
 
 
 /***/ }),
@@ -3618,7 +3624,7 @@ function useProvider(ModuleClass, createView) {
     // register the component in the ModuleManager upon component creation
     const { moduleMetadata, scope, isRoot, store, } = (0, hooks_1.useOnCreate)(() => {
         const moduleName = ModuleClass.name;
-        const store = moduleManager.resolve(store_1.ReactiveStore);
+        const store = moduleManager.resolve(store_1.Store);
         let scope = store.currentContext[moduleName];
         let isRoot = false;
         if (!scope) {
@@ -3680,7 +3686,7 @@ function useSelector(cb) {
     const selectorResultRef = (0, react_1.useRef)({});
     const forceUpdate = (0, hooks_1.useForceUpdate)();
     const moduleManager = (0, useModule_1.useModuleManager)();
-    const store = moduleManager.resolve(store_1.ReactiveStore);
+    const store = moduleManager.resolve(store_1.Store);
     (0, react_1.useEffect)(() => {
         servicesRevisionRef.current = store.runAndSaveAccessors(() => {
             selectorResultRef.current = cb();

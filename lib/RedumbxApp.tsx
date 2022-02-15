@@ -2,13 +2,13 @@ import React, {
   ReactNode, useEffect, useState,
 } from 'react';
 import {
-  ReactiveStore,
-  TModuleConstructorMap,
+  Store,
 } from './store';
 import { useOnCreate, useOnDestroy } from './hooks';
-import { StoreContext, useModule, useModuleManager } from './useModule';
+import { StoreContext, useModuleManager } from './useModule';
 import { createModuleManager, destroyModuleManager } from './module-manager';
-import { Scope } from './scope';
+import { Scope } from './scope/scope';
+import { TModuleConstructorMap } from './scope/interfaces';
 
 export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?: Scope, services?: TModuleConstructorMap}) {
   const [moduleManager] = useState(() => {
@@ -36,7 +36,7 @@ export function ModuleRoot(p: {children: ReactNode | ReactNode[], module: any })
   const moduleManager = useModuleManager();
 
   const { moduleName, scope, store } = useOnCreate(() => {
-    const store = moduleManager.resolve(ReactiveStore);
+    const store = moduleManager.resolve(Store);
     const moduleName = p.module.prototype.constructor.name;
     const scope = moduleManager.registerScope({ [moduleName]: p.module });
     return { scope, moduleName, store };

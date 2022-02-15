@@ -1,5 +1,6 @@
-import { ReactiveStore, TModuleConstructorMap } from './store';
-import { Scope } from './scope';
+import { Store } from './store';
+import { Scope } from './scope/scope';
+import { TModuleConstructorMap } from './scope/interfaces';
 
 const moduleManagers: Record<string, Scope> = {};
 
@@ -8,9 +9,9 @@ const moduleManagers: Record<string, Scope> = {};
 
 export function createModuleManager(Services: TModuleConstructorMap = {}) {
   // const moduleManager = new ModuleManager(Services);
-  const moduleManager = new Scope({ ...Services, ReactiveStore });
+  const moduleManager = new Scope({ ...Services, Store });
   moduleManagers[moduleManager.id] = moduleManager;
-  moduleManager.init(ReactiveStore);
+  moduleManager.init(Store);
   return moduleManager;
 }
 

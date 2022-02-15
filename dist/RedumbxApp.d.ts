@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
-import { TModuleConstructorMap } from './store';
-import { Scope } from './scope';
+import { Scope } from './scope/scope';
+import { TModuleConstructorMap } from './scope/interfaces';
 export declare function RedumbxApp(p: {
     children: ReactNode | ReactNode[];
     moduleManager?: Scope;

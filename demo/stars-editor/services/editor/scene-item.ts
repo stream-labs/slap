@@ -1,6 +1,6 @@
 import { EditorService, EditorView } from './editor';
-import { inject } from '../../../../lib/scope';
 import { ISceneItemState } from '../../interfeaces';
+import { inject } from '../../../../lib';
 
 export class SceneItemState {
   services = inject({ EditorService });

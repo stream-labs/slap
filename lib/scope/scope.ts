@@ -1,27 +1,19 @@
-import {
-  generateId,
-  TInstances,
-  TModuleConstructorMap,
-} from './store';
 import { createNanoEvents } from 'nanoevents';
+import {
+  TInstances, TModuleClass, TModuleConstructorMap, TProvider,
+} from './interfaces';
+import { generateId } from './utils';
 
 let currentScope: Scope | null = null;
 
-export type TProvider = {
-  factory: TModuleClass,
-  instance: InstanceType<TModuleClass>,
-  name: string,
-  initParams: any[],
-  scope: Scope,
-  readonly pluginData: Record<string, any>,
-}
-
-export type TModuleClass = new (...args: any) => any;
-
 export class Scope {
-  public id!: string;
+  id!: string;
 
-  public parent: Scope | null = null;
+  parent: Scope | null = null;
+
+  childScopes: Record<string, Scope> = {};
+
+  registry: Record<string, TProvider> = {};
 
   constructor(
     dependencies: TModuleConstructorMap = {},
@@ -32,10 +24,6 @@ export class Scope {
     if (parentScope) this.parent = parentScope;
     dependencies && this.registerMany(dependencies);
   }
-
-  childScopes: Record<string, Scope> = {};
-
-  registry: Record<string, TProvider> = {};
 
   resolve<T extends TModuleClass>(moduleClassOrName: T | string): InstanceType<T> {
     const provider = this.resolveProvider(moduleClassOrName);
@@ -62,7 +50,6 @@ export class Scope {
     this.registry[moduleName] = provider;
 
     this.events.emit('onModuleRegister', provider);
-    // this.afterRegister.next(provider);
   }
 
   registerMany(dependencies: TModuleConstructorMap) {
@@ -129,8 +116,6 @@ export class Scope {
     const scope = this.createScope({});
     this.childScopes[scope.id] = scope;
     scope.events = this.events;
-    // scope.afterRegister = this.afterRegister;
-    // scope.afterInit = this.afterInit;
     dependencies && scope.registerMany(dependencies);
     return scope;
   }
@@ -193,10 +178,6 @@ export class Scope {
       parentScope: this.parent ? this.parent.getScheme() : null,
     };
   }
-  //
-  // afterInit = new Subject<TProvider>();
-  //
-  // afterRegister = new Subject<TProvider>();
 
   removeInstance(moduleClassOrName: TModuleClass | string) {
     const provider = this.resolveProvider(moduleClassOrName);
@@ -216,10 +197,13 @@ export class Scope {
   events = createNanoEvents<ScopeEvents>();
 }
 
-
 export interface ScopeEvents {
   onModuleInit: (provider: TProvider) => void,
   onModuleRegister: (provider: TProvider) => void
+}
+
+export function getCurrentScope() {
+  return currentScope;
 }
 
 export function inject<T extends TModuleConstructorMap>(dependencies: T): TInstances<T> {
@@ -237,22 +221,6 @@ export function inject<T extends TModuleConstructorMap>(dependencies: T): TInsta
   });
 
   return depsProxy as any as TInstances<T>;
-}
-
-export function injectState<TModuleClass extends new (...args: any) => any>(StatefulModule: TModuleClass): InstanceType<TModuleClass>['state'] {
-  assertInjectIsAllowed();
-  const module = currentScope!.resolve(StatefulModule);
-  const proxy = { _isStateProxy: true };
-  Object.keys(module.state).forEach(stateKey => {
-    Object.defineProperty(proxy, stateKey, {
-      configurable: true,
-      enumerable: true,
-      get() {
-        return module.state[stateKey];
-      },
-    });
-  });
-  return proxy;
 }
 
 export function injectScope(): Scope {

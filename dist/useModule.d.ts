@@ -2,7 +2,7 @@ import React from 'react';
 import { TPromisifyFunctions } from './store';
 import { TMerge, TMerge3 } from './merge';
 export declare const StoreContext: React.Context<string>;
-export declare function useModuleManager(): import("./scope").Scope;
+export declare function useModuleManager(): import(".").Scope;
 export declare type TModuleView<TModule extends Object, TState = TModule extends {
     state?: any;
 } ? TModule['state'] : null> = TMerge<TState, TModule>;

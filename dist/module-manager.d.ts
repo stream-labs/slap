@@ -1,5 +1,5 @@
-import { TModuleConstructorMap } from './store';
-import { Scope } from './scope';
+import { Scope } from './scope/scope';
+import { TModuleConstructorMap } from './scope/interfaces';
 export declare function createModuleManager(Services?: TModuleConstructorMap): Scope;
 /**
  * The ModuleManager is a singleton object accessible in other files

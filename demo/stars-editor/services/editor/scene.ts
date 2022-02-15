@@ -1,7 +1,7 @@
-import { inject, injectScope } from '../../../../lib/scope';
 import { EditorService } from './editor';
 import { SceneItemController, SceneItemView } from './scene-item';
 import { createViewWithActions } from '../../../../lib/createStateView';
+import { inject, injectScope } from '../../../../lib';
 
 export class SceneState {
   services = inject({ EditorService });

@@ -2,14 +2,14 @@ import { useEffect, useRef } from 'react';
 import { useForceUpdate } from './hooks';
 import { isSimilar } from './isDeepEqual';
 import { useModuleManager } from './useModule';
-import { ReactiveStore } from './store';
+import { Store } from './store';
 
 export function useSelector(cb: Function) {
   const servicesRevisionRef = useRef<Record<string, number>>({});
   const selectorResultRef = useRef<Record<string, any>>({});
   const forceUpdate = useForceUpdate();
   const moduleManager = useModuleManager();
-  const store = moduleManager.resolve(ReactiveStore);
+  const store = moduleManager.resolve(Store);
 
   useEffect(() => {
     servicesRevisionRef.current = store.runAndSaveAccessors(() => {

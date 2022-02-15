@@ -1,14 +1,15 @@
 import produce from 'immer';
 import { traverseClassInstance } from './traverseClassInstance';
-import { injectScope, Scope, TModuleClass } from './scope';
 import { IModuleMetadata } from './module-manager';
+import {
+  assertInjectIsAllowed, getCurrentScope, injectScope, Scope,
+} from './scope/scope';
+import { TModuleClass } from './scope/interfaces';
+import { generateId } from './scope/utils';
 
-export class ReactiveStore {
-  constructor(public readonly storeId: string) {
-  }
+export class Store {
 
   state = {
-    storeId: this.storeId,
     modules: {} as Record<string, Record<string, any>>,
   };
 
@@ -26,7 +27,7 @@ export class ReactiveStore {
 
   init() {
     Object.keys(this.scope.registry).forEach(moduleName => {
-      if (moduleName === 'ReactiveStore') return;
+      if (moduleName === 'Store') return;
       this.createModuleMetadata(moduleName, this.scope.id);
     });
 
@@ -35,7 +36,7 @@ export class ReactiveStore {
     });
 
     this.scope.events.on('onModuleInit', moduleInfo => {
-      if (moduleInfo.name === 'ReactiveStore') return;
+      if (moduleInfo.name === 'Store') return;
       const instance = moduleInfo.instance as any;
       const scopeId = moduleInfo.scope.id;
       const metadata = this.getModuleMetadata(moduleInfo.factory, scopeId) || this.createModuleMetadata(moduleInfo.name, scopeId);
@@ -58,7 +59,7 @@ export class ReactiveStore {
       get: () => {
         // prevent accessing state on destroyed module
         if (!store.state.modules[moduleName][contextId]) {
-          throw new Error('ReduxModule_is_destroyed');
+          throw new Error('Module_is_destroyed');
         }
         if (store.isRecordingAccessors) {
           const revision = store.modulesRevisions[moduleName + contextId];
@@ -222,40 +223,11 @@ function catchDestroyedModuleCalls(module: any) {
         return originalMethod.apply(module, args);
       } catch (e: unknown) {
         // silently stop execution if module is destroyed
-        if ((e as any).message !== 'ReduxModule_is_destroyed') throw e;
+        if ((e as any).message !== 'Module_is_destroyed') throw e;
       }
     };
   });
 }
-
-export function assertIsDefined<T>(val: T): asserts val is NonNullable<T> {
-  if (val === undefined || val === null) {
-    throw new Error(`Expected 'val' to be defined, but received ${val}`);
-  }
-}
-
-export function getDefined<T>(val: T): NonNullable<T> {
-  assertIsDefined(val);
-  return val;
-}
-
-let idCounter = 1;
-export function generateId() {
-  return (idCounter++).toString();
-}
-
-export type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
-  [P in keyof T]: InstanceType<T[P]>;
-};
-
-export type GetInjectReturnType<Type> = Type extends new (...args: any) => any
-  ? InstanceType<Type>
-  : Type extends { [key: string]: new (...args: any) => any } ? TInstances<Type> :
-    never;
-export type TInjector = <T>(injectedObject: T) => GetInjectReturnType<T>
-
-export type TModuleConstructor = new (...args: any[]) => any;
-export type TModuleConstructorMap = { [key: string]: TModuleConstructor }
 
 /**
  * Makes all functions return a Promise and sets other types to never
@@ -273,10 +245,18 @@ export type TPromisifyFunction<T> = T extends (...args: infer P) => infer R
     : (...args: P) => Promise<R>
   : T;
 
-type TModuleManagerHooks = {
-  onModuleRegister(context: any): void;
-  onModuleInit(context: any): void;
-  onModuleDestroy(context: any): void;
-  onMutation(context: any): void;
-  onMethod(context: any): void;
+export function injectState<TModuleClass extends new (...args: any) => any>(StatefulModule: TModuleClass): InstanceType<TModuleClass>['state'] {
+  assertInjectIsAllowed();
+  const module = getCurrentScope()!.resolve(StatefulModule);
+  const proxy = { _isStateProxy: true };
+  Object.keys(module.state).forEach(stateKey => {
+    Object.defineProperty(proxy, stateKey, {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return module.state[stateKey];
+      },
+    });
+  });
+  return proxy;
 }
