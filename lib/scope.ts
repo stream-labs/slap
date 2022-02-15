@@ -31,7 +31,6 @@ export class Scope {
     this.id = parentScope ? `${parentScope.id}__${uid}` : `root_${uid}`;
     if (parentScope) this.parent = parentScope;
     dependencies && this.registerMany(dependencies);
-    console.log(`New Scope created ${this.id}`);
   }
 
   childScopes: Record<string, Scope> = {};
@@ -89,7 +88,7 @@ export class Scope {
     TServiceClass extends new (...args: any) => any,
     >(moduleClassOrName: TServiceClass | string, ...args: ConstructorParameters<TModuleClass>): InstanceType<TServiceClass> {
     const provider = this.resolveProvider(moduleClassOrName);
-    if (!provider) throw new Error(`Can not init unregister "${moduleClassOrName}", this module is already inited in the given scope`);
+    if (!provider) throw new Error(`Can not init "${moduleClassOrName}", provider not found`);
 
     if (provider.instance) {
       throw new Error(`The module ${provider.name} is already inited in the given scope`);

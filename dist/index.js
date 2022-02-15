@@ -9139,7 +9139,6 @@ class Scope {
         if (parentScope)
             this.parent = parentScope;
         dependencies && this.registerMany(dependencies);
-        console.log(`New Scope created ${this.id}`);
     }
     resolve(moduleClassOrName) {
         const provider = this.resolveProvider(moduleClassOrName);
@@ -9185,7 +9184,7 @@ class Scope {
     init(moduleClassOrName, ...args) {
         const provider = this.resolveProvider(moduleClassOrName);
         if (!provider)
-            throw new Error(`Can not init unregister "${moduleClassOrName}", this module is already inited in the given scope`);
+            throw new Error(`Can not init "${moduleClassOrName}", provider not found`);
         if (provider.instance) {
             throw new Error(`The module ${provider.name} is already inited in the given scope`);
         }
