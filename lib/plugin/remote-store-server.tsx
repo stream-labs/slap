@@ -1,6 +1,6 @@
 // import { generateId } from '../store';
 //
-// interface IRemoteStoreClient {
+// interface IConnection {
 //   id: string;
 //   send(msg: string): string;
 //   onMessage(cb: (msg: string) => void): void
@@ -11,7 +11,7 @@
 // const responsePrefix = 'RemoteStoreResponse|';
 //
 // export class PostMessageServer {
-//   clients: Record<string, IRemoteStoreClient> = {};
+//   connections: Record<string, IConnection> = {};
 //
 //   listen() {
 //     window.addEventListener('message', (event) => {
@@ -24,20 +24,18 @@
 //
 //       if (msg.startsWith(requestPrefix)) {
 //         this.onRequest(event);
-//         return;
 //       }
-//
 //     }, false);
 //   }
 //
 //   onConnect(event: MessageEvent<any>) {
 //     const clientId = generateId();
-//     const client: IRemoteStoreClient = {
+//     const connection: IConnection = {
 //       id: clientId,
 //       send(msg) {
 //         event.source.postMessage(msg);
-//       }
-//     }
+//       },
+//     };
 //   }
 //
 //   onRequest(event: MessageEvent<any>) {

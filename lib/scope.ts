@@ -1,9 +1,9 @@
-import { Subject } from 'rxjs';
 import {
   generateId,
   TInstances,
   TModuleConstructorMap,
 } from './store';
+import { createNanoEvents } from 'nanoevents';
 
 let currentScope: Scope | null = null;
 
@@ -61,7 +61,8 @@ export class Scope {
 
     this.registry[moduleName] = provider;
 
-    this.afterRegister.next(provider);
+    this.events.emit('onModuleRegister', provider);
+    // this.afterRegister.next(provider);
   }
 
   registerMany(dependencies: TModuleConstructorMap) {
@@ -98,7 +99,8 @@ export class Scope {
     provider.instance = instance;
     provider.initParams = args;
 
-    this.afterInit.next(provider);
+    // this.afterInit.next(provider);
+    this.events.emit('onModuleInit', provider);
     return instance;
   }
 
@@ -126,8 +128,9 @@ export class Scope {
   registerScope(dependencies?: TModuleConstructorMap) {
     const scope = this.createScope({});
     this.childScopes[scope.id] = scope;
-    scope.afterRegister = this.afterRegister;
-    scope.afterInit = this.afterInit;
+    scope.events = this.events;
+    // scope.afterRegister = this.afterRegister;
+    // scope.afterInit = this.afterInit;
     dependencies && scope.registerMany(dependencies);
     return scope;
   }
@@ -161,8 +164,9 @@ export class Scope {
 
     // unsubscribe events
     if (!this.parent) {
-      this.afterInit.unsubscribe();
-      this.afterRegister.unsubscribe();
+      // this.afterInit.unsubscribe();
+      // this.afterRegister.unsubscribe();
+      this.events.events = {};
     }
   }
 
@@ -189,10 +193,10 @@ export class Scope {
       parentScope: this.parent ? this.parent.getScheme() : null,
     };
   }
-
-  afterInit = new Subject<TProvider>();
-
-  afterRegister = new Subject<TProvider>();
+  //
+  // afterInit = new Subject<TProvider>();
+  //
+  // afterRegister = new Subject<TProvider>();
 
   removeInstance(moduleClassOrName: TModuleClass | string) {
     const provider = this.resolveProvider(moduleClassOrName);
@@ -208,6 +212,14 @@ export class Scope {
   get isRoot() {
     return !!this.parent;
   }
+
+  events = createNanoEvents<ScopeEvents>();
+}
+
+
+export interface ScopeEvents {
+  onModuleInit: (provider: TProvider) => void,
+  onModuleRegister: (provider: TProvider) => void
 }
 
 export function inject<T extends TModuleConstructorMap>(dependencies: T): TInstances<T> {

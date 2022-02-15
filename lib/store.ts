@@ -30,11 +30,11 @@ export class ReactiveStore {
       this.createModuleMetadata(moduleName, this.scope.id);
     });
 
-    this.scope.afterRegister.subscribe(moduleInfo => {
+    this.scope.events.on('onModuleRegister', moduleInfo => {
       this.createModuleMetadata(moduleInfo.name, this.scope.id);
     });
 
-    this.scope.afterInit.subscribe(moduleInfo => {
+    this.scope.events.on('onModuleInit', moduleInfo => {
       if (moduleInfo.name === 'ReactiveStore') return;
       const instance = moduleInfo.instance as any;
       const scopeId = moduleInfo.scope.id;

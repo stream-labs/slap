@@ -1,4 +1,3 @@
-import { Subject } from 'rxjs';
 import { TInstances, TModuleConstructorMap } from './store';
 export declare type TProvider = {
     factory: TModuleClass;
@@ -35,10 +34,13 @@ export declare class Scope {
     resolveProvider(moduleClasOrName: TModuleClass | string): TProvider | null;
     setPluginData(moduleClasOrName: TModuleClass | string, pluginName: string, data: any): void;
     getScheme(): any;
-    afterInit: Subject<TProvider>;
-    afterRegister: Subject<TProvider>;
     removeInstance(moduleClassOrName: TModuleClass | string): void;
     get isRoot(): boolean;
+    events: import("nanoevents").Emitter<ScopeEvents>;
+}
+export interface ScopeEvents {
+    onModuleInit: (provider: TProvider) => void;
+    onModuleRegister: (provider: TProvider) => void;
 }
 export declare function inject<T extends TModuleConstructorMap>(dependencies: T): TInstances<T>;
 export declare function injectState<TModuleClass extends new (...args: any) => any>(StatefulModule: TModuleClass): InstanceType<TModuleClass>['state'];
