@@ -3,8 +3,8 @@ import { useComponentId, useOnCreate, useOnDestroy } from './hooks';
 import { useModuleManager } from './useModule';
 import { ReactiveStore } from './store';
 
-export function useModuleMetadata<TModule>
-(ModuleClass: new(...args: any[]) => TModule, isService: boolean, createView: (module: TModule) => any) {
+export function useProvider<TModule>
+(ModuleClass: new(...args: any[]) => TModule, createView: (module: TModule) => any) {
   const componentId = useComponentId();
   const moduleManager = useModuleManager();
 
@@ -37,8 +37,6 @@ export function useModuleMetadata<TModule>
       moduleMetadata = store.updateModuleMetadata(moduleName, scope.id, { createView, view: createView(moduleInstance) });
     }
 
-    // if (!isService) moduleManager.registerComponent(moduleName, contextId, componentId);
-
     return {
       moduleMetadata,
       store,
@@ -58,4 +56,9 @@ export function useModuleMetadata<TModule>
   });
 
   return moduleMetadata;
+}
+
+export function useNonReactiveModule<TModule>(ModuleClass: new(...args: any[]) => TModule, createView: (module: TModule) => any) {
+  const metadata = useProvider(ModuleClass, createView);
+  return metadata.instance;
 }

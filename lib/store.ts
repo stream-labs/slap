@@ -256,7 +256,7 @@ export type GetInjectReturnType<Type> = Type extends new (...args: any) => any
     never;
 export type TInjector = <T>(injectedObject: T) => GetInjectReturnType<T>
 
-export type TModuleConstructor = new (...args: any) => any;
+export type TModuleConstructor = new (...args: any[]) => any;
 export type TModuleConstructorMap = { [key: string]: TModuleConstructor }
 
 /**

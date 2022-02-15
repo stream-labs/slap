@@ -51,7 +51,7 @@ export declare type GetInjectReturnType<Type> = Type extends new (...args: any) 
     [key: string]: new (...args: any) => any;
 } ? TInstances<Type> : never;
 export declare type TInjector = <T>(injectedObject: T) => GetInjectReturnType<T>;
-export declare type TModuleConstructor = new (...args: any) => any;
+export declare type TModuleConstructor = new (...args: any[]) => any;
 export declare type TModuleConstructorMap = {
     [key: string]: TModuleConstructor;
 };

@@ -4,3 +4,4 @@ export * from './module-manager';
 export * from './RedumbxApp';
 export * from './scope';
 export * from './useSelector';
+export * from './useProvider';

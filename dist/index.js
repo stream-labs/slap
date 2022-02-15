@@ -8928,6 +8928,7 @@ __exportStar(__webpack_require__(10), exports);
 __exportStar(__webpack_require__(585), exports);
 __exportStar(__webpack_require__(284), exports);
 __exportStar(__webpack_require__(599), exports);
+__exportStar(__webpack_require__(834), exports);
 
 
 /***/ }),
@@ -9640,7 +9641,7 @@ const hooks_1 = __webpack_require__(886);
 const merge_1 = __webpack_require__(2);
 const lockThis_1 = __webpack_require__(924);
 const useSelector_1 = __webpack_require__(599);
-const useModuleMetadata_1 = __webpack_require__(871);
+const useProvider_1 = __webpack_require__(834);
 const module_manager_1 = __webpack_require__(10);
 const dependency_watcher_1 = __webpack_require__(407);
 exports.StoreContext = react_1.default.createContext('1');
@@ -9679,21 +9680,13 @@ function useSelectFrom(module, extend) {
 }
 exports.useSelectFrom = useSelectFrom;
 function useModule(ModuleClass, selectorFn = () => ({}), isService = false) {
-    const moduleMetadata = (0, useModuleMetadata_1.useModuleMetadata)(ModuleClass, isService, createModuleView);
+    const moduleMetadata = (0, useProvider_1.useProvider)(ModuleClass, createModuleView);
     const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
     return selectResult;
 }
 exports.useModule = useModule;
-// export function useService<
-//   TModule,
-//   TSelectorResult,
-//   TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
-//   >
-// (ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
-//   return useModule(ModuleClass, selectorFn, true);
-// }
 function useServiceView(ModuleClass, selectorFn = () => ({})) {
-    const moduleMetadata = (0, useModuleMetadata_1.useModuleMetadata)(ModuleClass, true, createServiceView);
+    const moduleMetadata = (0, useProvider_1.useProvider)(ModuleClass, createServiceView);
     const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
     return selectResult;
 }
@@ -9710,17 +9703,17 @@ exports.createServiceView = createServiceView;
 
 /***/ }),
 
-/***/ 871:
+/***/ 834:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useModuleMetadata = void 0;
+exports.useNonReactiveModule = exports.useProvider = void 0;
 const react_1 = __webpack_require__(156);
 const hooks_1 = __webpack_require__(886);
 const useModule_1 = __webpack_require__(603);
 const store_1 = __webpack_require__(971);
-function useModuleMetadata(ModuleClass, isService, createView) {
+function useProvider(ModuleClass, createView) {
     const componentId = (0, hooks_1.useComponentId)();
     const moduleManager = (0, useModule_1.useModuleManager)();
     // register the component in the ModuleManager upon component creation
@@ -9743,7 +9736,6 @@ function useModuleMetadata(ModuleClass, isService, createView) {
         if (!moduleMetadata.view) {
             moduleMetadata = store.updateModuleMetadata(moduleName, scope.id, { createView, view: createView(moduleInstance) });
         }
-        // if (!isService) moduleManager.registerComponent(moduleName, contextId, componentId);
         return {
             moduleMetadata,
             store,
@@ -9762,7 +9754,12 @@ function useModuleMetadata(ModuleClass, isService, createView) {
     });
     return moduleMetadata;
 }
-exports.useModuleMetadata = useModuleMetadata;
+exports.useProvider = useProvider;
+function useNonReactiveModule(ModuleClass, createView) {
+    const metadata = useProvider(ModuleClass, createView);
+    return metadata.instance;
+}
+exports.useNonReactiveModule = useNonReactiveModule;
 
 
 /***/ }),

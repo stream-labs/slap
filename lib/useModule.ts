@@ -10,7 +10,7 @@ import {
 import { merge, TMerge, TMerge3 } from './merge';
 import { lockThis } from './lockThis';
 import { useSelector } from './useSelector';
-import { useModuleMetadata } from './useModuleMetadata';
+import { useProvider } from './useProvider';
 import { getModuleManager } from './module-manager';
 import { createDependencyWatcher } from './dependency-watcher';
 
@@ -63,19 +63,10 @@ export function useModule<
   TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
   >
 (ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult), isService = false): TResult {
-  const moduleMetadata = useModuleMetadata(ModuleClass, isService, createModuleView);
+  const moduleMetadata = useProvider(ModuleClass, createModuleView);
   const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
   return selectResult as TResult;
 }
-
-// export function useService<
-//   TModule,
-//   TSelectorResult,
-//   TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
-//   >
-// (ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
-//   return useModule(ModuleClass, selectorFn, true);
-// }
 
 export function useServiceView<
   TService,
@@ -83,7 +74,7 @@ export function useServiceView<
   TResult extends TMerge<TServiceView<TService>, TSelectorResult>
   >
 (ModuleClass: new(...args: any[]) => TService, selectorFn: (view: TServiceView<TService>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
-  const moduleMetadata = useModuleMetadata(ModuleClass, true, createServiceView);
+  const moduleMetadata = useProvider(ModuleClass, createServiceView);
   const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
   return selectResult as TResult;
 }
