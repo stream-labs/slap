@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useComponentId, useOnCreate, useOnDestroy } from './hooks';
-import { useModuleManager } from './useModule';
+import { createModuleView, TModuleView, useModuleManager, useSelectFrom } from './useModule';
 import { ReactiveStore } from './store';
+import { TMerge } from './merge';
 
 export function useProvider<TModule>
 (ModuleClass: new(...args: any[]) => TModule, createView: (module: TModule) => any) {
@@ -58,7 +59,13 @@ export function useProvider<TModule>
   return moduleMetadata;
 }
 
-export function useNonReactiveModule<TModule>(ModuleClass: new(...args: any[]) => TModule, createView: (module: TModule) => any) {
-  const metadata = useProvider(ModuleClass, createView);
-  return metadata.instance;
+export function useNonReactiveModule<
+  TModule,
+  TSelectorResult,
+  TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
+  >
+(ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
+  const moduleMetadata = useProvider(ModuleClass, createModuleView);
+  const result = moduleMetadata.view as TResult;
+  return result;
 }

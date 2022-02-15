@@ -8,7 +8,7 @@ export declare type TModuleView<TModule extends Object, TState = TModule extends
 } ? TModule['state'] : null> = TMerge<TState, TModule>;
 export declare function createModuleView<TModule>(module: TModule): TModuleView<TModule>;
 export declare function useSelectFrom<TModuleView extends Object, TExtendedView, TReturnType = TMerge<TModuleView, TExtendedView>>(module: TModuleView, extend?: (module: TModuleView) => TExtendedView): TReturnType;
-export declare function useModule<TModule, TSelectorResult, TResult extends TMerge<TModuleView<TModule>, TSelectorResult>>(ModuleClass: new (...args: any[]) => TModule, selectorFn?: (view: TModuleView<TModule>) => TSelectorResult, isService?: boolean): TResult;
+export declare function useModule<TModule, TSelectorResult, TResult extends TMerge<TModuleView<TModule>, TSelectorResult>>(ModuleClass: new (...args: any[]) => TModule, selectorFn?: (view: TModuleView<TModule>) => TSelectorResult): TResult;
 export declare function useServiceView<TService, TSelectorResult, TResult extends TMerge<TServiceView<TService>, TSelectorResult>>(ModuleClass: new (...args: any[]) => TService, selectorFn?: (view: TServiceView<TService>) => TSelectorResult): TResult;
 export declare function createServiceView<TService>(service: TService): Omit<(TService extends {
     state?: any;

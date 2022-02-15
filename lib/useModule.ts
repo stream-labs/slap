@@ -62,7 +62,7 @@ export function useModule<
   TSelectorResult,
   TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
   >
-(ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult), isService = false): TResult {
+(ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
   const moduleMetadata = useProvider(ModuleClass, createModuleView);
   const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
   return selectResult as TResult;

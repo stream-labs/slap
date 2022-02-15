@@ -9679,7 +9679,7 @@ function useSelectFrom(module, extend) {
     return dependencyWatcher.watcherProxy;
 }
 exports.useSelectFrom = useSelectFrom;
-function useModule(ModuleClass, selectorFn = () => ({}), isService = false) {
+function useModule(ModuleClass, selectorFn = () => ({})) {
     const moduleMetadata = (0, useProvider_1.useProvider)(ModuleClass, createModuleView);
     const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
     return selectResult;
@@ -9755,9 +9755,10 @@ function useProvider(ModuleClass, createView) {
     return moduleMetadata;
 }
 exports.useProvider = useProvider;
-function useNonReactiveModule(ModuleClass, createView) {
-    const metadata = useProvider(ModuleClass, createView);
-    return metadata.instance;
+function useNonReactiveModule(ModuleClass, selectorFn = () => ({})) {
+    const moduleMetadata = useProvider(ModuleClass, useModule_1.createModuleView);
+    const result = moduleMetadata.view;
+    return result;
 }
 exports.useNonReactiveModule = useNonReactiveModule;
 
