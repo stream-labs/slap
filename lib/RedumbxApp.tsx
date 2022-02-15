@@ -4,9 +4,8 @@ import React, {
 import {
   Store,
 } from './store';
-import { useOnCreate, useOnDestroy } from './hooks';
+import { useOnCreate } from './hooks';
 import { StoreContext, useModuleManager } from './useModule';
-import { createModuleManager, destroyModuleManager } from './module-manager';
 import { Scope } from './scope/scope';
 import { TModuleConstructorMap } from './scope/interfaces';
 
@@ -18,11 +17,7 @@ export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?
       if (services) moduleManager.registerMany(services);
       return moduleManager;
     }
-    return services ? createModuleManager(services) : createModuleManager();
-  });
-
-  useOnDestroy(() => {
-    destroyModuleManager(moduleManager.id);
+    return services ? new Scope(services) : new Scope();
   });
 
   return (

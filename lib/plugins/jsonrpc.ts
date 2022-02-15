@@ -76,21 +76,22 @@ export function createError(
   };
 }
 
-export function createRequest(resourceId: string, method: string, ...args: any[]): IJsonRpcRequest {
+export function createRequest(resourceId: string, method: string, token: string, ...args: any[]): IJsonRpcRequest {
   return {
     method,
     jsonrpc: '2.0',
     id: uuid(),
     params: {
+      token,
       args,
       resource: resourceId,
     },
   };
 }
 
-function createResponse<TResult>(
+export function createResponse<TResult>(
   requestOrRequestId: string | IJsonRpcRequest,
-  result: TResult = null,
+  result: TResult | null = null,
 ): IJsonRpcResponse<TResult> {
   /* eslint-disable */
   const id =
@@ -107,14 +108,41 @@ export function createEvent(options: {
   data: any;
   isRejected?: boolean;
 }): IJsonRpcResponse<IJsonRpcEvent> {
+  // @ts-ignore
   return createResponse<IJsonRpcEvent>(null, {
     _type: 'EVENT',
     ...options,
   });
 }
 
-export function parseJSONRPC(msg: string) {
+export function createRequestWithOptions(
+  resourceId: string,
+  method: string,
+  options: {
+    token: string;
+    compactMode: boolean;
+    // fetchMutations: boolean;
+    // noReturn?: boolean;
+    // windowId?: string;
+  },
+  ...args: any[]
+): IJsonRpcRequest {
+  const request = createRequest(resourceId, method, options.token, ...args);
+  request.params = { ...request.params, ...options };
+  return request;
+}
+
+export function parseRPCRequest(msg: string) {
   const json = JSON.parse(msg);
-  if (!json.id || !json.jsonrpc || !json.params.resource) throw new Error('Invalid JSONRPC');
+  if (!json.id || !json.jsonrpc || !json.params?.resource) throw new Error('Invalid JSONRPC request');
   return json;
+}
+
+export function parseRPCResponse(msg: string) {
+  try {
+    const json = JSON.parse(msg);
+    return json;
+  } catch (e) {
+    throw new Error(`Invalid JSONRPC response: ${msg}`);
+  }
 }

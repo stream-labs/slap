@@ -2,13 +2,11 @@ import produce from 'immer';
 import { traverseClassInstance } from './traverseClassInstance';
 import { IModuleMetadata } from './module-manager';
 import {
-  assertInjectIsAllowed, getCurrentScope, injectScope, Scope,
-} from './scope/scope';
-import { TModuleClass } from './scope/interfaces';
-import { generateId } from './scope/utils';
+  assertInjectIsAllowed, getCurrentScope, injectScope, Scope, TModuleClass,
+  generateId, Subject,
+} from './scope';
 
 export class Store {
-
   state = {
     modules: {} as Record<string, Record<string, any>>,
   };
@@ -49,8 +47,8 @@ export class Store {
     });
   }
 
-  initModule(module: any, moduleName: string, contextId: string) {
-    if (!this.state.modules[moduleName]) this.state.modules[moduleName] = {};
+  initModule(module: any, moduleName: string, contextId: string, state?: any) {
+    this.state.modules[moduleName] = state || {};
     this.state.modules[moduleName][contextId] = module.state;
     this.modulesRevisions[moduleName + contextId] = 1;
     const store = this;
@@ -81,6 +79,23 @@ export class Store {
     if (!Object.keys(this.state.modules[moduleName])) {
       delete this.state.modules[moduleName];
     }
+  }
+
+  setBulkState(bulkState: Record<string, any>) {
+    const scopeId = this.scope.id;
+    Object.keys(bulkState).forEach(moduleName => {
+      const module = this.scope.resolve(moduleName);
+      this.initModule(module, moduleName, scopeId, bulkState[moduleName]);
+    });
+  }
+
+  getBulkState() {
+    const state: Record<string, any> = {};
+    const scopeId = this.scope.id;
+    Object.keys(this.state.modules).forEach(moduleName => {
+      state[moduleName] = this.state.modules[moduleName][scopeId];
+    });
+    return state;
   }
 
   mutateModule(moduleName: string, contextId: string, mutation: Function) {
@@ -167,10 +182,36 @@ export class Store {
         store.immerState = null;
         store.state.modules[moduleName][contextId] = nextState;
         store.isMutationRunning = false;
+        // store.onMutation.next({ id: Number(generateId()), type: `${moduleName}.${mutationName}`, payload: args });
         store.watchers.run();
       };
     });
   }
+
+  //   mutate(mutation: Mutation, scopeId: string) {
+  //     const [moduleName, methodName ] = mutation.type.split('.')[0];
+  //     // prevent accessing state on deleted module
+  //     if (!this.state.modules[moduleName][scopeId]) {
+  //       throw new Error('Module_is_destroyed');
+  //     }
+  //
+  //     const store = this;
+  //
+  //     const nextState = produce(module.state, (draftState: any) => {
+  //       store.isMutationRunning = true;
+  //       store.immerState = draftState;
+  //       console.log('run mutation', moduleName, methodName);
+  //       originalMethod.apply(module, args);
+  //       store.modulesRevisions[moduleName + contextId]++;
+  //     });
+  //     store.immerState = null;
+  //     store.state.modules[moduleName][contextId] = nextState;
+  //     store.isMutationRunning = false;
+  //     store.onMutation.next({ id: Number(generateId()), type: `${moduleName}.${mutationName}`, payload: args });
+  //     store.watchers.run();
+  //   }
+  //
+  onMutation = new Subject<Mutation>();
 }
 
 class StoreWatchers {
@@ -259,4 +300,10 @@ export function injectState<TModuleClass extends new (...args: any) => any>(Stat
     });
   });
   return proxy;
+}
+
+export interface Mutation {
+  id: number;
+  type: string;
+  payload: any;
 }

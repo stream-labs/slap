@@ -1,7 +1,7 @@
 /**
  * Travers class methods and props
  */
-import { isPlainObject } from '@reduxjs/toolkit';
+import { isPlainObject } from 'is-plain-object';
 
 export function traverseClassInstance<T extends object>(
   instance: T,
