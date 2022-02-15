@@ -40,13 +40,11 @@ export class ReactiveStore {
       const scopeId = moduleInfo.scope.id;
       const metadata = this.getModuleMetadata(moduleInfo.factory, scopeId) || this.createModuleMetadata(moduleInfo.name, scopeId);
       metadata.instance = instance;
-      const stateDescriptor = typeof Object.getOwnPropertyDescriptor(instance, 'state')?.get;
-      const isStatefull = stateDescriptor && typeof stateDescriptor !== 'function' && !instance.state?._isStateProxy;
+      const stateDescriptor = Object.getOwnPropertyDescriptor(instance, 'state');
+      const isStatefull = stateDescriptor && !stateDescriptor.get && !instance.state?._isStateProxy;
       if (!isStatefull) return;
 
-      console.log('start init store for ', moduleInfo.name, 'in scope', scopeId);
       this.initModule(instance, metadata.moduleName, scopeId);
-      console.log('finish init state for ', moduleInfo.name, 'in scope', scopeId);
     });
   }
 

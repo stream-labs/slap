@@ -9376,20 +9376,18 @@ class ReactiveStore {
             this.createModuleMetadata(moduleInfo.name, this.scope.id);
         });
         this.scope.afterInit.subscribe(moduleInfo => {
-            var _a, _b;
+            var _a;
             if (moduleInfo.name === 'ReactiveStore')
                 return;
             const instance = moduleInfo.instance;
             const scopeId = moduleInfo.scope.id;
             const metadata = this.getModuleMetadata(moduleInfo.factory, scopeId) || this.createModuleMetadata(moduleInfo.name, scopeId);
             metadata.instance = instance;
-            const stateDescriptor = typeof ((_a = Object.getOwnPropertyDescriptor(instance, 'state')) === null || _a === void 0 ? void 0 : _a.get);
-            const isStatefull = stateDescriptor && typeof stateDescriptor !== 'function' && !((_b = instance.state) === null || _b === void 0 ? void 0 : _b._isStateProxy);
+            const stateDescriptor = Object.getOwnPropertyDescriptor(instance, 'state');
+            const isStatefull = stateDescriptor && !stateDescriptor.get && !((_a = instance.state) === null || _a === void 0 ? void 0 : _a._isStateProxy);
             if (!isStatefull)
                 return;
-            console.log('start init store for ', moduleInfo.name, 'in scope', scopeId);
             this.initModule(instance, metadata.moduleName, scopeId);
-            console.log('finish init state for ', moduleInfo.name, 'in scope', scopeId);
         });
     }
     initModule(module, moduleName, contextId) {

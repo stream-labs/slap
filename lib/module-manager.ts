@@ -28,7 +28,7 @@ export function destroyModuleManager(appId: string) {
 
 export interface IModuleMetadata {
   moduleName: string;
-  scopeId: string; // TODO: rename to scopeId
+  scopeId: string;
   instance: any;
   createView: any;
   view: any;
