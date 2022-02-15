@@ -10,9 +10,8 @@ export declare type TProvider = {
 };
 export declare type TModuleClass = new (...args: any) => any;
 export declare class Scope {
-    dependencies: TModuleConstructorMap;
-    readonly parentScope: Scope | null;
     id: string;
+    parent: Scope | null;
     constructor(dependencies?: TModuleConstructorMap, parentScope?: Scope | null);
     childScopes: Record<string, Scope>;
     registry: Record<string, TProvider>;
@@ -27,7 +26,7 @@ export declare class Scope {
      */
     init<TServiceClass extends new (...args: any) => any>(moduleClassOrName: TServiceClass | string, ...args: ConstructorParameters<TModuleClass>): InstanceType<TServiceClass>;
     create<TServiceClass extends new (...args: any) => any>(ModuleClass: TServiceClass, ...args: ConstructorParameters<TModuleClass>): InstanceType<TServiceClass>;
-    exec(cb: Function): any;
+    private exec;
     createScope(dependencies?: TModuleConstructorMap): Scope;
     registerScope(dependencies?: TModuleConstructorMap): Scope;
     unregisterScope(scopeId: string): void;
@@ -39,6 +38,7 @@ export declare class Scope {
     afterInit: Subject<TProvider>;
     afterRegister: Subject<TProvider>;
     removeInstance(moduleClassOrName: TModuleClass | string): void;
+    get isRoot(): boolean;
 }
 export declare function inject<T extends TModuleConstructorMap>(dependencies: T): TInstances<T>;
 export declare function injectState<TModuleClass extends new (...args: any) => any>(StatefulModule: TModuleClass): InstanceType<TModuleClass>['state'];

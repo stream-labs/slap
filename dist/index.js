@@ -9098,7 +9098,7 @@ function createModuleManager(Services = {}) {
     // const moduleManager = new ModuleManager(Services);
     const moduleManager = new scope_1.Scope(Object.assign(Object.assign({}, Services), { ReactiveStore: store_1.ReactiveStore }));
     moduleManagers[moduleManager.id] = moduleManager;
-    moduleManager.resolve(store_1.ReactiveStore);
+    moduleManager.init(store_1.ReactiveStore);
     return moduleManager;
 }
 exports.createModuleManager = createModuleManager;
@@ -9129,27 +9129,29 @@ const store_1 = __webpack_require__(971);
 let currentScope = null;
 class Scope {
     constructor(dependencies = {}, parentScope = null) {
-        this.dependencies = dependencies;
-        this.parentScope = parentScope;
+        this.parent = null;
         this.childScopes = {};
         this.registry = {};
         this.afterInit = new rxjs_1.Subject();
         this.afterRegister = new rxjs_1.Subject();
-        this.id = parentScope ? `${parentScope.id}__${(0, store_1.generateId)()}` : 'root';
+        const uid = (0, store_1.generateId)();
+        this.id = parentScope ? `${parentScope.id}__${uid}` : `root_${uid}`;
+        if (parentScope)
+            this.parent = parentScope;
+        dependencies && this.registerMany(dependencies);
         console.log(`New Scope created ${this.id}`);
     }
     resolve(moduleClassOrName) {
         const provider = this.resolveProvider(moduleClassOrName);
         if (!provider)
             throw Error(`Provider not found for ${moduleClassOrName}`);
-        if (!provider.instance)
+        if (provider.instance)
             return provider.instance;
         return this.init(moduleClassOrName);
     }
     register(ModuleClass, name) {
         const moduleName = name || ModuleClass.name;
-        console.log(`Start module registration: ${moduleName}`);
-        if (this.dependencies[moduleName]) {
+        if (this.registry[moduleName]) {
             throw new Error(`${moduleName} already registered in the given Scope`);
         }
         const provider = {
@@ -9163,7 +9165,6 @@ class Scope {
         };
         this.registry[moduleName] = provider;
         this.afterRegister.next(provider);
-        console.log(`Finish module registration: ${moduleName}`);
     }
     registerMany(dependencies) {
         Object.keys(dependencies).forEach(depName => this.register(dependencies[depName]));
@@ -9182,7 +9183,6 @@ class Scope {
      * Instantiate a registered module
      */
     init(moduleClassOrName, ...args) {
-        console.log(`Start module init: ${moduleClassOrName}`);
         const provider = this.resolveProvider(moduleClassOrName);
         if (!provider)
             throw new Error(`Can not init unregister "${moduleClassOrName}", this module is already inited in the given scope`);
@@ -9193,7 +9193,6 @@ class Scope {
         provider.instance = instance;
         provider.initParams = args;
         this.afterInit.next(provider);
-        console.log(`Finish module init: ${provider.name}`);
         return instance;
     }
     create(ModuleClass, ...args) {
@@ -9228,9 +9227,9 @@ class Scope {
         delete this.childScopes[scopeId];
     }
     getRootScope() {
-        if (!this.parentScope)
+        if (!this.parent)
             return this;
-        return this.parentScope.getRootScope();
+        return this.parent.getRootScope();
     }
     destroy() {
         // destroy child scopes
@@ -9247,7 +9246,7 @@ class Scope {
             provider.initParams = [];
         });
         // unsubscribe events
-        if (!this.parentScope) {
+        if (!this.parent) {
             this.afterInit.unsubscribe();
             this.afterRegister.unsubscribe();
         }
@@ -9257,9 +9256,9 @@ class Scope {
         const metadata = this.registry[moduleName];
         if (metadata)
             return metadata;
-        if (!this.parentScope)
+        if (!this.parent)
             return null;
-        return this.parentScope.resolveProvider(moduleName);
+        return this.parent.resolveProvider(moduleName);
     }
     setPluginData(moduleClasOrName, pluginName, data) {
         const provider = this.resolveProvider(moduleClasOrName);
@@ -9272,7 +9271,7 @@ class Scope {
         return {
             id: this.id,
             registry: this.registry,
-            parentScope: this.parentScope ? this.parentScope.getScheme() : null,
+            parentScope: this.parent ? this.parent.getScheme() : null,
         };
     }
     removeInstance(moduleClassOrName) {
@@ -9285,6 +9284,9 @@ class Scope {
         instance.destroy && instance.destroy();
         delete provider.instance;
         provider.initParams = [];
+    }
+    get isRoot() {
+        return !!this.parent;
     }
 }
 exports.Scope = Scope;
@@ -9365,7 +9367,7 @@ class ReactiveStore {
         this.currentContext = {};
     }
     init() {
-        Object.keys(this.scope.dependencies).forEach(moduleName => {
+        Object.keys(this.scope.registry).forEach(moduleName => {
             if (moduleName === 'ReactiveStore')
                 return;
             this.createModuleMetadata(moduleName, this.scope.id);
@@ -9756,7 +9758,7 @@ function useModuleMetadata(ModuleClass, isService, createView) {
     }, []);
     // unregister the component from the module onDestroy
     (0, hooks_1.useOnDestroy)(() => {
-        if (!isRoot)
+        if (isRoot)
             scope.destroy();
     });
     return moduleMetadata;
