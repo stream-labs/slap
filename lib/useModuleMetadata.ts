@@ -54,7 +54,7 @@ export function useModuleMetadata<TModule>
 
   // unregister the component from the module onDestroy
   useOnDestroy(() => {
-    if (!isRoot) scope.destroy();
+    if (isRoot) scope.destroy();
   });
 
   return moduleMetadata;

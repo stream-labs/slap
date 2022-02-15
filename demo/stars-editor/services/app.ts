@@ -14,7 +14,7 @@ export class AppService {
     EditorService,
   });
 
-  start() {
+  init() {
     this.services.EditorService.load();
   }
 

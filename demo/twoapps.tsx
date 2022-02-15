@@ -28,3 +28,26 @@ function main() {
 
 main();
 
+
+// export function TwoApps() {
+//   return (
+//     <>
+//       <RedumbxApp>
+//         <MultiplePersistentCounters />
+//       </RedumbxApp>
+//       <RedumbxApp>
+//         <MultiplePersistentCounters />
+//       </RedumbxApp>
+//     </>
+//   );
+// }
+//
+// function main() {
+//   // const moduleManager = createModuleManager({ CounterService });
+//   // const counterService = moduleManager.resolve(CounterService);
+//   // counterService.increment();
+//   ReactDOM.render(<TwoApps />, document.getElementById('app'));
+// }
+//
+// main();
+

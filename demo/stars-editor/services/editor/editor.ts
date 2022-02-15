@@ -40,7 +40,7 @@ export class EditorService extends EditorState {
   }
 
   getScene(id: string) {
-    return this.scope.createModule(SceneController, id);
+    return this.scope.create(SceneController, id);
   }
 
   getSceneState(id: string) {
@@ -83,8 +83,8 @@ export class EditorView extends EditorState {
   scope = injectScope();
 
   getScene(sceneId: string) {
-    const view = this.scope.createModule(SceneView, sceneId);
-    const controller = this.scope.createModule(SceneController, sceneId);
+    const view = this.scope.create(SceneView, sceneId);
+    const controller = this.scope.create(SceneController, sceneId);
     const result = createViewWithActions(view, controller);
     return result;
   }

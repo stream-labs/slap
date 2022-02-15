@@ -10,7 +10,7 @@ export function createModuleManager(Services: TModuleConstructorMap = {}) {
   // const moduleManager = new ModuleManager(Services);
   const moduleManager = new Scope({ ...Services, ReactiveStore });
   moduleManagers[moduleManager.id] = moduleManager;
-  moduleManager.resolve(ReactiveStore);
+  moduleManager.init(ReactiveStore);
   return moduleManager;
 }
 

@@ -25,28 +25,28 @@ export class ReactiveStore {
   modulesMetadata: Record<string, Record<string, IModuleMetadata>> = {};
 
   init() {
-    Object.keys(this.scope.dependencies).forEach(moduleName => {
+    Object.keys(this.scope.registry).forEach(moduleName => {
       if (moduleName === 'ReactiveStore') return;
       this.createModuleMetadata(moduleName, this.scope.id);
     });
 
     this.scope.afterRegister.subscribe(moduleInfo => {
-      this.createModuleMetadata(moduleInfo.moduleName, this.scope.id);
+      this.createModuleMetadata(moduleInfo.name, this.scope.id);
     });
 
     this.scope.afterInit.subscribe(moduleInfo => {
-      if (moduleInfo.moduleName === 'ReactiveStore') return;
+      if (moduleInfo.name === 'ReactiveStore') return;
       const instance = moduleInfo.instance as any;
-      const scopeId = instance.scope.id;
-      const metadata = this.getModuleMetadata(moduleInfo.ModuleClass, scopeId) || this.createModuleMetadata(moduleInfo.moduleName, scopeId);
+      const scopeId = moduleInfo.scope.id;
+      const metadata = this.getModuleMetadata(moduleInfo.factory, scopeId) || this.createModuleMetadata(moduleInfo.name, scopeId);
       metadata.instance = instance;
       const stateDescriptor = typeof Object.getOwnPropertyDescriptor(instance, 'state')?.get;
       const isStatefull = stateDescriptor && typeof stateDescriptor !== 'function' && !instance.state?._isStateProxy;
       if (!isStatefull) return;
 
-      console.log('start init store for ', moduleInfo.moduleName, 'in scope', scopeId);
+      console.log('start init store for ', moduleInfo.name, 'in scope', scopeId);
       this.initModule(instance, metadata.moduleName, scopeId);
-      console.log('finish init state for ', moduleInfo.moduleName, 'in scope', scopeId);
+      console.log('finish init state for ', moduleInfo.name, 'in scope', scopeId);
     });
   }
 

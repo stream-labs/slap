@@ -29,7 +29,7 @@ export class SceneController extends SceneState {
   }
 
   getItem(id: string) {
-    return this.scope.createModule(SceneItemController, this.id, id);
+    return this.scope.create(SceneItemController, this.id, id);
   }
 }
 
@@ -37,8 +37,8 @@ export class SceneView extends SceneState {
   scope = injectScope();
 
   getItem(itemId: string) {
-    const getters = this.scope.createModule(SceneItemView, this.id, itemId);
-    const controler = this.scope.createModule(SceneItemController, this.id, itemId);
+    const getters = this.scope.create(SceneItemView, this.id, itemId);
+    const controler = this.scope.create(SceneItemController, this.id, itemId);
     const result = createViewWithActions(getters, controler);
     return result;
   }

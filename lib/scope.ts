@@ -7,49 +7,62 @@ import {
 
 let currentScope: Scope | null = null;
 
+export type TProvider = {
+  factory: TModuleClass,
+  instance: InstanceType<TModuleClass>,
+  name: string,
+  initParams: any[],
+  scope: Scope,
+  readonly pluginData: Record<string, any>,
+}
+
+export type TModuleClass = new (...args: any) => any;
+
 export class Scope {
   public id!: string;
 
+  public parent: Scope | null = null;
+
   constructor(
-    public dependencies: TModuleConstructorMap = {},
-    public readonly parentScope: Scope | null = null,
-    id?: string,
+    dependencies: TModuleConstructorMap = {},
+    parentScope: Scope | null = null,
   ) {
-    if (!id) {
-      this.id = parentScope ? `${parentScope.id}__${generateId()}` : 'root';
-    } else {
-      this.id = id;
-    }
+    const uid = generateId();
+    this.id = parentScope ? `${parentScope.id}__${uid}` : `root_${uid}`;
+    if (parentScope) this.parent = parentScope;
+    dependencies && this.registerMany(dependencies);
+    console.log(`New Scope created ${this.id}`);
   }
 
   childScopes: Record<string, Scope> = {};
 
-  instances = {} as TInstances<this['dependencies']>;
+  registry: Record<string, TProvider> = {};
 
-  resolve<T extends TModuleClass>(ModuleClass: T): InstanceType<T> {
-    const scope = this.getScope(ModuleClass);
-    const moduleName = ModuleClass.name;
-    const instance = scope?.instances[moduleName];
-
-    if (instance) return instance;
-    if (!scope) this.register(ModuleClass);
-    return this.initRegisteredModule(ModuleClass);
+  resolve<T extends TModuleClass>(moduleClassOrName: T | string): InstanceType<T> {
+    const provider = this.resolveProvider(moduleClassOrName);
+    if (!provider) throw Error(`Provider not found for ${moduleClassOrName}`);
+    if (provider.instance) return provider.instance;
+    return this.init(moduleClassOrName);
   }
 
-  getScope(ModuleClass: TModuleClass): Scope | null {
-    const moduleName = ModuleClass.name;
-    if (this.dependencies[moduleName]) return this;
-    if (this.parentScope) return this.parentScope.getScope(ModuleClass);
-    return null;
-  }
-
-  register(ModuleClass: TModuleClass) {
-    const moduleName = ModuleClass.name;
-    if (this.dependencies[moduleName]) {
-      throw new Error(`${moduleName} already registered`);
+  register(ModuleClass: TModuleClass, name?: string) {
+    const moduleName = name || ModuleClass.name;
+    if (this.registry[moduleName]) {
+      throw new Error(`${moduleName} already registered in the given Scope`);
     }
-    this.dependencies[moduleName] = ModuleClass;
-    this.afterRegister.next({ ModuleClass, moduleName, scopeId: this.id });
+    const provider = {
+      factory: ModuleClass,
+      name: moduleName,
+      scope: this,
+      instance: null,
+      initParams: [],
+      pluginData: {},
+      data: null,
+    };
+
+    this.registry[moduleName] = provider;
+
+    this.afterRegister.next(provider);
   }
 
   registerMany(dependencies: TModuleConstructorMap) {
@@ -60,37 +73,46 @@ export class Scope {
     // TODO
   }
 
-  isRegistered(ModuleClass: TModuleClass): boolean {
-    return !!this.getScope(ModuleClass);
+  isRegistered(moduleClassOrName: TModuleClass | string): boolean {
+    return !!this.resolveProvider(moduleClassOrName);
   }
 
-  hasInstance(ModuleClass: TModuleClass): boolean {
-    if (!this.isRegistered(ModuleClass)) return false;
-    return !!this.getScope(ModuleClass);
+  hasInstance(moduleClassOrName: TModuleClass | string): boolean {
+    const provider = this.resolveProvider(moduleClassOrName);
+    return !!provider?.instance;
   }
 
-  initRegisteredModule<
+  /**
+   * Instantiate a registered module
+   */
+  init<
     TServiceClass extends new (...args: any) => any,
-    >(ModuleClass: TServiceClass, ...args: ConstructorParameters<TModuleClass>): InstanceType<TServiceClass> {
-    const moduleName = ModuleClass.name;
-    const instance = this.createModule(ModuleClass, ...args);
+    >(moduleClassOrName: TServiceClass | string, ...args: ConstructorParameters<TModuleClass>): InstanceType<TServiceClass> {
+    const provider = this.resolveProvider(moduleClassOrName);
+    if (!provider) throw new Error(`Can not init unregister "${moduleClassOrName}", this module is already inited in the given scope`);
 
-    (this.instances as any)[moduleName] = instance;
-    instance.init && instance.init();
-    this.afterInit.next({ instance, moduleName, ModuleClass, scopeId: this.id });
+    if (provider.instance) {
+      throw new Error(`The module ${provider.name} is already inited in the given scope`);
+    }
+
+    const instance = this.create(provider.factory, ...args);
+    provider.instance = instance;
+    provider.initParams = args;
+
+    this.afterInit.next(provider);
     return instance;
   }
 
-  createModule<
+  create<
     TServiceClass extends new (...args: any) => any,
     >(ModuleClass: TServiceClass, ...args: ConstructorParameters<TModuleClass>): InstanceType<TServiceClass> {
     const instance = this.exec(() => new ModuleClass(...args));
+    instance.init && instance.init();
     instance._scope = this;
-    instance.scope = this;
     return instance;
   }
 
-  exec(cb: Function) {
+  private exec(cb: Function) {
     const prevScope = currentScope;
     currentScope = this;
     const result = cb();
@@ -98,12 +120,12 @@ export class Scope {
     return result;
   }
 
-  createScope(dependencies?: TModuleConstructorMap, id?: string) {
-    return new Scope(dependencies, this, id);
+  createScope(dependencies?: TModuleConstructorMap) {
+    return new Scope(dependencies, this);
   }
 
-  registerScope(dependencies?: TModuleConstructorMap, id?: string) {
-    const scope = this.createScope({}, id);
+  registerScope(dependencies?: TModuleConstructorMap) {
+    const scope = this.createScope({});
     this.childScopes[scope.id] = scope;
     scope.afterRegister = this.afterRegister;
     scope.afterInit = this.afterInit;
@@ -111,40 +133,88 @@ export class Scope {
     return scope;
   }
 
-  unregisterScope(id: string) {
-    const childScope = this.childScopes[id];
-    childScope.destroy();
-    delete this.childScopes[id];
+  unregisterScope(scopeId: string) {
+    const scope = this.childScopes[scopeId];
+    if (!scope) throw new Error(`Can not unregister Scope ${scopeId} - Scope not found`);
+    scope.destroy();
+    delete this.childScopes[scopeId];
+  }
+
+  getRootScope(): Scope {
+    if (!this.parent) return this;
+    return this.parent.getRootScope();
   }
 
   destroy() {
-    this.afterInit.unsubscribe();
-    this.afterRegister.unsubscribe();
-    // TODO unregister
+    // destroy child scopes
+    Object.keys(this.childScopes).forEach(scopeId => {
+      this.unregisterScope(scopeId);
+    });
+
+    // destroy instances
+    Object.keys(this.registry).forEach(providerName => {
+      const provider = this.registry[providerName];
+      const instance = provider.instance;
+      if (!instance) return;
+      instance.destroy && instance.destroy();
+      provider.initParams = [];
+    });
+
+    // unsubscribe events
+    if (!this.parent) {
+      this.afterInit.unsubscribe();
+      this.afterRegister.unsubscribe();
+    }
   }
 
-  afterInit = new Subject<{ instance: any, moduleName: string, ModuleClass: any, scopeId: string }>();
-
-  afterRegister = new Subject<{ ModuleClass: any, moduleName: string, scopeId: string}>();
-
-  removeInstance<
-    TServiceClass extends new (...args: any) => any
-    >(ModuleClass: TServiceClass) {
-    const moduleName = ModuleClass.name;
-    const instance = this.instances[moduleName];
-    delete this.instances[moduleName];
+  resolveProvider(moduleClasOrName: TModuleClass | string): TProvider | null {
+    const moduleName = typeof moduleClasOrName === 'string' ? moduleClasOrName : moduleClasOrName.name;
+    const metadata = this.registry[moduleName];
+    if (metadata) return metadata;
+    if (!this.parent) return null;
+    return this.parent.resolveProvider(moduleName);
   }
 
-  // destroy() {
-  //   this.onInstantiate.unsubscribe();
-  // }
+  setPluginData(moduleClasOrName: TModuleClass | string, pluginName: string, data: any) {
+    const provider = this.resolveProvider(moduleClasOrName);
+    if (!provider) {
+      throw new Error(`Can not set plugin data, provider not found: ${moduleClasOrName}`);
+    }
+    provider.pluginData[pluginName] = data;
+  }
+
+  getScheme(): any {
+    return {
+      id: this.id,
+      registry: this.registry,
+      parentScope: this.parent ? this.parent.getScheme() : null,
+    };
+  }
+
+  afterInit = new Subject<TProvider>();
+
+  afterRegister = new Subject<TProvider>();
+
+  removeInstance(moduleClassOrName: TModuleClass | string) {
+    const provider = this.resolveProvider(moduleClassOrName);
+    if (!provider) throw new Error(`Can not remove instance ${moduleClassOrName} - provider not found`);
+    const instance = provider.instance;
+
+    if (!instance) throw new Error(`Can not remove instance ${moduleClassOrName} - instance not found`);
+    instance.destroy && instance.destroy();
+    delete provider.instance;
+    provider.initParams = [];
+  }
+
+  get isRoot() {
+    return !!this.parent;
+  }
 }
 
-export type TModuleClass = new (...args: any) => any;
-
 export function inject<T extends TModuleConstructorMap>(dependencies: T): TInstances<T> {
+  assertInjectIsAllowed();
   const scope: Scope = currentScope!;
-  const depsProxy = { _scope: currentScope };
+  const depsProxy = { _scope: scope };
   Object.keys(dependencies).forEach(moduleName => {
     const ModuleClass = dependencies[moduleName];
     Object.defineProperty(depsProxy, moduleName, {
@@ -159,6 +229,7 @@ export function inject<T extends TModuleConstructorMap>(dependencies: T): TInsta
 }
 
 export function injectState<TModuleClass extends new (...args: any) => any>(StatefulModule: TModuleClass): InstanceType<TModuleClass>['state'] {
+  assertInjectIsAllowed();
   const module = currentScope!.resolve(StatefulModule);
   const proxy = { _isStateProxy: true };
   Object.keys(module.state).forEach(stateKey => {
@@ -174,5 +245,11 @@ export function injectState<TModuleClass extends new (...args: any) => any>(Stat
 }
 
 export function injectScope(): Scope {
+  assertInjectIsAllowed();
   return currentScope!;
+}
+
+export function assertInjectIsAllowed() {
+  if (currentScope) return;
+  throw new Error('Injections a not allowed for objects outside the Scope. Create this object via Scope.create() or Scope.init() or Scope.resolve()');
 }

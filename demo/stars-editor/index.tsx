@@ -15,8 +15,7 @@ function main() {
     EditorService,
   });
 
-  const app = moduleManager.resolve(AppService);
-  app.start();
+  moduleManager.init(AppService);
 
   ReactDOM.render(
     <RedumbxApp moduleManager={moduleManager}>
