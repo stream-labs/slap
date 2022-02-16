@@ -71,7 +71,7 @@ export class Store {
     });
 
     this.replaceMethodsWithMutations(module, moduleName, contextId);
-    catchDestroyedModuleCalls(module);
+    // catchDestroyedModuleCalls(module);
   }
 
   destroyModule(moduleName: string, contextId: string) {
@@ -129,6 +129,8 @@ export class Store {
       createView: null,
       view: null,
       componentIds: [],
+      mutations: {},
+      originalMutations: {},
     };
     return metadata!;
   }
@@ -156,9 +158,11 @@ export class Store {
   replaceMethodsWithMutations(module: any, moduleName: string, contextId: string) {
     const mutationNames: string[] = Object.getPrototypeOf(module).mutations || [];
     const store = this;
+    const metadata = this.modulesMetadata[moduleName][contextId];
 
     mutationNames.forEach(mutationName => {
       const originalMethod = (module as any)[mutationName];
+      metadata.originalMutations[mutationName] = originalMethod;
 
       // override the original Module method to dispatch mutations
       (module as any)[mutationName] = function (...args: any[]) {
@@ -166,51 +170,39 @@ export class Store {
         // we don't need to dispatch a new mutation again
         // just call the original method
         if (store.isMutationRunning) return originalMethod.apply(module, args);
-
-        // prevent accessing state on deleted module
-        if (!store.state.modules[moduleName][contextId]) {
-          throw new Error('Module_is_destroyed');
-        }
-
-        const nextState = produce(module.state, (draftState: any) => {
-          store.isMutationRunning = true;
-          store.immerState = draftState;
-          console.log('run mutation', mutationName);
-          originalMethod.apply(module, args);
-          store.modulesRevisions[moduleName + contextId]++;
-        });
-        store.immerState = null;
-        store.state.modules[moduleName][contextId] = nextState;
-        store.isMutationRunning = false;
-        // store.onMutation.next({ id: Number(generateId()), type: `${moduleName}.${mutationName}`, payload: args });
-        store.watchers.run();
+        store.mutate({ id: Number(generateId()), type: `${moduleName}.${mutationName}`, payload: args }, contextId);
       };
     });
   }
 
-  //   mutate(mutation: Mutation, scopeId: string) {
-  //     const [moduleName, methodName ] = mutation.type.split('.')[0];
-  //     // prevent accessing state on deleted module
-  //     if (!this.state.modules[moduleName][scopeId]) {
-  //       throw new Error('Module_is_destroyed');
-  //     }
-  //
-  //     const store = this;
-  //
-  //     const nextState = produce(module.state, (draftState: any) => {
-  //       store.isMutationRunning = true;
-  //       store.immerState = draftState;
-  //       console.log('run mutation', moduleName, methodName);
-  //       originalMethod.apply(module, args);
-  //       store.modulesRevisions[moduleName + contextId]++;
-  //     });
-  //     store.immerState = null;
-  //     store.state.modules[moduleName][contextId] = nextState;
-  //     store.isMutationRunning = false;
-  //     store.onMutation.next({ id: Number(generateId()), type: `${moduleName}.${mutationName}`, payload: args });
-  //     store.watchers.run();
-  //   }
-  //
+  mutate(mutation: Mutation, scopeId?: string) {
+    scopeId = scopeId || this.scope.id;
+    const [moduleName, methodName] = mutation.type.split('.');
+    const store = this;
+    const moduleState = store.state.modules[moduleName][scopeId];
+
+    // prevent accessing state on deleted module
+    if (!this.state.modules[moduleName][scopeId]) {
+      throw new Error('Module_is_destroyed');
+    }
+
+    const moduleMetadata = store.modulesMetadata[moduleName][scopeId];
+    const module = moduleMetadata.instance;
+
+    const nextState = produce(moduleState, (draftState: any) => {
+      store.isMutationRunning = true;
+      store.immerState = draftState;
+      console.log('run mutation', mutation.type);
+      moduleMetadata.originalMutations[methodName].apply(module, mutation.payload);
+      store.modulesRevisions[moduleName + scopeId]++;
+    });
+    store.immerState = null;
+    store.state.modules[moduleName][scopeId] = nextState;
+    store.isMutationRunning = false;
+    store.onMutation.next(mutation);
+    store.watchers.run();
+  }
+
   onMutation = new Subject<Mutation>();
 }
 
@@ -252,23 +244,23 @@ export function mutation() {
 /**
  * Add try/catch that silently stops all method calls for a destroyed module
  */
-function catchDestroyedModuleCalls(module: any) {
-  // wrap each method in try/catch block
-  traverseClassInstance(module, (propName, descriptor) => {
-    // ignore getters
-    if (descriptor.get || typeof module[propName] !== 'function') return;
-
-    const originalMethod = module[propName];
-    module[propName] = (...args: unknown[]) => {
-      try {
-        return originalMethod.apply(module, args);
-      } catch (e: unknown) {
-        // silently stop execution if module is destroyed
-        if ((e as any).message !== 'Module_is_destroyed') throw e;
-      }
-    };
-  });
-}
+// function catchDestroyedModuleCalls(module: any) {
+//   // wrap each method in try/catch block
+//   traverseClassInstance(module, (propName, descriptor) => {
+//     // ignore getters
+//     if (descriptor.get || typeof module[propName] !== 'function') return;
+//
+//     const originalMethod = module[propName];
+//     module[propName] = (...args: unknown[]) => {
+//       try {
+//         return originalMethod.apply(module, args);
+//       } catch (e: unknown) {
+//         // silently stop execution if module is destroyed
+//         if ((e as any).message !== 'Module_is_destroyed') throw e;
+//       }
+//     };
+//   });
+// }
 
 /**
  * Makes all functions return a Promise and sets other types to never

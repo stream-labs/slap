@@ -1,4 +1,4 @@
-import { Store } from './store';
+import { Mutation, Store } from './store';
 import { Scope } from './scope/scope';
 import { TModuleConstructorMap } from './scope/interfaces';
 
@@ -34,4 +34,6 @@ export interface IModuleMetadata {
   createView: any;
   view: any;
   componentIds: string[];
+  mutations: Record<string, Mutation>;
+  originalMutations: Record<string, Function>;
 }

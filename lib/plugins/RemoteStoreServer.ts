@@ -39,7 +39,7 @@ export class RemoteStoreServer {
       args,
     } = req.params;
     const service = this.scope.resolve(resource);
-    const result = (service[method] as any)(...args as any[]);
+    const result = typeof service[method] === 'function' ? (service[method] as any)(...args as any) : service[method];
     const response = this.serializePayload(service, result, req, token);
     return response;
   }

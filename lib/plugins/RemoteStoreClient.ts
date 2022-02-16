@@ -55,6 +55,7 @@ export class RemoteStoreClient {
     console.log('request bulk state');
     const store = this.deps.Store;
     const bulkState = await (store.getBulkState() as any);
+    store.onMutation.subscribe(mutation => store.mutate(mutation));
     console.log('bulk state is', bulkState);
   }
 
@@ -80,7 +81,7 @@ export class RemoteStoreClient {
     try {
       jrpc = parseRPCResponse(msg);
     } catch (e) {}
-    if (jrpc) this.handleResponse(jrpc);
+    if (jrpc) this.execServerResponse(jrpc);
   }
 
   applyIpcProxy(service: InstanceType<TModuleClass>): any {
@@ -97,7 +98,7 @@ export class RemoteStoreClient {
         }
 
         if (service instanceof Store) {
-          if (property !== 'getBulkState') return target[property];
+          if (property !== 'getBulkState' && property !== 'onMutation') return target[property];
         }
 
         // if (
@@ -150,15 +151,27 @@ export class RemoteStoreClient {
       if (!this.sender) throw new Error('Sender is not ready');
 
       if (isObservable) {
-        // const request = createRequest(
-        //   resourceId,
-        //   methodName,
-        //   this.token,
-        //   ...args,
-        // );
+        return {
+          subscribe: (cb: Function) => {
+            this.send(createRequest(
+              resourceId,
+              methodName,
+              this.token,
+              ...args,
+            ));
 
-        const observableResourceId = `${resourceId}.${methodName}`;
-        return (this.subscriptions[observableResourceId] = this.subscriptions[observableResourceId] || new Subject());
+            const observableResourceId = `${resourceId}.${methodName}`;
+            this.subscriptions[observableResourceId] = this.subscriptions[observableResourceId] || new Subject();
+            // @ts-ignore
+            return this.subscriptions[observableResourceId].subscribe(cb);
+          },
+          next: () => {
+            console.log('ignore next');
+          }
+        };
+
+        // const observableResourceId = `${resourceId}.${methodName}`;
+        // return (this.subscriptions[observableResourceId] = this.subscriptions[observableResourceId] || new Subject());
       }
 
       const request = createRequest(
@@ -168,7 +181,7 @@ export class RemoteStoreClient {
         ...args,
       );
 
-      this.send(request);
+      return this.send(request);
     };
   }
 
@@ -177,8 +190,18 @@ export class RemoteStoreClient {
    * such as promises, event subscriptions, helpers, and services.
    * @param result The processed result
    */
-  handleResponse(jrpc: IJsonRpcResponse<any>) {
-    const result = jrpc.result;
+  execServerResponse(res: IJsonRpcResponse<any>) {
+    const reqId = res.id;
+    const result = res.result;
+
+    if (reqId && this.requests[reqId]) {
+      const [resolve, reject] = this.requests[reqId];
+      delete this.requests[reqId];
+      resolve(result);
+    }
+
+    if (!result) return;
+
     if (result && result._type === 'SUBSCRIPTION') {
       if (result.emitter === 'PROMISE') {
         return new Promise((resolve, reject) => {
@@ -189,6 +212,7 @@ export class RemoteStoreClient {
 
       if (result.emitter === 'STREAM') {
         return (this.subscriptions[result.resourceId] = this.subscriptions[result.resourceId] || new Subject());
+        // this.subscriptions[result.resourceId].next(result.data);
       }
     }
 
@@ -197,12 +221,25 @@ export class RemoteStoreClient {
       return helper;
     }
 
-    const reqId = jrpc.id;
+    // handle promise reject/resolve
+    if (result.emitter === 'PROMISE') {
+      const promises = this.promises;
+      const promisePayload = res.result;
+      if (promisePayload) {
+        // skip the promise result if this promise has been created from another window
+        if (!promises[promisePayload.resourceId]) return;
 
-    if (reqId && this.requests[reqId]) {
-      const [resolve, reject] = this.requests[reqId];
-      delete this.requests[reqId];
-      resolve(result);
+        // resolve or reject the promise depending on the response from the main window
+        const [resolve, reject] = promises[promisePayload.resourceId];
+        const callback = promisePayload.isRejected ? reject : resolve;
+        callback(promisePayload.data);
+        delete promises[promisePayload.resourceId];
+      }
+    } else if (result.emitter === 'STREAM') {
+      // handle RXJS events
+      const resourceId = res.result.resourceId;
+      if (!this.subscriptions[resourceId]) return;
+      this.subscriptions[resourceId].next(res.result.data);
     }
 
     // payload can contain helpers-objects
