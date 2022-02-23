@@ -19,6 +19,7 @@ export function createDependencyWatcher<T extends object>(watchedObject: T) {
     },
     {
       get: (target, propName: string) => {
+        // if (propName === 'isLoaded') debugger;
         // if (propName === 'hasOwnProperty') return watchedObject.hasOwnProperty;
         if (propName in target) return (target as any)[propName];
         const value = (watchedObject as any)[propName];

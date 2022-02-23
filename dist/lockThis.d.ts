@@ -4,4 +4,4 @@
  *
  * const { action1, action2 } = actions;
  */
-export declare function lockThis<T extends object>(instance: T): T;
+export declare function lockThis<T extends object>(instance: T, self?: T): T;

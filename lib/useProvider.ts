@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
 import { useComponentId, useOnCreate, useOnDestroy } from './hooks';
-import { createModuleView, TModuleView, useModuleManager, useSelectFrom } from './useModule';
+import {
+  createModuleView, TModuleView, useScope, useSelectFrom,
+} from './useModule';
 import { Store } from './store';
 import { TMerge } from './merge';
 
 export function useProvider<TModule>
-(ModuleClass: new(...args: any[]) => TModule, createView: (module: TModule) => any) {
+(ModuleClass: new(...args: any[]) => TModule, createView?: (module: TModule) => any) {
   const componentId = useComponentId();
-  const moduleManager = useModuleManager();
+  const moduleManager = useScope();
 
   // register the component in the ModuleManager upon component creation
   const {
@@ -33,9 +35,18 @@ export function useProvider<TModule>
     }
 
     const moduleInstance = scope.resolve(ModuleClass);
-    let moduleMetadata = store.getModuleMetadata(ModuleClass, scope.id)!;
+    let moduleMetadata = store.getModuleMetadata(moduleName, scope.id)!;
     if (!moduleMetadata.view) {
-      moduleMetadata = store.updateModuleMetadata(moduleName, scope.id, { createView, view: createView(moduleInstance) });
+      let view: any;
+      if ((moduleInstance as any).createView) {
+        view = (moduleInstance as any).createView();
+      } else if (createView) {
+        view = createView(moduleInstance);
+      } else {
+        view = createModuleView(moduleInstance);
+      }
+      // const view = (moduleInstance as any).createView ? (moduleInstance as any).createView() : (() => createModuleView(moduleInstance));
+      moduleMetadata = store.updateModuleMetadata(moduleName, scope.id, { view });
     }
 
     return {
@@ -59,13 +70,13 @@ export function useProvider<TModule>
   return moduleMetadata;
 }
 
-export function useNonReactiveModule<
-  TModule,
-  TSelectorResult,
-  TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
-  >
-(ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
-  const moduleMetadata = useProvider(ModuleClass, createModuleView);
-  const result = moduleMetadata.view as TResult;
-  return result;
-}
+// export function useNonReactiveModule<
+//   TModule,
+//   TSelectorResult,
+//   TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
+//   >
+// (ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
+//   const moduleMetadata = useProvider(ModuleClass);
+//   const result = moduleMetadata.view as TResult;
+//   return result;
+// }

@@ -1,4 +1,4 @@
-import { Scope } from './scope';
+import { IProviderOptions, Scope } from './scope';
 
 export type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
   [P in keyof T]: InstanceType<T[P]>;
@@ -21,5 +21,7 @@ export type TProvider = {
   name: string,
   initParams: any[],
   scope: Scope,
+  options: IProviderOptions,
+  cache: Record<string, any>,
   readonly pluginData: Record<string, any>,
 }

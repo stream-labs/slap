@@ -1,5 +1,6 @@
 
 export interface ISceneItemState {
+  id: string,
   color: string,
   angle: number,
   width: number,
@@ -11,6 +12,7 @@ export interface ISceneItemState {
 }
 
 export interface ISceneState {
+  id: string;
   name: string;
   backgroundColor: string;
   items: Record<string, ISceneItemState>;

@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {
-  mutation, RedumbxApp, useModule,
+  mutation, RedumbxApp, useModule, useScope,
 } from '../lib';
 import { ModuleRoot } from '../lib/RedumbxApp';
 import './index.css';
@@ -9,11 +9,11 @@ import './index.css';
 function CountersApp() {
   return (
     <RedumbxApp>
-      {/* <Counter /> */}
+      <Counter />
       <MultipleCounters />
       <MultipleIndependentCounters />
       TODO
-      {/* <MultiplePersistentCounters /> */}
+      <MultiplePersistentCounters />
     </RedumbxApp>
   );
 }
@@ -92,6 +92,8 @@ export function MultipleIndependentCounters() {
 export class CounterService extends CounterModule {}
 
 export function PersistentCounter() {
+  const mm = useScope();
+  if (!mm.isRegistered(CounterService)) mm.register(CounterService);
   const { counter, decrement, increment } = useModule(CounterService);
   return (
     <div>

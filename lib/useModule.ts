@@ -11,22 +11,34 @@ import { merge, TMerge, TMerge3 } from './merge';
 import { lockThis } from './lockThis';
 import { useSelector } from './useSelector';
 import { useProvider } from './useProvider';
-import { getModuleManager } from './module-manager';
 import { createDependencyWatcher } from './dependency-watcher';
+import { Scope } from './scope';
 
-export const StoreContext = React.createContext('1');
+export const AppScope = React.createContext<Scope|null>(null);
 
-export function useModuleManager() {
-  const storeId = useContext(StoreContext);
-  return useMemo(() => {
-    const moduleManager = getModuleManager(storeId);
-    return moduleManager;
-  }, []);
+export function useScope() {
+  return useContext(AppScope)!;
+  // const scope = useContext(AppScope);
+  // return useMemo(() => {
+  //   const moduleManager = scope;
+  //   return moduleManager!;
+  // }, []);
 }
 
-export type TModuleView<TModule extends Object, TState = TModule extends { state?: any } ? TModule['state'] : null> = TMerge<TState, TModule>;
+// export type TModuleView<TModule extends Object, TState = TModule extends { state?: any } ? TModule['state'] : null> = TMerge<TState, TModule>;
+
+export type TModuleView<
+  TModule extends Object,
+  TState = TModule extends { state?: any } ? TModule['state'] : null,
+  TView = TModule extends { createView: () => any } ? ReturnType<TModule['createView']> : null,
+  > = TMerge3<TState, TModule, TView>;
+
 
 export function createModuleView<TModule>(module: TModule): TModuleView<TModule> {
+  if ('createView' in (module as any)) {
+    const lockedModule = (module as any).createView(); // lockThis((module as any).view as any);
+    return lockedModule;
+  }
   const lockedModule = lockThis(module as any);
   const mergedModule = (module as any).state ? merge([
     // allow to select variables from the module's state
@@ -63,33 +75,33 @@ export function useModule<
   TResult extends TMerge<TModuleView<TModule>, TSelectorResult>
   >
 (ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
-  const moduleMetadata = useProvider(ModuleClass, createModuleView);
+  const moduleMetadata = useProvider(ModuleClass);
   const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
   return selectResult as TResult;
 }
 
-export function useServiceView<
-  TService,
-  TSelectorResult,
-  TResult extends TMerge<TServiceView<TService>, TSelectorResult>
-  >
-(ModuleClass: new(...args: any[]) => TService, selectorFn: (view: TServiceView<TService>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
-  const moduleMetadata = useProvider(ModuleClass, createServiceView);
-  const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
-  return selectResult as TResult;
-}
+// export function useServiceView<
+//   TService,
+//   TSelectorResult,
+//   TResult extends TMerge<TServiceView<TService>, TSelectorResult>
+//   >
+// (ModuleClass: new(...args: any[]) => TService, selectorFn: (view: TServiceView<TService>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
+//   const moduleMetadata = useProvider(ModuleClass, createServiceView);
+//   const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
+//   return selectResult as TResult;
+// }
 
-export function createServiceView<TService>(service: TService) {
-  // const actions = service as any;
-  // const getters = (service as any).view || {} as any;
-  // return createViewWithActions(actions, getters) as TServiceView<TService>;
-  const moduleView = createModuleView(service); // createModuleView((service as any).view);
-  return moduleView;
-}
+// export function createServiceView<TService>(service: TService) {
+//   // const actions = service as any;
+//   // const getters = (service as any).view || {} as any;
+//   // return createViewWithActions(actions, getters) as TServiceView<TService>;
+//   const moduleView = createModuleView(service); // createModuleView((service as any).view);
+//   return moduleView;
+// }
 
-export type TServiceView<
-  TService extends Object,
-  TState = TService extends { state?: any } ? TService['state'] : {},
-  TView = TService extends { view?: any } ? TService['view'] : {},
-  TActions = TPromisifyFunctions<TService>
-  > = TMerge3<TState, TActions, TView>;
+// export type TServiceView<
+//   TService extends Object,
+//   TState = TService extends { state?: any } ? TService['state'] : {},
+//   TView = TService extends { view?: any } ? TService['view'] : {},
+//   TActions = TPromisifyFunctions<TService>
+//   > = TMerge3<TState, TActions, TView>;

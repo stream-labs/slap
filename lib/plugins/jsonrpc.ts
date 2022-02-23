@@ -18,7 +18,7 @@ export interface IJsonRpcRequest {
   method: string;
   params: {
     token: string;
-    resource: string;
+    resource: string|any;
     args?: any[];
     fetchMutations?: boolean;
     compactMode?: boolean;
@@ -76,7 +76,7 @@ export function createError(
   };
 }
 
-export function createRequest(resourceId: string, method: string, token: string, ...args: any[]): IJsonRpcRequest {
+export function createRequest(resourceId: string | any[], method: string, token: string, ...args: any[]): IJsonRpcRequest {
   return {
     method,
     jsonrpc: '2.0',

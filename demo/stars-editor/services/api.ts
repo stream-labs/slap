@@ -10,11 +10,13 @@ export class ApiService {
 
 const scenesData: Record<string, ISceneState> = {
   scene1: {
+    id: 'scene1',
     name: 'Scene 1',
     backgroundColor: 'blue',
     selectedItemId: 'star1',
     items: {
       star1: {
+        id: 'star1',
         color: 'yellow',
         angle: 0,
         width: 100,
@@ -25,6 +27,7 @@ const scenesData: Record<string, ISceneState> = {
         },
       },
       star2: {
+        id: 'star2',
         color: 'yellow',
         angle: 0,
         width: 100,
@@ -35,6 +38,7 @@ const scenesData: Record<string, ISceneState> = {
         },
       },
       star3: {
+        id: 'star3',
         color: 'yellow',
         angle: 0,
         width: 100,
@@ -48,11 +52,13 @@ const scenesData: Record<string, ISceneState> = {
   },
 
   scene2: {
+    id: 'scene2',
     name: 'Scene 2',
     backgroundColor: 'black',
     selectedItemId: 'star4',
     items: {
       star4: {
+        id: 'star4',
         color: 'yellow',
         angle: 0,
         width: 100,
@@ -63,6 +69,7 @@ const scenesData: Record<string, ISceneState> = {
         },
       },
       star5: {
+        id: 'star5',
         color: 'yellow',
         angle: 0,
         width: 100,
@@ -73,6 +80,7 @@ const scenesData: Record<string, ISceneState> = {
         },
       },
       star6: {
+        id: 'star6',
         color: 'yellow',
         angle: 0,
         width: 100,

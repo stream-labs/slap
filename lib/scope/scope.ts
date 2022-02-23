@@ -15,24 +15,34 @@ export class Scope {
 
   registry: Record<string, TProvider> = {};
 
+  settings = {
+
+  };
+
   constructor(
     dependencies: TModuleConstructorMap = {},
     parentScope: Scope | null = null,
+    settings: Partial<Scope['settings']> | null = null,
   ) {
     const uid = generateId();
     this.id = parentScope ? `${parentScope.id}__${uid}` : `root_${uid}`;
+    if (settings) Object.assign(this.settings, settings);
     if (parentScope) this.parent = parentScope;
     dependencies && this.registerMany(dependencies);
   }
 
   resolve<T extends TModuleClass>(moduleClassOrName: T | string): InstanceType<T> {
     const provider = this.resolveProvider(moduleClassOrName);
-    if (!provider) throw Error(`Provider not found for ${moduleClassOrName}`);
     if (provider.instance) return provider.instance;
     return this.init(moduleClassOrName);
   }
 
-  register(ModuleClass: TModuleClass, name?: string) {
+  getInstance<T extends TModuleClass>(moduleClassOrName: T | string): InstanceType<T> | null {
+    const provider = this.getProvider(moduleClassOrName);
+    return provider ? provider.instance : null;
+  }
+
+  register(ModuleClass: TModuleClass, name?: string, options?: Partial<IProviderOptions>) {
     const moduleName = name || ModuleClass.name;
     if (this.registry[moduleName]) {
       throw new Error(`${moduleName} already registered in the given Scope`);
@@ -44,7 +54,12 @@ export class Scope {
       instance: null,
       initParams: [],
       pluginData: {},
+      cache: {},
       data: null,
+      options: {
+        initMethod: 'init',
+        ...(options || {}),
+      } as IProviderOptions,
     };
 
     this.registry[moduleName] = provider;
@@ -52,8 +67,8 @@ export class Scope {
     this.events.emit('onModuleRegister', provider);
   }
 
-  registerMany(dependencies: TModuleConstructorMap) {
-    Object.keys(dependencies).forEach(depName => this.register(dependencies[depName]));
+  registerMany(dependencies: TModuleConstructorMap, options?: Partial<IProviderOptions>) {
+    Object.keys(dependencies).forEach(depName => this.register(dependencies[depName], undefined, options));
   }
 
   unregister(ModuleClass: TModuleClass) {
@@ -61,7 +76,7 @@ export class Scope {
   }
 
   isRegistered(moduleClassOrName: TModuleClass | string): boolean {
-    return !!this.resolveProvider(moduleClassOrName);
+    return !!this.getProvider(moduleClassOrName);
   }
 
   hasInstance(moduleClassOrName: TModuleClass | string): boolean {
@@ -86,16 +101,33 @@ export class Scope {
     provider.instance = instance;
     provider.initParams = args;
 
-    // this.afterInit.next(provider);
     this.events.emit('onModuleInit', provider);
+    return instance;
+  }
+
+
+  /**
+   * Register and instantiate a module
+   */
+  start<
+    TServiceClass extends new (...args: any) => any,
+    >(moduleClass: TServiceClass, ...args: ConstructorParameters<TServiceClass>): InstanceType<TServiceClass> {
+    const provider = this.resolveProvider(moduleClass);
+    if (!provider) this.register(moduleClass);
+    const instance = this.init(moduleClass, ...args as any);
     return instance;
   }
 
   create<
     TServiceClass extends new (...args: any) => any,
-    >(ModuleClass: TServiceClass, ...args: ConstructorParameters<TModuleClass>): InstanceType<TServiceClass> {
-    const instance = this.exec(() => new ModuleClass(...args));
-    instance.init && instance.init();
+    >(ModuleClass: TServiceClass, ...args: ConstructorParameters<TServiceClass>): InstanceType<TServiceClass> {
+    const instance = this.exec(() => new ModuleClass(...args as any));
+    let initMethodName = 'init';
+    if (this.isRegistered(ModuleClass)) {
+      const provider = this.resolveProvider(ModuleClass);
+      initMethodName = provider.options.initMethod;
+    }
+    initMethodName && instance[initMethodName] && instance[initMethodName]();
     instance._scope = this;
     return instance;
   }
@@ -108,12 +140,12 @@ export class Scope {
     return result;
   }
 
-  createScope(dependencies?: TModuleConstructorMap) {
-    return new Scope(dependencies, this);
+  createScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>) {
+    return new Scope(dependencies, this, settings);
   }
 
-  registerScope(dependencies?: TModuleConstructorMap) {
-    const scope = this.createScope({});
+  registerScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>) {
+    const scope = this.createScope({}, settings);
     this.childScopes[scope.id] = scope;
     scope.events = this.events;
     dependencies && scope.registerMany(dependencies);
@@ -155,7 +187,15 @@ export class Scope {
     }
   }
 
-  resolveProvider(moduleClasOrName: TModuleClass | string): TProvider | null {
+  resolveProvider(moduleClasOrName: TModuleClass | string): TProvider {
+    const provider = this.getProvider(moduleClasOrName);
+    if (!provider) {
+      throw new Error(`Provider not found ${moduleClasOrName}`);
+    }
+    return provider;
+  }
+
+  getProvider(moduleClasOrName: TModuleClass | string): TProvider | null {
     const moduleName = typeof moduleClasOrName === 'string' ? moduleClasOrName : moduleClasOrName.name;
     const metadata = this.registry[moduleName];
     if (metadata) return metadata;
@@ -231,4 +271,8 @@ export function injectScope(): Scope {
 export function assertInjectIsAllowed() {
   if (currentScope) return;
   throw new Error('Injections a not allowed for objects outside the Scope. Create this object via Scope.create() or Scope.init() or Scope.resolve()');
+}
+
+export interface IProviderOptions {
+  initMethod: string;
 }

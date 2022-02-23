@@ -47,5 +47,6 @@ module.exports = {
     'no-useless-constructor': 0,
     'react/jsx-no-bind': 0,
     'no-return-assign': 0,
+    'lines-between-class-members': 0,
   },
 };

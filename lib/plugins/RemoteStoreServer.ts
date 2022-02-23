@@ -8,40 +8,67 @@ import {
   parseRPCRequest,
 } from './jsonrpc';
 import {
-  generateId, injectScope, Subject, Subscription,
+  generateId, injectScope, Subject, Subscription, TModuleConstructorMap,
 } from '../scope';
 import { traverseClassInstance } from '../traverseClassInstance';
+import { RemoteStore } from './RemoteStore';
 
 export class RemoteStoreServer {
   scope = injectScope();
 
   connections: Record<string, IConnection> = {};
 
-  constructor(public params: RemoteStoreServerParams) {
+  constructor(public params: RemoteStoreServerParams, public remoteServices: TModuleConstructorMap) {
   }
 
   init() {
+    this.scope.registerMany(this.remoteServices);
+    this.scope.init(RemoteStore, this.remoteServices);
     this.params.listen(this.onMessage.bind(this));
   }
 
   onMessage(msg: string, sender: ISender) {
-    const jrpc = this.validateRequest(msg, sender);
+    const req = this.validateRequest(msg, sender);
+    if (!req) return;
+    const { jrpc, resource } = req;
     if (!jrpc) return;
     const token = jrpc.params.token;
-    const response = this.execJRPC(jrpc, token);
+    this.execJRPC(jrpc, resource, token, sender);
+  }
+
+  execJRPC(req: IJsonRpcRequest, resource: any, token: string, sender: ISender) {
+    const method = req.method;
+    const {
+      args,
+    } = req.params;
+    const result = typeof resource[method] === 'function' ? (resource[method] as any)(...args as any) : resource[method];
+    const response = this.serializePayload(resource, result, req, token);
     this.send(sender, response);
   }
 
-  execJRPC(req: IJsonRpcRequest, token: string): IJsonRpcResponse<any> {
-    const method = req.method;
-    const {
-      resource,
-      args,
-    } = req.params;
-    const service = this.scope.resolve(resource);
-    const result = typeof service[method] === 'function' ? (service[method] as any)(...args as any) : service[method];
-    const response = this.serializePayload(service, result, req, token);
-    return response;
+  getResource(path: string) {
+    if (typeof path === 'string') {
+      return this.getService(path);
+    }
+
+    const [serviceName, ...methods] = path as any[];
+    const service = this.getService(serviceName);
+    let resource = service;
+
+    if (!service) return null;
+
+    for (const methodCall of methods) {
+      const [methodName, ...args] = typeof methodCall === 'string' ? [methodCall] : methodCall;
+      if (!(methodName in resource)) return null;
+      resource = args ? resource[methodName](...args) : resource[methodName];
+    }
+
+    return resource;
+  }
+
+  getService(serviceName: string) {
+    if (!this.remoteServices[serviceName]) return null;
+    return this.scope.resolve(serviceName);
   }
 
   /**
@@ -216,7 +243,7 @@ export class RemoteStoreServer {
     this.send(connection, createResponse(msg.id, token));
   }
 
-  validateRequest(msg: string, sender: ISender): IJsonRpcRequest | null {
+  validateRequest(msg: string, sender: ISender): {jrpc: IJsonRpcRequest, resource: any } | null {
     let json: IJsonRpcRequest;
     try {
       json = parseRPCRequest(msg);
@@ -235,12 +262,13 @@ export class RemoteStoreServer {
       sendUnauthorizedError(sender);
     }
 
-    const { resource } = json.params;
-    if (!this.scope.isRegistered(resource)) {
-      sendNoServiceError(sender, resource);
+    const resourcePath = json.params.resource;
+    const resource = this.getResource(resourcePath);
+    if (!resource) {
+      sendNoResourceError(sender, resource);
       return null;
     }
-    return json;
+    return { jrpc: json, resource };
   }
 
   stop() {
@@ -288,13 +316,14 @@ function sendUnauthorizedError(sender: ISender) {
   sendSilent(sender, createError('-1', { code: E_JSON_RPC_ERROR.INVALID_REQUEST, message: 'Unauthorized' }));
 }
 
-function sendNoServiceError(sender: ISender, serviceName: string) {
+function sendNoResourceError(sender: ISender, serviceName: string) {
   sendSilent(sender, createError('-1', { code: E_JSON_RPC_ERROR.METHOD_NOT_FOUND, message: `Resource not found ${serviceName}` }));
 }
 
 function sendSilent(sender: ISender, jrpc: IJsonRpcResponse<any>) {
   try {
     const msg = JSON.stringify(jrpc);
+    console.log('Send silent', msg);
     sender.send(msg);
   } catch (e) {}
 }
@@ -303,7 +332,6 @@ interface IConnection {
   token: string;
   subscriptions: Record<string, Subscription>;
   send(msg: string): void;
-  // onRequest(cb: (msg: string) => void): void
 }
 
 interface ISender {

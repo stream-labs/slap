@@ -1,4 +1,4 @@
-import { EditorService, EditorView } from './editor';
+import { EditorService } from './editor';
 import { ISceneItemState } from '../../interfeaces';
 import { inject } from '../../../../lib';
 
@@ -39,13 +39,13 @@ export class SceneItemController extends SceneItemState {
     this.update({ position });
   }
 }
-
-export class SceneItemView extends SceneItemState {
-  views = inject({ EditorView });
-
-  get scene() {
-    return this.views.EditorView.getScene(this.sceneId);
-  }
-
-  // select next
-}
+//
+// export class SceneItemView extends SceneItemState {
+//   views = inject({ EditorView });
+//
+//   get scene() {
+//     return this.views.EditorView.getScene(this.sceneId);
+//   }
+//
+//   // select next
+// }

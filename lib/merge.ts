@@ -49,7 +49,11 @@ export function merge<
 }
 
 export function unwrapState<TState, T extends {state: any}>(obj: T): TMerge<T['state'], T> {
-  Object.keys(obj.state).forEach(stateKey => {
+  const state = obj.state;
+
+  if (!state) throw new Error(`State not found for object ${obj}`);
+
+  Object.keys(state).forEach(stateKey => {
     if (stateKey in obj) return;
 
     Object.defineProperty(obj, stateKey, {
@@ -63,13 +67,27 @@ export function unwrapState<TState, T extends {state: any}>(obj: T): TMerge<T['s
   return obj as TMerge<TState, T>;
 }
 
+// export type TMerge<
+//   T1,
+//   T2,
+//   TObj1 = T1 extends (...args: any[]) => infer R1 ? R1 : T1,
+//   TObj2 = T2 extends (...args: any[]) => infer R2 ? R2 : T2,
+//   R extends object = Omit<TObj1, keyof TObj2> & TObj2
+//   > = R;
+
+// export type TMerge<
+//   T1,
+//   T2,
+//   TObj1 = T1 extends {} ? T1 : {},
+//   TObj2 = T2 extends {} ? T2 : {},
+//   > = Omit<TObj1, keyof TObj2> & TObj2
+
 export type TMerge<
   T1,
   T2,
-  TObj1 = T1 extends (...args: any[]) => infer R1 ? R1 : T1,
-  TObj2 = T2 extends (...args: any[]) => infer R2 ? R2 : T2,
-  R extends object = Omit<TObj1, keyof TObj2> & TObj2
-  > = R;
+  TObj1 = T1 extends {} ? T1 : {},
+  TObj2 = T2 extends {} ? T2 : {},
+  > = Omit<TObj1, keyof TObj2> & TObj2
 
 export type TMerge3<T1, T2, T3> = TMerge<TMerge<T1, T2>, T3>;
 export type TMerge4<T1, T2, T3, T4> = TMerge<TMerge3<T1, T2, T3>, T4>;

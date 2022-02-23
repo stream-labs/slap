@@ -1,6 +1,5 @@
 import { EditorService } from './editor';
-import { SceneItemController, SceneItemView } from './scene-item';
-import { createViewWithActions } from '../../../../lib/createStateView';
+import { SceneItemController, SceneItemState } from './scene-item';
 import { inject, injectScope } from '../../../../lib';
 
 export class SceneState {
@@ -31,19 +30,27 @@ export class SceneController extends SceneState {
   getItem(id: string) {
     return this.scope.create(SceneItemController, this.id, id);
   }
-}
 
-export class SceneView extends SceneState {
-  scope = injectScope();
-
-  getItem(itemId: string) {
-    const getters = this.scope.create(SceneItemView, this.id, itemId);
-    const controler = this.scope.create(SceneItemController, this.id, itemId);
-    const result = createViewWithActions(getters, controler);
-    return result;
-  }
-
-  get items() {
-    return Object.keys(this.state.items).map(id => this.getItem(id));
+  createView() {
+    // TODO
   }
 }
+
+// export class SceneView extends SceneState {
+//   scope = injectScope();
+//
+//   getItem(itemId: string) {
+//     // const getters = this.scope.create(SceneItemView, this.id, itemId);
+//     // const controler = this.scope.create(SceneItemController, this.id, itemId);
+//     // const result = createViewWithActions(getters, controler);
+//     // return result;
+//
+//     const sceneId = this.id;
+//     const path = ['EditorService', ['getScene', sceneId], ['getItem', itemId]];
+//     return createRemoteView(path, SceneItemController, SceneItemState, this.scope, sceneId, itemId);
+//   }
+//
+//   get items() {
+//     return Object.keys(this.state.items).map(id => this.getItem(id));
+//   }
+// }

@@ -1,11 +1,12 @@
 import { ISceneItemState, ISceneState } from '../../interfeaces';
 import {
   inject, injectScope, injectState,
-  mutation,
+  mutation, Scope, TPromisifyFunctions,
 } from '../../../../lib';
 import { ApiService } from '../api';
-import { SceneController, SceneView } from './scene';
-import { createViewWithActions } from '../../../../lib/createStateView';
+import { SceneController, SceneState } from './scene';
+import { SceneItemController, SceneItemState } from './scene-item';
+import { createView } from '../../../../lib/plugins/useService';
 
 export class EditorState {
   state = {
@@ -26,6 +27,7 @@ export class EditorState {
 
 export class EditorService extends EditorState {
   services = inject({ ApiService });
+
   scope = injectScope();
 
   async load() {
@@ -35,9 +37,9 @@ export class EditorService extends EditorState {
     this.setIsLoaded();
   }
 
-  get scenes() {
-    return Object.keys(this.state.scenes).map(id => this.getScene(id));
-  }
+  // get scenes() {
+  //   return Object.keys(this.state.scenes).map(id => this.getScene(id));
+  // }
 
   getScene(id: string) {
     return this.scope.create(SceneController, id);
@@ -75,25 +77,105 @@ export class EditorService extends EditorState {
     const itemState = this.getScene(sceneId).getItem(itemId).state;
     Object.assign(itemState, patch);
   }
+
+  // TODO move to components?
+  createView() {
+    return createView({
+      path: 'EditorService',
+      stateGetter: () => this.state,
+      controllerClass: EditorService,
+      gettersClass: EditorState,
+      viewFactoryClass: EditorViewFactory,
+      scope: this.scope,
+      shouldCache: true,
+      args: [],
+    });
+  }
 }
 
-export class EditorView extends EditorState {
-  state = injectState(EditorService);
-
+export class EditorViewFactory {
+  services = inject({ EditorService });
   scope = injectScope();
 
-  getScene(sceneId: string) {
-    const view = this.scope.create(SceneView, sceneId);
-    const controller = this.scope.create(SceneController, sceneId);
-    const result = createViewWithActions(view, controller);
-    return result;
+  getState() {
+    return this.services.EditorService.state;
   }
 
-  get scenes() {
-    return Object.keys(this.state.scenes).map(sceneId => this.getScene(sceneId));
+  getScene(sceneId: string) {
+    const v = createView({
+      path: ['EditorService', ['getScene', sceneId]],
+      stateGetter: () => this.getState().scenes[sceneId],
+      controllerClass: SceneController,
+      gettersClass: SceneState,
+      viewFactoryClass: SceneViewFactory,
+      scope: this.scope,
+      shouldCache: false,
+      args: [sceneId],
+    });
+    return v;
+  }
+
+  getItem(sceneId: string, itemId: string) {
+    const v = createView({
+      path: ['EditorService', ['getScene', sceneId], ['getItem', itemId]],
+      stateGetter: () => this.getState().scenes[sceneId].items[itemId],
+      controllerClass: SceneItemController,
+      gettersClass: SceneItemState,
+      viewFactoryClass: SceneItemViewFactory,
+      scope: this.scope,
+      shouldCache: false,
+      args: [sceneId, itemId],
+    });
+    return v;
   }
 
   get activeScene() {
-    return this.getScene(this.state.activeSceneId);
+    return this.getScene(this.getState().activeSceneId);
+  }
+
+  get scenes() {
+    return Object.keys(this.getState().scenes).map(sceneId => this.getScene(sceneId));
+  }
+}
+
+export class SceneViewFactory {
+  constructor(public sceneId: string) {
+  }
+
+  services = inject({ EditorService });
+
+  get editorView() {
+    return this.services.EditorService.createView();
+  }
+
+  get state() {
+    return this.editorView.getState().scenes[this.sceneId];
+  }
+
+  getItem(itemId: string) {
+    return this.editorView.getItem(this.sceneId, itemId);
+  }
+
+  get items() {
+    return Object.keys(this.editorView.getState().scenes[this.sceneId].items).map(id => this.getItem(id));
+  }
+}
+
+export class SceneItemViewFactory {
+  constructor(public sceneId: string, public itemId: string) {
+  }
+
+  services = inject({ EditorService });
+
+  get editorView() {
+    return this.services.EditorService.createView();
+  }
+
+  get state() {
+    return this.editorView.getState().scenes[this.sceneId].items[this.itemId];
+  }
+
+  getScene() {
+    this.editorView.getScene(this.sceneId);
   }
 }

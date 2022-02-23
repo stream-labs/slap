@@ -1,15 +1,24 @@
-import { inject, injectScope } from '../scope/scope';
-import { TModuleClass } from '../scope/interfaces';
+import {
+  getCurrentScope, inject, injectScope, Scope,
+} from '../scope/scope';
+import { TModuleClass, TModuleConstructorMap } from '../scope/interfaces';
 import {
   createRequest,
   IJsonRpcRequest,
   IJsonRpcResponse, parseRPCResponse,
 } from './jsonrpc';
-import { Store } from '../store';
-import { Subject } from '../scope';
+import {
+  getModuleMutations, Mutation, Store, TPromisifyFunctions,
+} from '../store';
+import { assertIsDefined, Subject } from '../scope';
+import { ApiClient } from './api-client';
+import { merge, TMerge3, unwrapState } from '../merge';
+import { lockThis } from '../lockThis';
+import { traverseClassInstance } from '../traverseClassInstance';
+import { RemoteStore } from './RemoteStore';
 
 export interface ISender {
-  send(msg: string): Promise<any>;
+  write(msg: string): Promise<any>;
 }
 
 export interface IRemoteClientParams {
@@ -18,8 +27,8 @@ export interface IRemoteClientParams {
 
 export class RemoteStoreClient {
   scope = injectScope();
-
-  deps = inject({ Store });
+  store!: Store;
+  // remoteScope!: Scope;
 
   /**
    * If the result of calling a service method in the main window is promise -
@@ -35,54 +44,53 @@ export class RemoteStoreClient {
    */
   private subscriptions: Record<string, Subject<any>> = {};
 
-  private sender!: ISender;
+  public api!: ApiClient;
 
   private token = '';
 
-  constructor(public params: IRemoteClientParams) {}
+  constructor(public params: IRemoteClientParams, public remoteServices: TModuleConstructorMap) {}
 
   async init() {
-    Object.keys(this.scope.registry).forEach(providerName => {
-      const provider = this.scope.registry[providerName];
-      if (provider.instance) provider.instance = this.applyIpcProxy(provider.instance);
-    });
+    console.log('register remote services');
+    const store = this.scope.resolve(Store);
+    this.scope.registerMany(this.remoteServices, { initMethod: '' });
+    this.scope.init(RemoteStore, this.remoteServices);
 
-    this.scope.events.on('onModuleInit', provider => {
-      provider.instance = this.applyIpcProxy(provider.instance);
-    });
-    this.sender = await this.params.connect(this.onMessage.bind(this));
-    await this.authorize();
+    // this.scope.events.on('onModuleInit', provider => {
+    //   const service = provider.instance;
+    //   if ('createView' in service) return;
+    //   service.createView = () => {
+    //     const Getters = Object.getPrototypeOf(service).constructor;
+    //     createRemoteView(service.prototype);
+    //   }
+    //   store.registerModuleFromInstance(provider.instance, provider.name);
+    // });
+
+    this.api = new ApiClient(this.params);
+    await this.api.connect();
+    console.log('Api is connected');
+
     console.log('request bulk state');
-    const store = this.deps.Store;
-    const bulkState = await (store.getBulkState() as any);
-    store.onMutation.subscribe(mutation => store.mutate(mutation));
+    const bulkState = await this.api.request<Record<string, unknown>>('RemoteStore', 'getBulkState');
     console.log('bulk state is', bulkState);
-  }
+    Object.keys(bulkState).forEach(moduleName => {
+      if (!this.remoteServices[moduleName]) delete bulkState[moduleName];
+    });
+    store.setBulkState(bulkState as any);
 
-  async authorize() {
-    const req = createRequest('auth', 'auth', '');
-    const resp = await this.send(req);
-    this.token = resp as string;
-  }
-
-  send(jrpc: IJsonRpcRequest) {
-    const id = jrpc.id;
-    const msg = JSON.stringify(jrpc);
-    console.log('send message:', msg);
-    this.sender.send(msg);
-    return new Promise((resolve, reject) => {
-      this.requests[id] = [resolve, reject];
+    console.log('Subscribe mutations', bulkState);
+    this.api.subscribe('RemoteStore', 'onMutation', (mutation: Mutation) => {
+      const [moduleName] = mutation.type.split('.');
+      if (!this.remoteServices[moduleName]) return;
+      store.mutate(mutation);
     });
   }
 
-  onMessage(msg: string) {
-    console.log('new message from server', msg);
-    let jrpc = null;
-    try {
-      jrpc = parseRPCResponse(msg);
-    } catch (e) {}
-    if (jrpc) this.execServerResponse(jrpc);
-  }
+  // initRemoteService(serviceName: string) {
+  //   if (this.remoteServices[serviceName]) throw new Error(`Remote service not found ${serviceName}`);
+  //   this.scope.register(this.remoteServices[serviceName]);
+  //   this.scope.init(serviceName);
+  // }
 
   applyIpcProxy(service: InstanceType<TModuleClass>): any {
     if (service.name === RemoteStoreClient.name) return;
@@ -108,7 +116,7 @@ export class RemoteStoreClient {
         //   return target[property];
         // }
 
-        const methodName = property.toString();
+        // const methodName = property.toString();
         // const isHelper = target._isHelper;
         //
         // // TODO: Remove once you're sure this is impossible
@@ -116,73 +124,12 @@ export class RemoteStoreClient {
         //   throw new Error('ATTEMPTED TO PROXY HELPER METHOD');
         // }
 
-        const handler = this.getRequestHandler(target, methodName);
+        // const handler = this.getRequestHandler(target, methodName);
 
-        if (typeof target[property] === 'function') return handler;
-        if (target[property] instanceof Subject) return handler();
+        // if (typeof target[property] === 'function') return handler;
+        // if (target[property] instanceof Subject) return handler();
       },
     });
-  }
-
-  getRequestHandler(
-    target: any,
-    methodName: string,
-  ) {
-    const serviceName = target.constructor.name;
-    const resourceId = serviceName;
-    // const isHelper = target['_isHelper'];
-    // const resourceId = isHelper ? target['_resourceId'] : serviceName;
-    const isObservable = target[methodName] instanceof Subject;
-    const isDevMode = true;
-    const shouldReturn = true;
-
-    return (...args: any[]) => {
-      // args may contain ServiceHelper objects
-      // serialize them
-      // traverse(args).forEach((item: any) => {
-      //   if (item && item._isHelper) {
-      //     return {
-      //       _type: 'HELPER',
-      //       resourceId: item._resourceId,
-      //     };
-      //   }
-      // });
-
-      if (!this.sender) throw new Error('Sender is not ready');
-
-      if (isObservable) {
-        return {
-          subscribe: (cb: Function) => {
-            this.send(createRequest(
-              resourceId,
-              methodName,
-              this.token,
-              ...args,
-            ));
-
-            const observableResourceId = `${resourceId}.${methodName}`;
-            this.subscriptions[observableResourceId] = this.subscriptions[observableResourceId] || new Subject();
-            // @ts-ignore
-            return this.subscriptions[observableResourceId].subscribe(cb);
-          },
-          next: () => {
-            console.log('ignore next');
-          }
-        };
-
-        // const observableResourceId = `${resourceId}.${methodName}`;
-        // return (this.subscriptions[observableResourceId] = this.subscriptions[observableResourceId] || new Subject());
-      }
-
-      const request = createRequest(
-        resourceId,
-        methodName,
-        this.token,
-        ...args,
-      );
-
-      return this.send(request);
-    };
   }
 
   /**
@@ -257,3 +204,5 @@ export class RemoteStoreClient {
     return this.scope.resolve(serviceName);
   }
 }
+
+export type AConstructorTypeOf<T> = new (...args:any[]) => T;

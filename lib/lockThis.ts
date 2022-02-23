@@ -6,19 +6,21 @@ import { traverseClassInstance } from './traverseClassInstance';
  *
  * const { action1, action2 } = actions;
  */
-export function lockThis<T extends object>(instance: T): T {
+export function lockThis<T extends object>(instance: T, self?: T): T {
+  self = self || instance;
   const result = {};
 
   traverseClassInstance(instance, (propName, descriptor) => {
     if (descriptor.get || typeof (instance as any)[propName] !== 'function') {
       Object.defineProperty(result, propName, {
         configurable: true,
+        enumerable: true,
         get: () => {
           return (instance as any)[propName];
         },
       });
     } else {
-      (result as any)[propName] = (instance as any)[propName].bind(instance);
+      (result as any)[propName] = (instance as any)[propName].bind(self);
     }
   });
 
