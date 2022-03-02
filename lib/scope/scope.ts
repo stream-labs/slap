@@ -3,8 +3,10 @@ import {
   TInstances, TModuleClass, TModuleConstructorMap, TProvider,
 } from './interfaces';
 import { generateId } from './utils';
+import { traverseClassInstance } from '../traverseClassInstance';
 
 let currentScope: Scope | null = null;
+let currentProvider: TProvider | null = null;
 
 export class Scope {
   id!: string;
@@ -55,7 +57,8 @@ export class Scope {
       initParams: [],
       pluginData: {},
       cache: {},
-      data: null,
+      metadata: {},
+      tasks: {},
       options: {
         initMethod: 'init',
         ...(options || {}),
@@ -97,14 +100,18 @@ export class Scope {
       throw new Error(`The module ${provider.name} is already inited in the given scope`);
     }
 
+    const prevProvider = currentProvider;
+    currentProvider = provider;
     const instance = this.create(provider.factory, ...args);
+    currentProvider = prevProvider;
     provider.instance = instance;
     provider.initParams = args;
 
     this.events.emit('onModuleInit', provider);
+    this.events.emit('onAfterModuleInit', provider);
+    this.checkModuleIsLoaded(provider);
     return instance;
   }
-
 
   /**
    * Register and instantiate a module
@@ -112,8 +119,7 @@ export class Scope {
   start<
     TServiceClass extends new (...args: any) => any,
     >(moduleClass: TServiceClass, ...args: ConstructorParameters<TServiceClass>): InstanceType<TServiceClass> {
-    const provider = this.resolveProvider(moduleClass);
-    if (!provider) this.register(moduleClass);
+    this.register(moduleClass);
     const instance = this.init(moduleClass, ...args as any);
     return instance;
   }
@@ -203,12 +209,20 @@ export class Scope {
     return this.parent.resolveProvider(moduleName);
   }
 
-  setPluginData(moduleClasOrName: TModuleClass | string, pluginName: string, data: any) {
+  getMetadata(moduleClasOrName: TModuleClass | string, pluginName: string) {
     const provider = this.resolveProvider(moduleClasOrName);
     if (!provider) {
-      throw new Error(`Can not set plugin data, provider not found: ${moduleClasOrName}`);
+      throw new Error(`Can not get module metadata, provider not found: ${moduleClasOrName}`);
     }
-    provider.pluginData[pluginName] = data;
+    return provider.metadata[pluginName];
+  }
+
+  setMetadata(moduleClasOrName: TModuleClass | string, pluginName: string, data: any) {
+    const provider = this.resolveProvider(moduleClasOrName);
+    if (!provider) {
+      throw new Error(`Can not set module metadata, provider not found: ${moduleClasOrName}`);
+    }
+    provider.metadata[pluginName] = data;
   }
 
   getScheme(): any {
@@ -234,16 +248,54 @@ export class Scope {
     return !!this.parent;
   }
 
+  startTask(moduleClasOrName: TModuleClass | string, taskName: string, taskData?: unknown) {
+    const provider = this.resolveProvider(moduleClasOrName);
+    provider.tasks[taskName] = taskData;
+  }
+
+  completeTask(moduleClasOrName: TModuleClass | string, taskName: string) {
+    const provider = this.resolveProvider(moduleClasOrName);
+    delete provider.tasks[taskName];
+    this.checkModuleIsLoaded(provider);
+  }
+
+  checkModuleIsLoaded(provider: TProvider) {
+    if (Object.keys(provider.tasks).length) return;
+    const instance = provider.instance;
+    if (instance.onLoad) instance.onLoad();
+  }
+
+  // createPlaceholder(provider: TProvider, description: string) {
+  //   provider.hasPlaceholders = true;
+  //   const placeholder = Symbol(`placeholder__${description}`);
+  //   provider.placeholders[placeholder] = '';
+  //   return placeholder;
+  // }
+  //
+  // resolvePlaceholders(provider: TProvider) {
+  //   if (!provider.hasPlaceholders) return;
+  //   const instance = provider.instance;
+  //   traverseClassInstance(instance, propName => {
+  //     const value = instance[propName];
+  //     if (typeof value !== )
+  //   })
+  // }
+
   events = createNanoEvents<ScopeEvents>();
 }
 
 export interface ScopeEvents {
   onModuleInit: (provider: TProvider) => void,
+  onAfterModuleInit: (provider: TProvider) => void,
   onModuleRegister: (provider: TProvider) => void
 }
 
 export function getCurrentScope() {
   return currentScope;
+}
+
+export function getCurrentProvider() {
+  return currentProvider;
 }
 
 export function inject<T extends TModuleConstructorMap>(dependencies: T): TInstances<T> {

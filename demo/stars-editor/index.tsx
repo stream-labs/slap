@@ -1,56 +1,49 @@
 import ReactDOM from 'react-dom';
 import React from 'react';
 import {
-  RedumbxApp, Scope, Store,
+  RedumbxApp, Scope
 } from '../../lib';
-import { App } from './components/App';
-import { AppService } from './services/app';
-import { ApiService } from './services/api';
-import { EditorService } from './services/editor';
+import { AppService } from './services/app.service';
 import 'antd/dist/antd.css';
-import { RemoteStoreServer } from '../../lib/plugins/RemoteStoreServer';
-import { PostMessageListener } from '../../lib/plugins/PostMessageListener';
-import { RemoteStoreClient } from '../../lib/plugins/RemoteStoreClient';
-import { PostMessageTransport } from '../../lib/plugins/PostMessageTransport';
-import { RemoteStore } from '../../lib/plugins/RemoteStore';
+import { ServerApp } from './components/ServerApp';
+import { BootstrapService } from '../../lib/slapp/bootstrap.service';
 
 function main() {
-  // just replace deps to change the store that needs to sync
 
-  const remoteServices = {
-    AppService, // add navigation service
-    ApiService,
-    EditorService,
-    RemoteStore,
-  };
+  // // allow other windows to communicate with services
+  // const remoteServices = {
+  //   AppService, // add navigation service
+  //   UsersService,
+  // };
 
   const isChild = window.location.href.includes('?id=child');
 
   // create the worker app
   if (!isChild) {
-    const server = new Scope({ Store, RemoteStoreServer });
-    server.init(Store);
-    server.init(RemoteStoreServer, PostMessageListener, remoteServices);
-    server.init(AppService);
+    // rxdb app
+    const server = new Scope();
+    server.start(BootstrapService, AppService);
+
     ReactDOM.render(
-      <div>
-        <a onClick={openChildWindow}>Open a Child window</a>
-      </div>,
+      <RedumbxApp moduleManager={server}>
+        <ServerApp />
+      </RedumbxApp>,
       document.getElementById('app'),
     );
   }
 
   // create client app
   if (isChild) {
-    const app = new Scope({ Store, RemoteStoreClient });
-    app.init(Store, { isRemote: true });
-    app.init(RemoteStoreClient, PostMessageTransport, remoteServices);
-    ReactDOM.render(
-      <RedumbxApp moduleManager={app}>
-        <App />
-      </RedumbxApp>,
-      document.getElementById('app'),
-    );
+    // const app = new Scope({ Store, RemoteStoreClient });
+    // app.init(Store, { isRemote: true });
+    // app.init(RemoteStoreClient, PostMessageTransport, remoteServices);
+    // app.resolve(DBService).createDB();
+    // ReactDOM.render(
+    //   <RedumbxApp moduleManager={app}>
+    //     <ClientApp />
+    //   </RedumbxApp>,
+    //   document.getElementById('app'),
+    // );
   }
 
   // const app = isChild ? createClientApp() : createServerApp();
@@ -73,6 +66,8 @@ function main() {
 
 main();
 
-function openChildWindow() {
-  const myWindow = window.open('?id=child', '_blank');
+
+function createSlappServer() {
+  const server = new Scope();
+  server.start(AppService);
 }

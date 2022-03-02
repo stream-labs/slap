@@ -18,11 +18,6 @@ export const AppScope = React.createContext<Scope|null>(null);
 
 export function useScope() {
   return useContext(AppScope)!;
-  // const scope = useContext(AppScope);
-  // return useMemo(() => {
-  //   const moduleManager = scope;
-  //   return moduleManager!;
-  // }, []);
 }
 
 // export type TModuleView<TModule extends Object, TState = TModule extends { state?: any } ? TModule['state'] : null> = TMerge<TState, TModule>;

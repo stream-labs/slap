@@ -19,3 +19,5 @@ export function hasGetter(instance: any, getterName: string) {
   const stateDescriptor = Object.getOwnPropertyDescriptor(instance, getterName);
   return !!stateDescriptor?.get;
 }
+
+export type Dict<T> = Record<string, T>;

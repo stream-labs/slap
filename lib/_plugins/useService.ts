@@ -97,7 +97,7 @@ export function createView<
 
   if (stateGetter) {
     traverseClassInstance(state, methodName => {
-      console.log('create factory method', methodName);
+      // console.log('create factory method', methodName);
       Object.defineProperty(result, methodName, {
         configurable: true,
         enumerable: true,
@@ -118,7 +118,7 @@ export function createView<
 
   if (viewFactory) {
     traverseClassInstance(viewFactory, methodName => {
-      console.log('create factory method', methodName);
+      // console.log('create factory method', methodName);
       Object.defineProperty(result, methodName, {
         configurable: true,
         enumerable: true,

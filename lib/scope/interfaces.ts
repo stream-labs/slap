@@ -22,6 +22,9 @@ export type TProvider = {
   initParams: any[],
   scope: Scope,
   options: IProviderOptions,
+  // hasPlaceholders: boolean;
+  // placeholders: Record<symbol, string>,
   cache: Record<string, any>,
-  readonly pluginData: Record<string, any>,
+  tasks: Record<string, any>,
+  readonly metadata: Record<string, any>,
 }

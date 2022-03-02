@@ -6,7 +6,7 @@ import {
 } from './scope';
 
 export class Store {
-  constructor(public settings: typeof defaultStoreSettings) {}
+  constructor() {}
 
   state = {
     modules: {} as Record<string, Record<string, any>>,
@@ -23,6 +23,11 @@ export class Store {
   watchers = new StoreWatchers();
 
   modulesMetadata: Record<string, Record<string, IModuleMetadata>> = {};
+
+  isReady = true;
+
+  onMutation = new Subject<Mutation>();
+  onReady = new Subject<boolean>();
 
   init() {
     const scope = this.scope;
@@ -45,8 +50,13 @@ export class Store {
       this.registerModuleFromInstance(instance, moduleInfo.name, scopeId);
     });
 
-    scope.register(StoreStatus);
-    scope.init(StoreStatus, this.settings);
+    // scope.register(StoreStatus);
+    // scope.init(StoreStatus, this.settings);
+  }
+
+  setIsReady(isReady: boolean) {
+    this.isReady = isReady;
+    this.onReady.next(isReady);
   }
 
   registerModuleFromClass(ModuleClass: any, moduleName?: string, scopeId?: string) {
@@ -120,10 +130,10 @@ export class Store {
     const scopeId = this.scope.id;
     Object.keys(bulkState).forEach(moduleName => {
       this.createModuleMetadata(moduleName, scopeId);
-      this.scope.init(moduleName);
+      this.scope.resolve(moduleName);
       this.state.modules[moduleName][scopeId] = bulkState[moduleName];
     });
-    this.scope.resolve(StoreStatus).setConnected(true);
+    // this.scope.resolve(StoreStatus).setConnected(true);
   }
 
   mutateModule(moduleName: string, contextId: string, mutation: Function) {
@@ -197,7 +207,9 @@ export class Store {
         // we don't need to dispatch a new mutation again
         // just call the original method
         if (store.isMutationRunning) return originalMethod.apply(module, args);
-        store.mutate({ id: Number(generateId()), type: `${moduleName}.${mutationName}`, payload: args }, scopeId);
+        store.mutate({
+          id: Number(generateId()), type: `${moduleName}.${mutationName}`, payload: args, module: moduleName, name: mutationName,
+        }, scopeId);
       };
     });
   }
@@ -229,8 +241,6 @@ export class Store {
     store.onMutation.next(mutation);
     store.watchers.run();
   }
-
-  onMutation = new Subject<Mutation>();
 }
 
 class StoreWatchers {
@@ -333,31 +343,27 @@ export function injectState<TModuleClass extends new (...args: any) => any>(Stat
 export interface Mutation {
   id: number;
   type: string;
+  name: string;
+  module: string;
   payload: any;
 }
 
-export class StoreStatus {
-  constructor(private settings?: TStoreSettings) {
-    this.state.isRemote = !!settings?.isRemote;
-  }
-
-  state = {
-    isRemote: false,
-    isConnected: false,
-  };
-
-  get isReady() {
-    return this.state.isRemote ? this.state.isConnected : true;
-  }
-
-  @mutation()
-  setConnected(isConnected: boolean) {
-    this.state.isConnected = isConnected;
-  }
-}
-
-export const defaultStoreSettings = {
-  isRemote: false,
-};
-
-export type TStoreSettings = typeof defaultStoreSettings;
+// export class StoreStatus {
+//   constructor(private settings?: TStoreSettings) {
+//     this.state.isRemote = !!settings?.isRemote;
+//   }
+//
+//   state = {
+//     isRemote: false,
+//     isConnected: false,
+//   };
+//
+//   get isReady() {
+//     return this.state.isRemote ? this.state.isConnected : true;
+//   }
+//
+//   @mutation()
+//   setConnected(isConnected: boolean) {
+//     this.state.isConnected = isConnected;
+//   }
+// }

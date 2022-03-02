@@ -6,7 +6,7 @@ import { AppService } from '../services/app';
 import { AboutPage } from './pages/AboutPage';
 import { useService } from '../../../lib/plugins/useService';
 
-export function App() {
+export function ClientApp() {
   const { activePage } = useService(AppService);
 
   return (

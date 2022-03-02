@@ -2,7 +2,21 @@ import React from 'react';
 import { useModule } from '../../../../lib';
 import { UsersService } from '../../services/users';
 
-export function AboutPage () {
+export class UsersModule {
+
+
+  state = {
+    selectedUser: '',
+    users: [] as any,
+  };
+
+  init() {
+
+  }
+
+}
+
+export function UsersPage() {
   const { users } = useModule(UsersService);
 
   // function openChildWindow() {

@@ -1,7 +1,7 @@
 import { inject, injectScope, mutation } from '../../../lib';
 import { EditorService } from './editor';
 
-export class AppState {
+export class AppService {
   state = {
     activePage: 'editor',
     pages: [
@@ -9,9 +9,7 @@ export class AppState {
       { title: 'About', id: 'about' },
     ],
   };
-}
 
-export class AppService extends AppState {
   services = inject({
     EditorService,
   });

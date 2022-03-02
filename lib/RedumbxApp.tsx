@@ -2,10 +2,10 @@ import React, {
   ReactNode, useEffect, useState,
 } from 'react';
 import {
-  Store, StoreStatus,
+  Store,
 } from './store';
 import { useOnCreate } from './hooks';
-import { AppScope, useModule, useScope } from './useModule';
+import { AppScope, useScope } from './useModule';
 import { Scope } from './scope/scope';
 import { TModuleConstructorMap } from './scope/interfaces';
 import { createModuleManager } from './module-manager';
@@ -32,7 +32,13 @@ export function RedumbxApp(p: {children: ReactNode | ReactNode[], moduleManager?
 
 function StatefulApp(p: {children: ReactNode | ReactNode[], fallback?: ReactNode}) {
   const fallback = p.fallback || 'Loading...';
-  const { isReady } = useModule(StoreStatus);
+  const store = useScope().resolve(Store);
+  const [isReady, setIsReady] = useState(store.isReady);
+
+  useEffect(() => {
+    const sub = store.onReady.subscribe(setIsReady);
+    return () => sub.unsubscribe();
+  }, []);
 
   return (
     <>
@@ -40,6 +46,12 @@ function StatefulApp(p: {children: ReactNode | ReactNode[], fallback?: ReactNode
       {isReady && p.children}
     </>
   );
+
+  // return (
+  //   <>
+  //     {p.children}
+  //   </>
+  // );
 }
 
 export function ModuleRoot(p: {children: ReactNode | ReactNode[], module: any }) {
