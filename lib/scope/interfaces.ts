@@ -1,4 +1,5 @@
-import { IProviderOptions, Scope } from './scope';
+import { Injector, IProviderOptions, Scope } from './scope';
+import { Dict } from './utils';
 
 export type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
   [P in keyof T]: InstanceType<T[P]>;
@@ -19,12 +20,15 @@ export type TProvider = {
   factory: TModuleClass,
   instance: InstanceType<TModuleClass>,
   name: string,
-  initParams: any[],
+  initParams: any[], // TODO do we need that?
   scope: Scope,
-  options: IProviderOptions,
-  // hasPlaceholders: boolean;
-  // placeholders: Record<symbol, string>,
-  cache: Record<string, any>,
-  tasks: Record<string, any>,
+  options: IProviderOptions, // TODO delegate Scope options
+  injectors: Dict<Injector<unknown>>,
+
+  // lifecycle flags
+  initCompleted: boolean,
+  injectionCompleted: boolean,
+  isLoaded: boolean,
+
   readonly metadata: Record<string, any>,
 }

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useComponentId, useOnCreate, useOnDestroy } from './hooks';
 import {
-  createModuleView, TModuleView, useScope, useSelectFrom,
+  createModuleView, TModuleView, useScope, useComponentView,
 } from './useModule';
 import { Store } from './store';
 import { TMerge } from './merge';
@@ -64,7 +64,7 @@ export function useProvider<TModule>
 
   // unregister the component from the module onDestroy
   useOnDestroy(() => {
-    if (isRoot) scope.destroy();
+    if (isRoot) scope.dispose();
   });
 
   return moduleMetadata;

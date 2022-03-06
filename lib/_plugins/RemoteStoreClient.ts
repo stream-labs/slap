@@ -80,7 +80,7 @@ export class RemoteStoreClient {
 
     console.log('Subscribe mutations', bulkState);
     this.api.subscribe('RemoteStore', 'onMutation', (mutation: Mutation) => {
-      const [moduleName] = mutation.type.split('.');
+      const moduleName = mutation.module;
       if (!this.remoteServices[moduleName]) return;
       store.mutate(mutation);
     });

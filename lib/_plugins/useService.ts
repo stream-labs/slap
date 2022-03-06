@@ -1,6 +1,6 @@
 import { TMerge, TMerge3, TMerge4 } from '../merge';
 import { useProvider } from '../useProvider';
-import { TModuleView, useSelectFrom } from '../useModule';
+import { TModuleView, useComponentView } from '../useModule';
 import { TPromisifyFunctions } from '../store';
 import { AConstructorTypeOf, RemoteStoreClient } from './RemoteStoreClient';
 import { Scope } from '../scope';
@@ -23,7 +23,7 @@ export function useService<
     scope: instance._scope,
     args: [],
   }));
-  const selectResult = useSelectFrom(moduleMetadata.view, selectorFn);
+  const selectResult = useComponentView(moduleMetadata.view, selectorFn);
   return selectResult as TResult;
 }
 

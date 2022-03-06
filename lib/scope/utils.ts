@@ -21,3 +21,7 @@ export function hasGetter(instance: any, getterName: string) {
 }
 
 export type Dict<T> = Record<string, T>;
+
+export function forEach<T>(dict: Dict<T>, cb: (value: T, key?: string) => unknown) {
+  Object.keys(dict).forEach(key => cb(dict[key], key));
+}

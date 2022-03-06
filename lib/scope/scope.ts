@@ -3,7 +3,6 @@ import {
   TInstances, TModuleClass, TModuleConstructorMap, TProvider,
 } from './interfaces';
 import { generateId } from './utils';
-import { traverseClassInstance } from '../traverseClassInstance';
 
 let currentScope: Scope | null = null;
 let currentProvider: TProvider | null = null;
@@ -49,16 +48,19 @@ export class Scope {
     if (this.registry[moduleName]) {
       throw new Error(`${moduleName} already registered in the given Scope`);
     }
+    console.log('register new class', moduleName);
     const provider = {
       factory: ModuleClass,
       name: moduleName,
       scope: this,
       instance: null,
       initParams: [],
+      initCompleted: false,
+      injectionCompleted: false,
+      isLoaded: false,
       pluginData: {},
-      cache: {},
       metadata: {},
-      tasks: {},
+      injectors: {},
       options: {
         initMethod: 'init',
         ...(options || {}),
@@ -100,15 +102,9 @@ export class Scope {
       throw new Error(`The module ${provider.name} is already inited in the given scope`);
     }
 
-    const prevProvider = currentProvider;
-    currentProvider = provider;
     const instance = this.create(provider.factory, ...args);
-    currentProvider = prevProvider;
-    provider.instance = instance;
-    provider.initParams = args;
 
     this.events.emit('onModuleInit', provider);
-    this.events.emit('onAfterModuleInit', provider);
     this.checkModuleIsLoaded(provider);
     return instance;
   }
@@ -124,26 +120,82 @@ export class Scope {
     return instance;
   }
 
+  // TODO optimize
   create<
     TServiceClass extends new (...args: any) => any,
     >(ModuleClass: TServiceClass, ...args: ConstructorParameters<TServiceClass>): InstanceType<TServiceClass> {
-    const instance = this.exec(() => new ModuleClass(...args as any));
+    console.log('create new class', ModuleClass.name);
+
     let initMethodName = 'init';
-    if (this.isRegistered(ModuleClass)) {
-      const provider = this.resolveProvider(ModuleClass);
-      initMethodName = provider.options.initMethod;
+    let provider: TProvider;
+    const prevScope = currentScope;
+    currentScope = this;
+
+    const isRegistered = this.isRegistered(ModuleClass);
+    if (isRegistered) {
+      provider = this.resolveProvider(ModuleClass);
+      initMethodName = provider.options!.initMethod;
+    } else {
+      provider = { scope: currentScope } as TProvider;
     }
-    initMethodName && instance[initMethodName] && instance[initMethodName]();
+
+    const prevProvider = currentProvider;
+    currentProvider = provider as TProvider;
+
+    const instance = new ModuleClass(...args as any);
+    provider.instance = instance;
+    provider.initParams = args;
+    instance.__provider = provider;
+    this.resolveInjectors(provider);
+    currentScope = prevScope;
+    currentProvider = prevProvider;
+
+    const initResult = initMethodName && instance[initMethodName] && instance[initMethodName]();
+    if (initResult?.then) {
+      initResult.then(() => provider.initCompleted = true);
+    } else {
+      provider.initCompleted = true;
+      this.checkModuleIsLoaded(provider);
+    }
     instance._scope = this;
     return instance;
   }
 
-  private exec(cb: Function) {
-    const prevScope = currentScope;
-    currentScope = this;
-    const result = cb();
-    currentScope = prevScope;
-    return result;
+  /**
+   * Resolve injectors for just created object
+   *
+   *  WARNING!
+   *  this code is executed for every object creation
+   *  and should care about performance
+   */
+  private resolveInjectors(provider: TProvider) {
+    const instance = provider.instance;
+    const descriptors = Object.getOwnPropertyDescriptors(instance);
+    const injectorPromises: Promise<unknown>[] = [];
+
+    // travers injectors
+    Object.keys(descriptors).forEach(propName => {
+      const descriptor = descriptors[propName];
+      if (descriptor.get) return; // don't execute getters
+      const injector = descriptor.value;
+      if (!(injector instanceof Injector)) return;
+      provider.injectors[propName] = injector;
+      const { init, promise, getter } = injector.injectorParams;
+      if (promise) injectorPromises.push(promise);
+      init && init();
+      Object.defineProperty(instance, propName, {
+        get: () => getter.apply(instance),
+      });
+    });
+
+    // load async injectors
+    if (injectorPromises.length) {
+      Promise.all(injectorPromises).then(() => {
+        this.checkModuleIsLoaded(provider);
+      });
+    } else {
+      provider.injectionCompleted = true;
+    }
   }
 
   createScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>) {
@@ -161,7 +213,7 @@ export class Scope {
   unregisterScope(scopeId: string) {
     const scope = this.childScopes[scopeId];
     if (!scope) throw new Error(`Can not unregister Scope ${scopeId} - Scope not found`);
-    scope.destroy();
+    scope.dispose();
     delete this.childScopes[scopeId];
   }
 
@@ -170,7 +222,7 @@ export class Scope {
     return this.parent.getRootScope();
   }
 
-  destroy() {
+  dispose() {
     // destroy child scopes
     Object.keys(this.childScopes).forEach(scopeId => {
       this.unregisterScope(scopeId);
@@ -186,11 +238,7 @@ export class Scope {
     });
 
     // unsubscribe events
-    if (!this.parent) {
-      // this.afterInit.unsubscribe();
-      // this.afterRegister.unsubscribe();
-      this.events.events = {};
-    }
+    if (!this.parent) this.events.events = {};
   }
 
   resolveProvider(moduleClasOrName: TModuleClass | string): TProvider {
@@ -248,46 +296,31 @@ export class Scope {
     return !!this.parent;
   }
 
-  startTask(moduleClasOrName: TModuleClass | string, taskName: string, taskData?: unknown) {
-    const provider = this.resolveProvider(moduleClasOrName);
-    provider.tasks[taskName] = taskData;
-  }
-
-  completeTask(moduleClasOrName: TModuleClass | string, taskName: string) {
-    const provider = this.resolveProvider(moduleClasOrName);
-    delete provider.tasks[taskName];
-    this.checkModuleIsLoaded(provider);
-  }
-
   checkModuleIsLoaded(provider: TProvider) {
-    if (Object.keys(provider.tasks).length) return;
-    const instance = provider.instance;
-    if (instance.onLoad) instance.onLoad();
+    if (!provider.initCompleted || !provider.injectionCompleted) return;
+    if (!provider.isLoaded && provider.instance.load) {
+      provider.instance.load().then(() => {
+        this.onModuleLoad(provider);
+      });
+      return;
+    }
+    this.onModuleLoad(provider);
   }
 
-  // createPlaceholder(provider: TProvider, description: string) {
-  //   provider.hasPlaceholders = true;
-  //   const placeholder = Symbol(`placeholder__${description}`);
-  //   provider.placeholders[placeholder] = '';
-  //   return placeholder;
-  // }
-  //
-  // resolvePlaceholders(provider: TProvider) {
-  //   if (!provider.hasPlaceholders) return;
-  //   const instance = provider.instance;
-  //   traverseClassInstance(instance, propName => {
-  //     const value = instance[propName];
-  //     if (typeof value !== )
-  //   })
-  // }
+  onModuleLoad(provider: TProvider) {
+    provider.isLoaded = true;
+    const instance = provider.instance;
+    instance.onLoad && instance.onLoad();
+    this.events.emit('onModuleLoad', provider);
+  }
 
   events = createNanoEvents<ScopeEvents>();
 }
 
 export interface ScopeEvents {
-  onModuleInit: (provider: TProvider) => void,
-  onAfterModuleInit: (provider: TProvider) => void,
   onModuleRegister: (provider: TProvider) => void
+  onModuleInit: (provider: TProvider) => void,
+  onModuleLoad: (provider: TProvider) => void,
 }
 
 export function getCurrentScope() {
@@ -298,27 +331,27 @@ export function getCurrentProvider() {
   return currentProvider;
 }
 
-export function inject<T extends TModuleConstructorMap>(dependencies: T): TInstances<T> {
-  assertInjectIsAllowed();
-  const scope: Scope = currentScope!;
-  const depsProxy = { _scope: scope };
-  Object.keys(dependencies).forEach(moduleName => {
-    const ModuleClass = dependencies[moduleName];
-    Object.defineProperty(depsProxy, moduleName, {
-      get: () => {
-        // @ts-ignore
-        return scope.resolve(ModuleClass);
-      },
-    });
-  });
+// export function inject<T extends TModuleConstructorMap>(dependencies: T): TInstances<T> {
+//   assertInjectIsAllowed();
+//   const scope: Scope = currentScope!;
+//   const depsProxy = { _scope: scope };
+//   Object.keys(dependencies).forEach(moduleName => {
+//     const ModuleClass = dependencies[moduleName];
+//     Object.defineProperty(depsProxy, moduleName, {
+//       get: () => {
+//         // @ts-ignore
+//         return scope.resolve(ModuleClass);
+//       },
+//     });
+//   });
+//
+//   return depsProxy as any as TInstances<T>;
+// }
 
-  return depsProxy as any as TInstances<T>;
-}
-
-export function injectScope(): Scope {
-  assertInjectIsAllowed();
-  return currentScope!;
-}
+// export function injectScope(): Scope {
+//   assertInjectIsAllowed();
+//   return currentScope!;
+// }
 
 export function assertInjectIsAllowed() {
   if (currentScope) return;
@@ -327,4 +360,39 @@ export function assertInjectIsAllowed() {
 
 export interface IProviderOptions {
   initMethod: string;
+}
+
+export type TInjectorParams<T> = {
+  promise?: Promise<any>;
+  init?(): unknown;
+  getter: () => T;
+}
+
+export class Injector<T> {
+  constructor(public provider: TProvider, public injectorParams: TInjectorParams<T>) {}
+}
+
+export function createInjector<T>(injectorCreator: (provider: TProvider) => TInjectorParams<T>) {
+  assertInjectIsAllowed();
+  const provider = getCurrentProvider()!;
+  const injectorParams = injectorCreator(provider);
+  return new Injector(provider, injectorParams) as any as T;
+}
+
+export function inject<T extends TModuleClass>(ModuleClass: T) {
+  return createInjector(provider => ({
+    getter: () => provider.scope.resolve(ModuleClass),
+  }));
+}
+
+export function injectProvider() {
+  return createInjector(provider => ({
+    getter: () => provider,
+  }));
+}
+
+export function injectScope() {
+  return createInjector(provider => ({
+    getter: () => provider.scope,
+  }));
 }

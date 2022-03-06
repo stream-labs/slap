@@ -13,7 +13,7 @@ export class RemoteStore {
 
   init() {
     this.services.Store.onMutation.subscribe(mutation => {
-      const serviceName = mutation.type.split('.')[0];
+      const serviceName = mutation.module;
       if (this.remoteServices[serviceName]) this.onMutation.next(mutation);
     });
   }

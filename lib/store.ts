@@ -43,11 +43,16 @@ export class Store {
       this.createModuleMetadata(moduleInfo.name, moduleInfo.scope.id);
     });
 
-    scope.events.on('onModuleInit', moduleInfo => {
-      if (moduleInfo.name === 'Store') return;
-      const instance = moduleInfo.instance as any;
-      const scopeId = moduleInfo.scope.id;
-      this.registerModuleFromInstance(instance, moduleInfo.name, scopeId);
+    scope.events.on('onModuleInit', provider => {
+      if (provider.name === 'Store') return;
+      const instance = provider.instance as any;
+      const scopeId = provider.scope.id;
+      this.registerModuleFromInstance(instance, provider.name, scopeId);
+    });
+
+    scope.events.on('onModuleLoad', provider => {
+      if (provider.name === 'Store') return;
+      provider.instance.setIsLoaded();
     });
 
     // scope.register(StoreStatus);
@@ -83,8 +88,8 @@ export class Store {
 
     if (instance) {
       const stateDescriptor = Object.getOwnPropertyDescriptor(instance, 'state');
-      metadata.isStateful = !!(stateDescriptor && !stateDescriptor.get && !instance.state?._isStateProxy);
-      if (metadata.isStateful) state = instance.state;
+      metadata.isStateful = !!(stateDescriptor && !stateDescriptor.get && !instance.state?._isStateProxy) || !instance.state;
+      if (metadata.isStateful) state = { ...instance.state, isLoaded: false };
     } else {
       metadata.isStateful = !!state;
       instance = {};
@@ -92,6 +97,13 @@ export class Store {
 
     if (metadata.isStateful) this.injectReactiveState(instance, moduleName, scopeId);
     this.injectMutations(instance, moduleName, scopeId, mutations);
+
+    this.injectMutations(
+      instance,
+      moduleName,
+      scopeId,
+      { setIsLoaded () { (this.state as any).isLoaded = true; } },
+    );
 
     if (!this.state.modules[moduleName]) this.state.modules[moduleName] = {};
     this.state.modules[moduleName][scopeId] = state;
@@ -208,7 +220,7 @@ export class Store {
         // just call the original method
         if (store.isMutationRunning) return originalMethod.apply(module, args);
         store.mutate({
-          id: Number(generateId()), type: `${moduleName}.${mutationName}`, payload: args, module: moduleName, name: mutationName,
+          id: Number(generateId()), payload: args, module: moduleName, name: mutationName,
         }, scopeId);
       };
     });
@@ -216,7 +228,8 @@ export class Store {
 
   mutate(mutation: Mutation, scopeId?: string) {
     scopeId = scopeId || this.scope.id;
-    const [moduleName, methodName] = mutation.type.split('.');
+    const moduleName = mutation.module;
+    const methodName = mutation.name;
     const store = this;
     const moduleState = store.state.modules[moduleName][scopeId];
 
@@ -231,7 +244,7 @@ export class Store {
     const nextState = produce(moduleState, (draftState: any) => {
       store.isMutationRunning = true;
       store.immerState = draftState;
-      console.log('RUN MUTATION', mutation.type, mutation.payload);
+      console.log('RUN MUTATION', mutation.name, mutation.payload);
       moduleMetadata.originalMutations[methodName].apply(module, mutation.payload);
       store.modulesRevisions[moduleName + scopeId]++;
     });
@@ -340,11 +353,14 @@ export function injectState<TModuleClass extends new (...args: any) => any>(Stat
   return proxy;
 }
 
+export interface ICommonState {
+  isLoaded: boolean;
+}
+
 export interface Mutation {
   id: number;
-  type: string;
-  name: string;
   module: string;
+  name: string;
   payload: any;
 }
 

@@ -17,7 +17,7 @@ export function useSubscription<T>(observable: Observable<T>, cb: (value: T) => 
  * Example from https://nils-mehlhorn.de/posts/react-hooks-rxjs
  */
 export function useObservable<T>(observable: Observable<T>): [T, any] {
-  const [value, setValue] = useState<T>();
+  const [value, setValue] = useState<T>((observable as any).value);
   const [error, setError] = useState();
 
   useEffect(() => {

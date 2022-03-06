@@ -7,10 +7,10 @@ export async function createServerDb(name = 'slapp') {
   console.log('DatabaseService: creating database..');
   addPouchPlugin(adapteridb);
 
-  const db = await createRxDatabase({
-    name,
-    storage: getRxStoragePouch('idb'),
-  });
+  const storage = getRxStoragePouch('idb');
+  await removeRxDatabase(name, storage);
+
+  const db = await createRxDatabase({ name, storage });
   console.log('DatabaseService: created database');
   (window as any).db = db; // write to window for debugging
 
