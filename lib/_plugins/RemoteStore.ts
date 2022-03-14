@@ -1,11 +1,11 @@
 import { inject, Subject, TModuleConstructorMap } from '../scope';
-import { Mutation, Store } from '../store';
+import { Mutation, StoreBack } from '../store-back';
 
 /**
  * Isolates Store
  */
 export class RemoteStore {
-  services = inject({ Store });
+  services = inject({ Store: StoreBack });
   onMutation = new Subject<Mutation>();
 
   constructor(public remoteServices: TModuleConstructorMap) {

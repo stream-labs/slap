@@ -2,11 +2,11 @@ import { Layout } from 'antd';
 import React from 'react';
 import { EditorMenu } from './EditorMenu';
 import { EditorCanvas } from './EditorCanvas';
-import { EditorService } from '../../../services/editor';
-import { useService } from '../../../../../lib/plugins/useService';
+import { EditorService } from '../../../services/editor.service';
+import { useModule } from '../../../../../lib';
 
 export function EditorPage() {
-  const { isLoaded } = useService(EditorService);
+  const { isLoaded } = useModule(EditorService);
   return (
     <>
       {!isLoaded && 'loading...'}

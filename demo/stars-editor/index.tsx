@@ -7,6 +7,7 @@ import { AppService } from './services/app.service';
 import 'antd/dist/antd.css';
 import { ServerApp } from './components/ServerApp';
 import { BootstrapService } from '../../lib/slapp/bootstrap.service';
+import { ClientApp } from './components/ClientApp';
 
 function main() {
 
@@ -26,7 +27,7 @@ function main() {
 
     ReactDOM.render(
       <RedumbxApp moduleManager={server}>
-        <ServerApp />
+        <ClientApp />
       </RedumbxApp>,
       document.getElementById('app'),
     );
@@ -65,9 +66,9 @@ function main() {
 }
 
 main();
-
-
-function createSlappServer() {
-  const server = new Scope();
-  server.start(AppService);
-}
+//
+//
+// function createSlappServer() {
+//   const server = new Scope();
+//   server.start(AppService);
+// }

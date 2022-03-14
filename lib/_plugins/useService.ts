@@ -1,7 +1,7 @@
 import { TMerge, TMerge3, TMerge4 } from '../merge';
-import { useProvider } from '../useProvider';
-import { TModuleView, useComponentView } from '../useModule';
-import { TPromisifyFunctions } from '../store';
+import { useResolveModule } from '../useResolveModule';
+import { TModuleViewOf, useComponentView } from '../useModule';
+import { TPromisifyFunctions } from '../store-back';
 import { AConstructorTypeOf, RemoteStoreClient } from './RemoteStoreClient';
 import { Scope } from '../scope';
 import { lockThis } from '../lockThis';
@@ -13,7 +13,7 @@ export function useService<
   TResult extends TMerge<TServiceView<TModule>, TSelectorResult>
   >
 (ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TServiceView<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
-  const moduleMetadata = useProvider(ModuleClass, (instance: any) => createView({
+  const moduleMetadata = useResolveModule(ModuleClass, (instance: any) => createView({
     path: ModuleClass.name,
     controllerClass: ModuleClass,
     stateGetter: 'state' in instance ? () => instance.state : undefined,

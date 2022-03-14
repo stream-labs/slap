@@ -1,21 +1,19 @@
 import React from 'react';
+import { EditorService } from '../../../services/editor.service';
+import { useModule } from '../../../../../lib';
 import { Menu } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
-import { EditorService } from '../../../services/editor';
-import { useService } from '../../../../../lib/plugins/useService';
 
 export function EditorMenu() {
   const {
     scenes,
-    selectedItemId,
+    sceneItems,
+    activeSceneId,
+    activeItemId,
     onItemClick,
     onSceneClick,
-    activeSceneId,
-  } = useService(EditorService, editor => ({
+  } = useModule(EditorService, editor => ({
 
-    get selectedItemId() {
-      return editor.activeScene.selectedItemId;
-    },
 
     onSceneClick(ev: { key: string }) {
       editor.getScene(ev.key).makeActive();
@@ -31,10 +29,10 @@ export function EditorMenu() {
   return (
     <div>
       <span style={{ color: 'yellow' }}>Selected Scene {activeSceneId}</span>
-      <span style={{ color: 'yellow' }}>Selected Item {selectedItemId}</span>
+      <span style={{ color: 'yellow' }}>Selected Item {activeItemId}</span>
       <Menu
         mode="inline"
-        selectedKeys={[activeSceneId, selectedItemId]}
+        selectedKeys={[activeSceneId, activeItemId]}
         style={{ height: '100%', borderRight: 0 }}
         onSelect={onItemClick}
       >
@@ -45,7 +43,7 @@ export function EditorMenu() {
             title={scene.name}
             onTitleClick={onSceneClick}
           >
-            {scene.items.map(item => (
+            {sceneItems.filter(item => item.sceneId === scene.id).map(item => (
               <Menu.Item key={item.id}>{item.id}</Menu.Item>
             ))}
           </Menu.SubMenu>

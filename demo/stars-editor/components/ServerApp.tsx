@@ -1,13 +1,14 @@
 import React from 'react';
 import { Button } from 'antd';
-import { UsersService, useService } from '../services/users.service';
+import { UsersService } from '../services/users.service';
+import { useModule } from '../../../lib';
 // import { useModule } from '../../../lib';
 // import { UsersService } from '../services/users';
 
 export function ServerApp() {
   const {
     isLoaded, usersCnt, addUser, removeUser, users, onlineUsers
-  } = useService(UsersService);
+  } = useModule(UsersService);
 
   return (
     <div>

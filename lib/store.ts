@@ -1,155 +1,143 @@
-import produce from 'immer';
-import { IModuleMetadata } from './module-manager';
+import produce, { enableMapSet } from 'immer';
 import {
-  assertInjectIsAllowed, getCurrentScope, injectScope, Scope, TModuleClass,
-  generateId, Subject,
+  Scope, generateId, Subject, Dict,
 } from './scope';
+import { traverseClassInstance } from './traverseClassInstance';
+import { Provider } from './scope/provider';
+
+enableMapSet();
+
+
 
 export class Store {
-  constructor() {}
 
   state = {
-    modules: {} as Record<string, Record<string, any>>,
+    modules: {} as Dict<IState>,
   };
 
-  scope = injectScope();
-
+  scope!: Scope;
   isMutationRunning = false;
-
   modulesRevisions: Record<string, number> = {};
-
-  immerState: any = null;
-
   watchers = new StoreWatchers();
-
-  modulesMetadata: Record<string, Record<string, IModuleMetadata>> = {};
-
   isReady = true;
-
-  onMutation = new Subject<Mutation>();
   onReady = new Subject<boolean>();
-
-  init() {
-    const scope = this.scope;
-
-    console.log('Create Store with scope', this.scope.id);
-
-    Object.keys(this.scope.registry).forEach(moduleName => {
-      if (moduleName === 'Store') return;
-      this.createModuleMetadata(moduleName, this.scope.id);
-    });
-
-    scope.events.on('onModuleRegister', moduleInfo => {
-      this.createModuleMetadata(moduleInfo.name, moduleInfo.scope.id);
-    });
-
-    scope.events.on('onModuleInit', provider => {
-      if (provider.name === 'Store') return;
-      const instance = provider.instance as any;
-      const scopeId = provider.scope.id;
-      this.registerModuleFromInstance(instance, provider.name, scopeId);
-    });
-
-    scope.events.on('onModuleLoad', provider => {
-      if (provider.name === 'Store') return;
-      provider.instance.setIsLoaded();
-    });
-
-    // scope.register(StoreStatus);
-    // scope.init(StoreStatus, this.settings);
-  }
 
   setIsReady(isReady: boolean) {
     this.isReady = isReady;
     this.onReady.next(isReady);
   }
 
-  registerModuleFromClass(ModuleClass: any, moduleName?: string, scopeId?: string) {
-    this.scope.register(ModuleClass, moduleName);
-    this.scope.init(ModuleClass);
-  }
+  createState<T extends TStateControllerConstructor>
+  (stateName: string, StateControllerClass: T, extraState: Object = {}): TStateControllerFor<InstanceType<T>> {
+    const controller = new StateControllerClass();
+    const defaultState = { ...controller.state, ...extraState };
+    const state: IState = {
+      rev: 0,
+      value: clone(defaultState),
+      draftState: null,
+      controller,
+      mutations: {},
+    };
+    this.state.modules[stateName] = state;
 
-  registerModuleFromInstance(module: any, moduleName: string, scopeId?: string) {
-    scopeId = scopeId || this.scope.id;
-    this.createModule(moduleName, null, getModuleMutations(module), module, scopeId, module);
-    // catchDestroyedModuleCalls(module);
-  }
+    // move state getters to the state controller level
+    Object.keys(defaultState).forEach(propName => {
+      Object.defineProperty(controller, propName, {
+        get() {
+          return controller.state[propName];
+        },
+        enumerable: true,
+      });
+    });
 
-  createModule(
-    moduleName: string,
-    state: any,
-    mutations: Record<string, Function>,
-    getters: Record<string, Function>,
-    scopeId: string,
-    instance?: any,
-  ) {
-    const metadata = this.getModuleMetadata(moduleName, scopeId)!;
-    metadata.instance = instance;
-
-    if (instance) {
-      const stateDescriptor = Object.getOwnPropertyDescriptor(instance, 'state');
-      metadata.isStateful = !!(stateDescriptor && !stateDescriptor.get && !instance.state?._isStateProxy) || !instance.state;
-      if (metadata.isStateful) state = { ...instance.state, isLoaded: false };
-    } else {
-      metadata.isStateful = !!state;
-      instance = {};
-    }
-
-    if (metadata.isStateful) this.injectReactiveState(instance, moduleName, scopeId);
-    this.injectMutations(instance, moduleName, scopeId, mutations);
-
-    this.injectMutations(
-      instance,
-      moduleName,
-      scopeId,
-      { setIsLoaded () { (this.state as any).isLoaded = true; } },
-    );
-
-    if (!this.state.modules[moduleName]) this.state.modules[moduleName] = {};
-    this.state.modules[moduleName][scopeId] = state;
-    this.modulesRevisions[moduleName + scopeId] = 1;
-    return instance;
-  }
-
-  injectReactiveState(module: any, moduleName: string, scopeId: string) {
+    // define state getter
     const store = this;
-    Object.defineProperty(module, 'state', {
-      get: () => {
-        // prevent accessing state on destroyed module
-        if (!store.state.modules[moduleName][scopeId]) {
-          throw new Error('Module_is_destroyed');
-        }
+    Object.defineProperty(controller, 'state', {
+      get() {
         if (store.isRecordingAccessors) {
-          const revision = store.modulesRevisions[moduleName + scopeId];
-          this.recordedAccessors[moduleName + scopeId] = revision;
+          store.recordedAccessors[stateName] = state.rev;
         }
-        return store.isMutationRunning ? this.immerState : store.state.modules[moduleName][scopeId];
+        return state.draftState || state.value;
       },
-      set: (newState: unknown) => {
-        if (!store.isMutationRunning) throw new Error('Can not change the state outside of mutation');
-      },
+      enumerable: true,
     });
-  }
 
-  destroyModule(moduleName: string, contextId: string) {
-    delete this.state.modules[moduleName][contextId];
-    if (!Object.keys(this.state.modules[moduleName])) {
-      delete this.state.modules[moduleName];
-    }
-  }
+    // register mutations
+    traverseClassInstance(controller, (propName, descriptor) => {
+      if (propName === 'state') return;
+      if (propName.startsWith('get')) return;
+      if (descriptor.get) return;
+      const mutationMethod = (controller as any)[propName];
+      if (typeof mutationMethod !== 'function') return;
 
-  setBulkState(bulkState: Record<string, any>) {
-    const scopeId = this.scope.id;
-    Object.keys(bulkState).forEach(moduleName => {
-      this.createModuleMetadata(moduleName, scopeId);
-      this.scope.resolve(moduleName);
-      this.state.modules[moduleName][scopeId] = bulkState[moduleName];
+      store.registerMutation(stateName, propName, mutationMethod);
     });
-    // this.scope.resolve(StoreStatus).setConnected(true);
+    return controller as TStateControllerFor<InstanceType<T>>;
   }
 
-  mutateModule(moduleName: string, contextId: string, mutation: Function) {
-    mutation();
+  registerMutation(stateName: string, mutationName: string, mutationMethod: Function) {
+    const state = this.state.modules[stateName];
+    const store = this;
+    state.mutations[mutationName] = mutationMethod;
+
+    // override the original Module method to dispatch mutations
+    (state.controller)[mutationName] = function (...args: any[]) {
+      // if this method was called from another mutation
+      // we don't need to dispatch a new mutation again
+      // just call the original method
+      if (store.isMutationRunning) return mutationMethod.apply(module, args);
+      const mutation = {
+        id: Number(generateId()),
+        payload: args,
+        stateName,
+        mutationName,
+      };
+      store.execMutation(mutation);
+    };
+  }
+
+  createModuleState<T extends TStateControllerConstructor>(provider: Provider<any>, StateControllerClass: T) {
+    const stateName = `${provider.name}__${provider.scope.id}`;
+    const isLoaded = provider.isLoaded;
+    const stateController = this.createState(stateName, StateControllerClass, { isLoaded });
+    if (isLoaded) return stateController;
+
+    this.registerMutation(stateName, 'setModuleIsLoaded', () => {
+      stateController.state.isLoaded = true;
+    });
+    provider.events.on('onModuleLoaded',() => stateController.setModuleIsLoaded());
+    return stateController;
+  }
+
+  execMutation(mutation: Mutation) {
+    const { stateName, mutationName } = mutation;
+    const store = this;
+    const state = this.state.modules[stateName];
+    state.value = produce(state.value, (draftState: any) => {
+      store.isMutationRunning = true;
+      state.draftState = draftState;
+      console.log('RUN MUTATION', stateName, mutationName, mutation.payload);
+      state.mutations[mutationName].apply(state.controller, mutation.payload);
+      state.rev++;
+    });
+    state.draftState = null;
+    store.isMutationRunning = false;
+    this.watchers.run();
+  }
+
+  // TODO : move to hooks?
+  currentScope: Record<string, Scope> = {};
+
+  setModuleScope(moduleName: string, scope: Scope) {
+    this.currentScope[moduleName] = scope;
+  }
+
+  resetModuleScope(moduleName: string) {
+    delete this.currentScope[moduleName];
+  }
+
+  destroyState(stateName: string) {
+    delete this.state.modules[stateName];
   }
 
   isRecordingAccessors = false;
@@ -165,35 +153,6 @@ export class Store {
     return result;
   }
 
-  private createModuleMetadata(moduleName: string, scopeId: string): IModuleMetadata {
-    console.log('create module metadata for', moduleName, scopeId);
-
-    if (!this.modulesMetadata[moduleName]) {
-      this.modulesMetadata[moduleName] = {};
-    }
-    // eslint-disable-next-line no-multi-assign
-    const metadata = this.modulesMetadata[moduleName][scopeId] = {
-      scopeId,
-      moduleName,
-      isStateful: false,
-      instance: null,
-      createView: null,
-      view: null,
-      mutations: {},
-      originalMutations: {},
-    };
-    return metadata!;
-  }
-
-  updateModuleMetadata(moduleName: string, scopeId: string, patch: Partial<IModuleMetadata>) {
-    const metadata = this.modulesMetadata[moduleName][scopeId];
-    return Object.assign(metadata, patch);
-  }
-
-  getModuleMetadata(moduleName: string, scopeId: string): IModuleMetadata | null {
-    return this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName][scopeId];
-  }
-
   currentContext: Record<string, Scope> = {};
 
   setModuleContext(moduleName: string, scope: Scope) {
@@ -202,57 +161,6 @@ export class Store {
 
   resetModuleContext(moduleName: string) {
     delete this.currentContext[moduleName];
-  }
-
-  injectMutations(module: any, moduleName: string, scopeId: string, mutations: Record<string, Function>) {
-    // const mutationNames: string[] = Object.getPrototypeOf(module).mutations || [];
-    const store = this;
-    const metadata = this.modulesMetadata[moduleName][scopeId];
-
-    Object.keys(mutations).forEach(mutationName => {
-      const originalMethod = mutations[mutationName];
-      metadata.originalMutations[mutationName] = originalMethod;
-
-      // override the original Module method to dispatch mutations
-      (module as any)[mutationName] = function (...args: any[]) {
-        // if this method was called from another mutation
-        // we don't need to dispatch a new mutation again
-        // just call the original method
-        if (store.isMutationRunning) return originalMethod.apply(module, args);
-        store.mutate({
-          id: Number(generateId()), payload: args, module: moduleName, name: mutationName,
-        }, scopeId);
-      };
-    });
-  }
-
-  mutate(mutation: Mutation, scopeId?: string) {
-    scopeId = scopeId || this.scope.id;
-    const moduleName = mutation.module;
-    const methodName = mutation.name;
-    const store = this;
-    const moduleState = store.state.modules[moduleName][scopeId];
-
-    // prevent accessing state on deleted module
-    if (!this.state.modules[moduleName][scopeId]) {
-      throw new Error('Module_is_destroyed');
-    }
-
-    const moduleMetadata = store.modulesMetadata[moduleName][scopeId];
-    const module = moduleMetadata.instance;
-
-    const nextState = produce(moduleState, (draftState: any) => {
-      store.isMutationRunning = true;
-      store.immerState = draftState;
-      console.log('RUN MUTATION', mutation.name, mutation.payload);
-      moduleMetadata.originalMutations[methodName].apply(module, mutation.payload);
-      store.modulesRevisions[moduleName + scopeId]++;
-    });
-    store.immerState = null;
-    store.state.modules[moduleName][scopeId] = nextState;
-    store.isMutationRunning = false;
-    store.onMutation.next(mutation);
-    store.watchers.run();
   }
 }
 
@@ -300,86 +208,31 @@ export function getModuleMutations(module: any): Record<string, Function> {
   return mutations;
 }
 
-/**
- * Add try/catch that silently stops all method calls for a destroyed module
- */
-// function catchDestroyedModuleCalls(module: any) {
-//   // wrap each method in try/catch block
-//   traverseClassInstance(module, (propName, descriptor) => {
-//     // ignore getters
-//     if (descriptor.get || typeof module[propName] !== 'function') return;
-//
-//     const originalMethod = module[propName];
-//     module[propName] = (...args: unknown[]) => {
-//       try {
-//         return originalMethod.apply(module, args);
-//       } catch (e: unknown) {
-//         // silently stop execution if module is destroyed
-//         if ((e as any).message !== 'Module_is_destroyed') throw e;
-//       }
-//     };
-//   });
-// }
-
-/**
- * Makes all functions return a Promise and sets other types to never
- */
-export type TPromisifyFunctions<T> = {
-  [P in keyof T]: T[P] extends (...args: any[]) => any ? TPromisifyFunction<T[P]> : never;
-};
-
-/**
- * Wraps the return type in a promise if it doesn't already return a promise
- */
-export type TPromisifyFunction<T> = T extends (...args: infer P) => infer R
-  ? T extends (...args: any) => Promise<any>
-    ? (...args: P) => R
-    : (...args: P) => Promise<R>
-  : T;
-
-export function injectState<TModuleClass extends new (...args: any) => any>(StatefulModule: TModuleClass): InstanceType<TModuleClass>['state'] {
-  assertInjectIsAllowed();
-  const module = getCurrentScope()!.resolve(StatefulModule);
-  const proxy = { _isStateProxy: true };
-  Object.keys(module.state).forEach(stateKey => {
-    Object.defineProperty(proxy, stateKey, {
-      configurable: true,
-      enumerable: true,
-      get() {
-        return module.state[stateKey];
-      },
-    });
-  });
-  return proxy;
-}
-
-export interface ICommonState {
-  isLoaded: boolean;
-}
-
 export interface Mutation {
   id: number;
-  module: string;
-  name: string;
+  stateName: string;
+  mutationName: string;
   payload: any;
 }
 
-// export class StoreStatus {
-//   constructor(private settings?: TStoreSettings) {
-//     this.state.isRemote = !!settings?.isRemote;
-//   }
-//
-//   state = {
-//     isRemote: false,
-//     isConnected: false,
-//   };
-//
-//   get isReady() {
-//     return this.state.isRemote ? this.state.isConnected : true;
-//   }
-//
-//   @mutation()
-//   setConnected(isConnected: boolean) {
-//     this.state.isConnected = isConnected;
-//   }
-// }
+/**
+ * use immerjs API to clone the object
+ */
+export function clone<T>(state: T) {
+  return produce(state, draft => {});
+}
+
+export type TStateControllerInstance = { state: any }
+export type TStateControllerConstructor = new (...args: any[]) => TStateControllerInstance;
+
+export type TStateControllerFor<TStateDescr extends TStateControllerInstance>
+  = TStateDescr['state'] & TStateDescr;
+
+export interface IState {
+  value: any;
+  draftState: any;
+  rev: number;
+  controller: any;
+  mutations: Dict<Function>;
+  provider?: Provider<any>;
+}

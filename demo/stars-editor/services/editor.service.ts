@@ -1,40 +1,74 @@
-import { mutation } from '../../../lib';
 import { createSchema, injectCollection } from '../../../lib/slapp/db.service';
+import { injectState } from '../../../lib/slapp/injectState';
+import { injectQuery } from '../../../lib/slapp/query';
+import { inject, injectScope } from '../../../lib/scope/injector';
 
-export class EditorService {
+class EditorState {
+  persistent = true;
+
   state = {
     activeSceneId: '',
     activeItemId: '',
   };
 
+  setActiveScene(id: string) {
+    this.state.activeSceneId = id;
+  }
+
+  setActiveItem(id: string) {
+    this.state.activeItemId = id;
+  }
+}
+
+export class EditorService {
+
+  state = injectState(EditorState);
+
   scenesCollection = injectCollection(sceneSchema);
+
   itemsCollection = injectCollection(sceneItemSchema);
+
+  queryScenes = injectQuery(this.scenesCollection);
+
+  querySceneItems = injectQuery(this.itemsCollection);
+
+  scope = injectScope();
 
   async load() {
     await Promise.all([
       ...initialScenes.map(scene => this.addScene(scene)),
       ...initalItems.map(scene => this.addSceneItem(scene)),
     ]);
-    this.setActiveScene('scene1');
-  }
-
-  @mutation()
-  setActiveScene(id: string) {
-    this.state.activeSceneId = id;
-  }
-
-  @mutation()
-  setActiveItem(id: string) {
-    this.state.activeItemId = id;
+    this.state.setActiveScene('scene1');
   }
 
   async addScene(scene: TScene) {
-    await this.scenesCollection.insert(scene);
+    await this.scenesCollection.items.insert(scene);
   }
 
   async addSceneItem(sceneItem: TSceneItem) {
-    await this.itemsCollection.insert(sceneItem);
+    await this.itemsCollection.items.insert(sceneItem);
   }
+
+  getSceneController(id: string) {
+    return this.scope.create(SceneController, id);
+  }
+}
+
+export class SceneController {
+
+  editor = inject(EditorService);
+
+  constructor(public id: string) {}
+
+  makeActive() {
+    this.editor.state.setActiveScene(this.id);
+  }
+
+  selectItem(id: string) {
+    this.editor.state.setActiveItem(id)
+  }
+
 }
 
 const sceneSchema = createSchema({

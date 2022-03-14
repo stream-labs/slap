@@ -1,6 +1,6 @@
-import { mutation } from '../../../lib';
+import { injectState } from '../../../lib/slapp/injectState';
 
-export class WindowService {
+export class WindowState {
   state = {
     activePage: 'editor',
     pages: [
@@ -9,8 +9,14 @@ export class WindowService {
     ],
   };
 
-  @mutation()
   setActivePage(page: string) {
     this.state.activePage = page;
+  }
+}
+
+export class WindowService {
+  state = injectState(WindowState);
+
+  init() {
   }
 }

@@ -4,7 +4,7 @@ import {
   IJsonRpcRequest,
   IJsonRpcResponse, parseRPCResponse,
 } from './jsonrpc';
-import { Store } from '../store';
+import { StoreBack } from '../store-back';
 import { Subject } from '../scope';
 
 export interface ISender {

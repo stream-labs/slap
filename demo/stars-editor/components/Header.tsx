@@ -1,10 +1,10 @@
 import React from 'react';
 import { Layout, Menu } from 'antd';
-import { AppService } from '../services/app';
+import { WindowService } from '../services/window.service';
 import { useModule } from '../../../lib';
 
 export function Header() {
-  const { pages, activePage, setActivePage } = useModule(AppService);
+  const { pages, activePage, setActivePage } = useModule(WindowService);
 
   // const app = useService(AppService);
   // app.pages;

@@ -1,28 +1,18 @@
-import { injectScope } from '../scope';
 import { DBService } from './db.service';
-import { mutation, Store } from '../store';
+import { Store } from '../store';
+import { injectScope } from '../scope/injector';
 
 export class BootstrapService {
   scope = injectScope();
 
-  state = {
-    isReady: false,
-  };
+  constructor(protected EntryService: any) {}
 
-  constructor(protected EntryService: any) {
-  }
-
-  async init() {
+  async load() {
     const store = this.scope.start(Store);
     store.setIsReady(false); // prevent rendering until DB is not initialized
     const db = this.scope.start(DBService);
     await db.loadServicesState();
     this.scope.start(this.EntryService);
     store.setIsReady(true); // allow rendering
-  }
-
-  @mutation()
-  setReady() {
-    this.state.isReady = true;
   }
 }

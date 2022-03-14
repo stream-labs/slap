@@ -6,7 +6,7 @@ import {
 } from '../scope';
 import { lockThis } from '../lockThis';
 import { merge, TMerge3, unwrapState } from '../merge';
-import { getModuleMutations, TPromisifyFunctions } from '../store';
+import { getModuleMutations, TPromisifyFunctions } from '../store-back';
 import { RemoteStoreClient } from './RemoteStoreClient';
 
 export type TServiceViews<T extends { [key: string]: new (...args: any) => any }> = {

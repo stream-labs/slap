@@ -1,20 +1,7 @@
 import React from 'react';
-import { useModule } from '../../../../lib';
-import { UsersService } from '../../services/users';
+// import { ServerApp } from '../ServerApp';
 
 export function AboutPage () {
-  const { users } = useModule(UsersService);
-
-  // function openChildWindow() {
-  //   const myWindow = window.open('?id=child', '_blank');
-  //   console.log('open window', myWindow);
-  //   console.log('opener', myWindow?.opener);
-  // }
-
-  return (
-    <div>
-      {users.map(user => <div key={user.id}>{user.name}</div>)}
-      {/* <a onClick={openChildWindow}>Open the Child window</a> */}
-    </div>
-  );
+  return <div>This is about page</div>;
+  // return <ServerApp />;
 }
