@@ -6,11 +6,11 @@ import { EditorService } from '../../../services/editor.service';
 import { useModule } from '../../../../../lib';
 
 export function EditorPage() {
-  const { isLoaded } = useModule(EditorService);
+  const { isLoading } = useModule(EditorService);
   return (
     <>
-      {!isLoaded && 'loading...'}
-      {isLoaded && (
+      {isLoading && 'loading...'}
+      {!isLoading && (
       <Layout>
         <Layout.Sider width={200} className="site-layout-background">
           <EditorMenu />

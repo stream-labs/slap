@@ -1,23 +1,19 @@
-import produce, { enableMapSet } from 'immer';
+import produce from 'immer';
 import {
-  Scope, generateId, Subject, Dict,
+  Scope, generateId, Subject, Dict, defineGetter, capitalize,
 } from './scope';
 import { traverseClassInstance } from './traverseClassInstance';
 import { Provider } from './scope/provider';
 
-enableMapSet();
-
-
-
 export class Store {
 
   state = {
-    modules: {} as Dict<IState>,
+    modules: {} as Dict<IStateMetadata>,
   };
 
   scope!: Scope;
   isMutationRunning = false;
-  modulesRevisions: Record<string, number> = {};
+  // modulesRevisions: Record<string, number> = {};
   watchers = new StoreWatchers();
   isReady = true;
   onReady = new Subject<boolean>();
@@ -27,40 +23,43 @@ export class Store {
     this.onReady.next(isReady);
   }
 
-  createState<T extends TStateControllerConstructor>
-  (stateName: string, StateControllerClass: T, extraState: Object = {}): TStateControllerFor<InstanceType<T>> {
-    const controller = new StateControllerClass();
-    const defaultState = { ...controller.state, ...extraState };
-    const state: IState = {
+  createState<TConfig extends TStateConfig>
+  (config: TConfig): TStateControllerFor<TConfig> {
+    const stateName = config.name;
+
+    if (this.state.modules[stateName]) {
+      throw new Error(`State with a name "${stateName}" is already created`);
+    }
+
+    const controller = {} as any;
+    const defaultState = config.state;
+    const metadata: IStateMetadata = {
       rev: 0,
+      config,
       value: clone(defaultState),
       draftState: null,
       controller,
       mutations: {},
     };
-    this.state.modules[stateName] = state;
+
+    this.state.modules[stateName] = metadata;
 
     // move state getters to the state controller level
     Object.keys(defaultState).forEach(propName => {
-      Object.defineProperty(controller, propName, {
-        get() {
-          return controller.state[propName];
-        },
-        enumerable: true,
-      });
+      defineGetter(controller, propName, () => controller.state[propName]);
     });
 
     // define state getter
     const store = this;
-    Object.defineProperty(controller, 'state', {
-      get() {
-        if (store.isRecordingAccessors) {
-          store.recordedAccessors[stateName] = state.rev;
-        }
-        return state.draftState || state.value;
-      },
-      enumerable: true,
+    defineGetter(controller, 'state', () => {
+      if (store.isRecordingAccessors) {
+        store.recordedAccessors[stateName] = metadata.rev;
+      }
+      return metadata.draftState || metadata.value;
     });
+
+    // autogenerate mutations
+    this.generateMutations(stateName);
 
     // register mutations
     traverseClassInstance(controller, (propName, descriptor) => {
@@ -72,7 +71,8 @@ export class Store {
 
       store.registerMutation(stateName, propName, mutationMethod);
     });
-    return controller as TStateControllerFor<InstanceType<T>>;
+
+    return controller;
   }
 
   registerMutation(stateName: string, mutationName: string, mutationMethod: Function) {
@@ -96,17 +96,13 @@ export class Store {
     };
   }
 
-  createModuleState<T extends TStateControllerConstructor>(provider: Provider<any>, StateControllerClass: T) {
-    const stateName = `${provider.name}__${provider.scope.id}`;
-    const isLoaded = provider.isLoaded;
-    const stateController = this.createState(stateName, StateControllerClass, { isLoaded });
-    if (isLoaded) return stateController;
-
-    this.registerMutation(stateName, 'setModuleIsLoaded', () => {
-      stateController.state.isLoaded = true;
+  generateMutations(stateName: string) {
+    const state = this.state.modules[stateName];
+    Object.keys(state.config.state).forEach(propertyName => {
+      const mutationName = `set${capitalize(propertyName)}`;
+      const mutationMethod = (val: unknown) => state.controller.state[propertyName] = val;
+      this.registerMutation(stateName, mutationName, mutationMethod);
     });
-    provider.events.on('onModuleLoaded',() => stateController.setModuleIsLoaded());
-    return stateController;
   }
 
   execMutation(mutation: Mutation) {
@@ -123,6 +119,10 @@ export class Store {
     state.draftState = null;
     store.isMutationRunning = false;
     this.watchers.run();
+  }
+
+  toJSON() {
+    // TODO use for debugging
   }
 
   // TODO : move to hooks?
@@ -164,6 +164,7 @@ export class Store {
   }
 }
 
+
 class StoreWatchers {
   watchers = {} as Record<string, Function>;
 
@@ -199,14 +200,14 @@ export function mutation() {
   };
 }
 
-export function getModuleMutations(module: any): Record<string, Function> {
-  const mutationNames: string[] = Object.getPrototypeOf(module).mutations || [];
-  const mutations: Record<string, Function> = {};
-  mutationNames.forEach(mutationName => {
-    mutations[mutationName] = module[mutationName];
-  });
-  return mutations;
-}
+// export function getModuleMutations(module: any): Record<string, Function> {
+//   const mutationNames: string[] = Object.getPrototypeOf(module).mutations || [];
+//   const mutations: Record<string, Function> = {};
+//   mutationNames.forEach(mutationName => {
+//     mutations[mutationName] = module[mutationName];
+//   });
+//   return mutations;
+// }
 
 export interface Mutation {
   id: number;
@@ -222,17 +223,43 @@ export function clone<T>(state: T) {
   return produce(state, draft => {});
 }
 
-export type TStateControllerInstance = { state: any }
-export type TStateControllerConstructor = new (...args: any[]) => TStateControllerInstance;
+export const defaultStateConfig: Partial<TStateConfig> = {
+  state: {},
+  persistent: false,
+  autogenerateMutations: true,
+};
 
-export type TStateControllerFor<TStateDescr extends TStateControllerInstance>
-  = TStateDescr['state'] & TStateDescr;
+export type TStateConfig = {
+  state: any,
+  name: string,
+  persistent?: boolean,
+  autogenerateMutations?: boolean,
+}
 
-export interface IState {
+export interface IStateMetadata {
   value: any;
   draftState: any;
   rev: number;
+  config: TStateConfig;
   controller: any;
   mutations: Dict<Function>;
   provider?: Provider<any>;
 }
+
+export type TStateControllerFor<TConfig extends TStateConfig>
+  = TConfig['state'] & PickGeneratedMutations<TConfig> & Omit<TConfig, keyof TStateConfig>;
+
+type GetSetterName<TPropName> = TPropName extends string ? `set${Capitalize<TPropName>}` : never;
+
+export type PickGeneratedMutations<TConfig extends TStateConfig> = {
+  [K in keyof TConfig['state'] as GetSetterName<K>]: (value: TConfig['state'][K]) => unknown
+}
+
+// const myState = {
+//   state: {
+//     myVal: 0,
+//   },
+// };
+//
+// const cont: TStateControllerFor<typeof myState> = null as any;
+// cont.setMyVal()

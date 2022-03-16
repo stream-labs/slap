@@ -1,10 +1,7 @@
 import { createNanoEvents } from 'nanoevents';
-import {
-  TInstances, TModuleClass, TModuleConstructorMap,
-} from './interfaces';
+import { TModuleClass, TModuleConstructorMap } from './interfaces';
 import { generateId } from './utils';
 import { Provider } from './provider';
-import { Store } from '../store';
 
 let currentScope: Scope | null = null;
 let currentProvider: Provider<any> | null = null;
@@ -109,7 +106,6 @@ export class Scope {
     >(ModuleClass: TServiceClass, ...args: ConstructorParameters<TServiceClass>): InstanceType<TServiceClass> {
     console.log('create new class', ModuleClass.name);
 
-
     const prevScope = currentScope;
     currentScope = this;
     let provider: Provider<TServiceClass>;
@@ -137,7 +133,6 @@ export class Scope {
 
     return provider.instance as InstanceType<TServiceClass>;
   }
-
 
   createScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>) {
     return new Scope(dependencies, this, settings);

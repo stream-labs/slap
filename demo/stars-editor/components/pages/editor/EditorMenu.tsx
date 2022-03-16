@@ -1,8 +1,8 @@
 import React from 'react';
-import { EditorService } from '../../../services/editor.service';
-import { useModule } from '../../../../../lib';
 import { Menu } from 'antd';
 import { UserOutlined } from '@ant-design/icons';
+import { EditorService } from '../../../services/editor.service';
+import { useModule } from '../../../../../lib';
 
 export function EditorMenu() {
   const {
@@ -12,8 +12,7 @@ export function EditorMenu() {
     activeItemId,
     onItemClick,
     onSceneClick,
-  } = useModule(EditorService, editor => ({
-
+  } = useModule(EditorService).extend(editor => ({
 
     onSceneClick(ev: { key: string }) {
       editor.getScene(ev.key).makeActive();

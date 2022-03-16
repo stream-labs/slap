@@ -3,19 +3,19 @@ import { Subscription } from 'rxjs';
 import { Store, TStateControllerFor } from '../store';
 import { createInjector, Injector } from '../scope/injector';
 import { CollectionInjectorType, TCollectionInfo } from './db.service';
-import { Dict } from '../scope';
-
-export class QueryState<TDoc> {
+export class QueryState<TValue, TError> {
 
   state = {
 
-    // define loading statuses
+    // define loading and error statuses
     isLoading: false,
     isLoaded: false,
-    error: null as unknown,
+    error: TError,
 
-    itemsValues: [] as TDoc[],
-    itemsMap: {} as Dict<TDoc>,
+    value: TValue;
+
+    itemsValues: [] as any,
+    itemsMap: {} as any,
     filter: null as Object | null,
 
     // define state revisions
@@ -25,19 +25,19 @@ export class QueryState<TDoc> {
     itemsRev: 0, // increments when update items
   };
 
-  setValues(values: TDoc[]) {
-    this.state.itemsValues = values;
-    const itemsMap = {} as Dict<TDoc>;
+  setValue(values: TValue) {
+    this.state.value = values;
+    const itemsMap = {} as any;
     values.forEach(value => itemsMap[(value as any).id] = value);
     this.state.itemsMap = itemsMap;
   }
 
-  setItem(key: string, value: TDoc) {
+  setItem(key: string, value: TValue) {
     this.state.itemsMap[key] = value;
     this.state.itemsRev++;
   }
 
-  addItem(key: string, value: TDoc) {
+  addItem(key: string, value: TValue) {
     this.state.itemsValues.push(value);
     this.state.itemsMap[key] = value;
     this.state.collectionRev++;
@@ -51,34 +51,67 @@ export class QueryState<TDoc> {
     this.state.collectionRev++;
   }
 
-  setFilter(filter: Object) {
-    this.state.filter = filter;
+  // setFilter(filter: Object) {
+  //   this.state.filter = filter;
+  // }
+
+  // setIsLoading(isLoading: boolean) {
+  //   this.state.isLoading = isLoading;
+  // }
+  //
+  // setIsLoaded(isLoaded: boolean) {
+  //   this.state.isLoaded = isLoaded;
+  // }
+  //
+  // setError(error: unknown) {
+  //   this.state.error = error;
+  // }
+}
+
+export interface QueryConfig<TValue, TError> {
+  name: string;
+  store: Store;
+  fetch(): Promise<TValue>
+  // filter: any;
+}
+
+export class Query<TValue, TError> {
+
+  state!: TStateControllerFor<QueryState<TValue, TError>>;
+  loadingPromise?: Promise<TValue>;
+
+  constructor(public config: QueryConfig<TValue, TError>) {
+    this.state = this.config.store.createState(config.name, QueryState);
   }
 
-  setIsLoading(isLoading: boolean) {
-    this.state.isLoading = isLoading;
+  exec() {
+
   }
 
-  setIsLoaded(isLoaded: boolean) {
-    this.state.isLoaded = isLoaded;
-  }
-
-  setError(error: unknown) {
-    this.state.error = error;
+  fetch() {
+    const name = this.config.name;
+    console.log('fetch query', name);
+    // prevent multiple fetches if one is already created
+    if (this.state.isLoading) return this.loadingPromise;
+    this.state.setIsLoading(true);
+    this.loadingPromise = this.config.fetch();
+    this.loadingPromise.then(value => {
+      this.state.setValue(value);
+      this.state.setIsLoading(false);
+      this.state.setIsLoaded(true);
+      console.log('query fetched', name);
+    });
+    return this.loadingPromise;
   }
 }
 
-export class CollectionQuery<TDoc> {
+export class CollectionQuery<TDoc> extends Query<TDoc, any> {
 
   collection!: TCollectionInfo<any, TDoc>;
   filterFn?: (() => Object);
-  state!: TStateControllerFor<QueryState<TDoc>>;
   changesSubscription?: Subscription;
-  loadingPromise?: Promise<any>;
 
-  constructor(public queryName: string, public store: Store) {
-    this.state = this.store.createState(this.queryName, QueryState) as TStateControllerFor<QueryState<TDoc>>;
-  }
+
 
   load(collection: TCollectionInfo<any, TDoc>, filterFn?: CollectionQuery<TDoc>['filterFn']) {
     this.collection = collection;
@@ -119,25 +152,25 @@ export class CollectionQuery<TDoc> {
     this.changesSubscription = undefined;
   }
 
-  fetch() {
-    console.log('fetch query', this.queryName);
-    // prevent multiple fetches if one is already created
-    if (this.state.isLoading) return this.loadingPromise;
-    this.state.setIsLoading(true);
-    this.loadingPromise = this.collection.items.find().exec();
-    this.loadingPromise.then(docs => {
-      this.state.setValues(docs);
-      this.state.setIsLoading(false);
-      this.state.setIsLoaded(true);
-      console.log('query fetched', this.queryName, this.state.itemsMap);
-    });
-    return this.loadingPromise;
-  }
-
-  destroy() {
-    this.unsubscribeChanges();
-    this.store.destroyState(this.queryName);
-  }
+  // fetch() {
+  //   console.log('fetch query', this.queryName);
+  //   // prevent multiple fetches if one is already created
+  //   if (this.state.isLoading) return this.loadingPromise;
+  //   this.state.setIsLoading(true);
+  //   this.loadingPromise = this.collection.items.find().exec();
+  //   this.loadingPromise.then(docs => {
+  //     this.state.setValues(docs);
+  //     this.state.setIsLoading(false);
+  //     this.state.setIsLoaded(true);
+  //     console.log('query fetched', this.queryName, this.state.itemsMap);
+  //   });
+  //   return this.loadingPromise;
+  // }
+  //
+  // destroy() {
+  //   this.unsubscribeChanges();
+  //   this.store.destroyState(this.queryName);
+  // }
 }
 
 export const QueryInjectorType = Symbol('queryInjector');
@@ -168,9 +201,9 @@ export function injectCollectionQuery<TDoc>(collectionInfo: TCollectionInfo<any,
       });
     },
     getValue() {
-      return query;
+      return query
     },
-  })) as CollectionQuery<TDoc>;
+  })) as Query<TDoc[], any>;
 }
 
 export function injectQuery<TDoc>(collection: TCollectionInfo<any, TDoc>) {

@@ -16,6 +16,8 @@ export function useSelector(cb: Function) {
       selectorResultRef.current = cb();
     });
 
+    // TODO do not run watchers for non-observable component views
+
     const watcherId = store.watchers.create(() => {
       const prevRevisions = servicesRevisionRef.current;
       const currentRevisions = store.modulesRevisions;

@@ -49,5 +49,6 @@ module.exports = {
     'no-return-assign': 0,
     'lines-between-class-members': 0,
     'padded-blocks': 0,
+    'no-continue': 0,
   },
 };

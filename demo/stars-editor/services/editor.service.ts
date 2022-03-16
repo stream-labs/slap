@@ -3,7 +3,7 @@ import { injectState } from '../../../lib/slapp/injectState';
 import { injectQuery } from '../../../lib/slapp/query';
 import { inject, injectScope } from '../../../lib/scope/injector';
 
-class EditorState {
+export class EditorState {
   persistent = true;
 
   state = {
@@ -28,9 +28,9 @@ export class EditorService {
 
   itemsCollection = injectCollection(sceneItemSchema);
 
-  queryScenes = injectQuery(this.scenesCollection);
+  scenesQuery = injectQuery(this.scenesCollection);
 
-  querySceneItems = injectQuery(this.itemsCollection);
+  sceneItemsQuery = injectQuery(this.itemsCollection);
 
   scope = injectScope();
 

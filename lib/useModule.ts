@@ -1,22 +1,16 @@
 import React, {
   useContext, useEffect, useMemo, useRef,
 } from 'react';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import {
-  useForceUpdate,
   useOnCreate,
 } from './hooks';
-import { merge, TMerge, TMerge3 } from './merge';
-import { lockThis } from './lockThis';
 import { useSelector } from './useSelector';
-import { useResolveModule } from './useResolveModule';
-// import { createDependencyWatcher } from './dependency-watcher';
-import { Dict, forEach, Scope } from './scope';
-import { traverseClassInstance } from './traverseClassInstance';
+import { useModuleInstance } from './useResolveModule';
+import { Dict, Scope } from './scope';
 import { TPromisifyFunctions } from './slapp/interfaces';
-import { CollectionQuery, QueryState } from './slapp/query';
-import { TCollectionInfo } from './slapp/db.service';
-import { Store } from './store';
+import { CollectionQuery } from './slapp/query';
+import { buildModuleView } from './slapp/module-view/module-view';
+import { ModuleViewBuilder } from './slapp/module-view/module-view-builder';
 
 export const AppScope = React.createContext<Scope|null>(null);
 
@@ -24,69 +18,7 @@ export function useScope() {
   return useContext(AppScope)!;
 }
 
-
-// export type TModuleView<
-//   TModule extends Object,
-//   TState = TModule extends { state?: any } ? TModule['state'] : null,
-//   TView = TModule extends { createView: () => any } ? ReturnType<TModule['createView']> : null,
-//   > = TState & TModule & TView
-
-
-export function createModuleView<TService extends Object>(service: TService): TModuleViewOf<TService> {
-  const view = {
-    moduleSchema: {},
-  } as any;
-  const module = service as any;
-
-  // append state and flatten state
-  if (module.state) {
-    defineGetter(view, 'state', () => module.state);
-    traverseClassInstance(module.state, stateKey => {
-      view.moduleSchema[stateKey] = 'state';
-      defineGetter(view, stateKey, () => module.state[stateKey]);
-    });
-  }
-
-  // append methods
-  traverseClassInstance(service, (propName, descriptor) => {
-    const module = service as any;
-
-    if (propName.startsWith('query')) {
-      view.moduleSchema[propName] = 'query';
-      defineGetter(view, propName, () => module[propName]);
-      let queryValueProp = propName.split('query')[1];
-      queryValueProp = queryValueProp.charAt(0).toLowerCase() + queryValueProp.slice(1);
-
-      defineGetter(view, queryValueProp, () => (view[propName].state.itemsValues));
-      return;
-    }
-
-    if (descriptor.get) {
-      view.moduleSchema[propName] = 'getter';
-      defineGetter(view, propName, () => module[propName]);
-      return;
-    }
-    view[propName] = (...args: any) => module[propName](...args);
-  });
-  return view as TModuleViewOf<TService>;
-}
-
-export interface IModuleView {
-  moduleSchema: Dict<'state' | 'getter' | 'getterFunction' | 'query' | 'queryValue'>
-}
-
-function defineGetter(target: object, methodName: string, getter: () => any) {
-  Object.defineProperty(target, methodName, {
-    configurable: true,
-    enumerable: true,
-    get: getter,
-  });
-}
-
-
-
-export function useComponentView<TModuleView, TReturnType = TModuleView,
-  >(moduleView: TModuleView): TReturnType {
+export function useComponentView<TModuleView>(moduleView: TModuleView) {
   const { selector, componentView } = useOnCreate(() => {
     const componentView = new ComponentView(moduleView);
 
@@ -100,55 +32,48 @@ export function useComponentView<TModuleView, TReturnType = TModuleView,
   // call selector to make selected props reactive
   useSelector(selector as any);
 
-  // run lifecycle
-  useEffect(() => {
-    componentView.onMount();
-    return () => componentView.onDestroy();
-  }, []);
+  // // run lifecycle
+  // useEffect(() => {
+  //   componentView.onMount();
+  //   return () => componentView.onDestroy();
+  // }, []);
 
-  return componentView as any as TReturnType;
+  return componentView;
 }
 
-export function useModuleView<TModule>(ModuleClass: new(...args: any[]) => TModule) {
-  const provider = useResolveModule(ModuleClass);
+export function useModuleView<TModule>(ModuleClass: TModule) {
+  const instance = useModuleInstance(ModuleClass);
   const moduleView = useOnCreate(() => {
-    return createModuleView(provider.instance!);
+    return buildModuleView(instance).view;
   });
   return moduleView;
 }
 
-
-export function useModule<
-  TModule,
-  TSelectorResult,
-  TResult extends TModuleViewOf<TModule> & TSelectorResult
-  >
-(ModuleClass: new(...args: any[]) => TModule, selectorFn: (view: TModuleViewOf<TModule>) => TSelectorResult = () => ({} as TSelectorResult)): TResult {
+export function useModule<TModule>(ModuleClass: TModule) {
   const moduleView = useModuleView(ModuleClass);
-  const componentView = useComponentView(moduleView, selectorFn) as any;
-  return componentView.dependencyWatcherProxy as any as TResult;
+  const componentView = useComponentView(moduleView);
+  return componentView.dependencyWatcherProxy;
 }
+
+export function useExtendedView<TModule, TExtendedProps extends Dict<any>>(module: TModule, extendedPropsConstructor: (module: TModule) => TExtendedProps) {
+  const moduleView = useOnCreate(() => {
+    return new ModuleViewBuilder<TModule>(module).extend(extendedPropsConstructor).view;
+  });
+  const componentView = useComponentView(moduleView);
+  return componentView.dependencyWatcherProxy;
+}
+
+type TComponentView<TModuleView> = TModuleView & { extend<TExtendedProps extends Dict<any>>(extendedPropsCreator: (view: TModuleView) => TExtendedProps): TComponentView<TModuleView & TExtendedProps> }
 
 export class ComponentView<TModuleView extends Object> {
   dependencies: Dict<any> = {};
-  dependencyWatcherProxy: any;
-  // revision = 0;
-  // renderCounter = 0; // use to optimize re-renderings
-  // subscriptions: Subscription[] = [];
-  // subscriptionValues: Dict<any> = {};
+  dependencyWatcherProxy!: TComponentView<TModuleView>;
+  hasObservers = false;
+
+  extend = useExtendedView;
 
   constructor(public moduleView: TModuleView) {
     this.initDependencyWatcher();
-  }
-
-  onMount() {
-  }
-
-  onLoad() {
-  }
-
-  onDestroy() {
-    /// this.subscriptions.forEach(s => s.unsubscribe());
   }
 
   initDependencyWatcher() {
@@ -163,16 +88,18 @@ export class ComponentView<TModuleView extends Object> {
         get: (target, propName: string) => {
           if (propName === 'hasOwnProperty') return moduleView.hasOwnProperty;
           if (propName in target) return (target as any)[propName];
+          if (propName === 'extend') return this.extend;
           const value = this.selectValue(propName);
           return value;
         },
       },
-    );
+    ) as any;
   }
 
   selectValue(propName: string) {
     const value = this.getValue(propName);
     this.dependencies[propName] = value;
+    if (this.hasObservers) this.hasObservers = true;
     return value;
   }
 
@@ -190,6 +117,8 @@ export class ComponentView<TModuleView extends Object> {
   }
 
   getState(): Partial<TModuleView> {
+    if (this.hasObservers) return null as any;
+
     const values: Partial<TModuleView> = {};
     const watchedObjectAny = this.moduleView as any;
     Object.keys(this.dependencies).forEach((propName) => {
@@ -210,22 +139,8 @@ export class ComponentView<TModuleView extends Object> {
   }
 }
 
-
-export type TModuleViewOf<
-  TService extends Object,
-  TState = TService extends { state?: any } ? TService['state'] : {},
-  > =
-  TState &
-  { isLoaded: boolean } &
-  PickGetters<TService> &
-  PickGetterFunctions<TService> &
-  PickAsyncMethods<TService> &
-  PickSubjectValues<TService> &
-  PickQueryValues<TService> &
-  PickControllerViews<TService>
-
 // https://github.com/Microsoft/TypeScript/issues/27024#issuecomment-421529650
-type IfEquals<X, Y, A, B> =
+export type IfEquals<X, Y, A, B> =
   (<T>() => T extends X ? 1 : 2) extends
     (<T>() => T extends Y ? 1 : 2) ? A : B;
 
@@ -248,10 +163,9 @@ type PickGetters<T> = Omit<T, WritableKeysOf<T>>;
 
 type Erase$<TStr> = TStr extends `${infer TName}$` ? TName : never;
 
-type TIsBehaviorSubjectName<Key> = Key extends `${string}$` ? Key : never;
-type PickBehaviorSubjects<T> = Pick<T, TIsBehaviorSubjectName<keyof T>>
-type PickSubjectValues<T> = {[K in keyof T as Erase$<K>]: T[K] extends Observable<infer TValue> ? TValue : never }
-
+// type TIsBehaviorSubjectName<Key> = Key extends `${string}$` ? Key : never;
+// type PickBehaviorSubjects<T> = Pick<T, TIsBehaviorSubjectName<keyof T>>
+// type PickSubjectValues<T> = {[K in keyof T as Erase$<K>]: T[K] extends Observable<infer TValue> ? TValue : never }
 
 type GetQueryName<TStr> = TStr extends `query${infer TName}` ? Uncapitalize<TName> : never;
 type TIsQueryName<Key> = Key extends `query${string}` ? Key : never;
