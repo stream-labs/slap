@@ -1,11 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { mutation, RedumbxApp, useModule } from '../lib';
+import { mutation, ReactModules, useModule } from '../lib';
 import './index.css';
+import { injectState } from '../lib/slapp/injectState';
 
 export function TodoListApp() {
   return (
-    <RedumbxApp>
+    <ReactModules>
       {/* <Module module={TodoModule}> */}
         <section className="todo-list">
           <h2>Todo List</h2>
@@ -14,7 +15,7 @@ export function TodoListApp() {
           <TodoCompleteButton />
         </section>
       {/* </Module> */}
-    </RedumbxApp>
+    </ReactModules>
   );
 }
 
@@ -76,7 +77,7 @@ export function TodoCompleteButton() {
 }
 
 class TodoModule {
-  state = {
+  state = injectState({
     tasks: [
       { id: 1, name: 'Buy milk', isCompleted: false },
       { id: 2, name: 'Wash the car', isCompleted: false },
@@ -84,7 +85,32 @@ class TodoModule {
     ],
     inputValue: '',
     counter: 3,
-  };
+
+    setInputValue(text: string) {
+      this.inputValue = text;
+    },
+
+    addTask() {
+      this.counter++;
+      this.tasks.unshift(
+        { id: this.counter, name: this.inputValue, isCompleted: false },
+      );
+      this.inputValue = '';
+    },
+
+    removeTask(id: number) {
+      this.tasks = this.tasks.filter(task => task.id !== id);
+    },
+
+    setCompleted(id: number, isCompleted: boolean) {
+      const task = this.tasks.find(task => task.id === id)!;
+      task.isCompleted = isCompleted;
+    },
+
+    completeAll() {
+      this.tasks = this.tasks.map((task) => ({ ...task, isCompleted: true }));
+    },
+  });
 
   get itemsCount() {
     return this.state.tasks.length;
@@ -96,36 +122,6 @@ class TodoModule {
 
   get hasIncompleted() {
     return !!this.state.tasks.find(task => !task.isCompleted);
-  }
-
-  @mutation()
-  setInputValue(text: string) {
-    this.state.inputValue = text;
-  }
-
-  @mutation()
-  addTask() {
-    this.state.counter++;
-    this.state.tasks.unshift(
-      { id: this.state.counter, name: this.state.inputValue, isCompleted: false },
-    );
-    this.state.inputValue = '';
-  }
-
-  @mutation()
-  removeTask(id: number) {
-    this.state.tasks = this.state.tasks.filter(task => task.id !== id);
-  }
-
-  @mutation()
-  setCompleted(id: number, isCompleted: boolean) {
-    const task = this.state.tasks.find(task => task.id === id)!;
-    task.isCompleted = isCompleted;
-  }
-
-  @mutation()
-  completeAll() {
-    this.state.tasks = this.state.tasks.map((task) => ({ ...task, isCompleted: true }));
   }
 }
 

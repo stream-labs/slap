@@ -1,8 +1,15 @@
 import { useEffect } from 'react';
 import { useComponentId, useOnCreate, useOnDestroy } from './hooks';
-import { useScope } from './useModule';
 import { Store } from './store';
-import { TModuleClass, TModuleConstructor } from './scope';
+import {
+  Scope,
+  TModuleClass,
+  TModuleConstructor,
+  TModuleInstanceFor,
+  TModuleLocatorType
+} from './scope';
+import { isPlainObject } from 'is-plain-object';
+import { useAppContext } from './ReactModules';
 //
 // export function useResolveModule<TModule>
 // (ModuleClass: new(...args: any[]) => TModule, createView?: (module: TModule) => any) {
@@ -57,11 +64,8 @@ import { TModuleClass, TModuleConstructor } from './scope';
 
 
 
-export function useModuleInstance<
-  TModuleConfig,
-  TModule = TModuleConfig extends TModuleClass ? InstanceType<TModuleConfig> : TModuleConfig>(ModuleConstructor: TModuleConfig): TModule
-{
-  const moduleManager = useScope();
+export function useModuleInstance<T extends TModuleLocatorType, TInitProps extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps: TInitProps|null = null, name = ''): TModuleInstanceFor<T> {
+  const rootScope = useAppContext().modulesScope;
 
   const {
     instance,
@@ -71,38 +75,34 @@ export function useModuleInstance<
     store,
   } = useOnCreate(() => {
 
-    const moduleIsPlainObject = Object.getPrototypeOf({}) === Object.getPrototypeOf(ModuleConstructor);
+    const moduleName = name || typeof locator === 'string' ? locator : (locator as any).name;
+    const store = rootScope.resolve(Store);
 
-    if (moduleIsPlainObject) {
-      return {
-        // TODO implement
-      } as any;
-    }
-
-    const ModuleClass = ModuleConstructor as any as TModuleClass;
-    const moduleName = (ModuleClass as any).name;
-    const store = moduleManager.resolve(Store);
-
-    let scope = store.currentContext[moduleName];
-
-    let isRoot = false;
+    let isRoot = !!initProps;
+    let scope: Scope = isRoot ? rootScope : store.currentContext[moduleName];
 
     if (!scope) {
-      if (moduleManager.isRegistered(ModuleClass)) {
-        scope = moduleManager;
+      if (rootScope.isRegistered(locator)) {
+        scope = rootScope;
       } else {
-        scope = moduleManager.registerScope({ ModuleClass });
         isRoot = true;
       }
     }
 
-    const instance = scope.resolve(ModuleClass);
+    if (isRoot) scope = rootScope.registerScope({}, { autoregister: true });
+
+    const instance = scope.resolve(locator);
+
+    if (initProps && typeof initProps === 'object') {
+      instance.state['updateState'](initProps);
+    }
 
     return {
       instance,
       store,
       isRoot,
       scope,
+      moduleName,
     };
   });
 

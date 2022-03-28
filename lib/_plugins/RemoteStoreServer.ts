@@ -10,7 +10,7 @@ import {
 import {
   generateId, injectScope, Subject, Subscription, TModuleConstructorMap,
 } from '../scope';
-import { traverseClassInstance } from '../traverseClassInstance';
+import { traverse } from '../traverse';
 import { RemoteStore } from './RemoteStore';
 
 export class RemoteStoreServer {
@@ -296,7 +296,7 @@ export class RemoteStoreServer {
 
       // collect resource keys from the whole prototype chain
 
-      traverseClassInstance(service, (propName) => {
+      traverse(service, (propName) => {
         resourceScheme[propName] = typeof service[propName];
       });
 

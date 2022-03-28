@@ -15,7 +15,7 @@ export class AppService {
   scope = injectScope();
 
   load() {
-    this.scope.registerMany({ UsersService, WindowService, EditorService });
+    // this.scope.registerMany({ UsersService, WindowService, EditorService });
     // this.services.EditorService.load();
   }
 

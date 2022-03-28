@@ -5,7 +5,7 @@ import { TPromisifyFunctions } from '../store-back';
 import { AConstructorTypeOf, RemoteStoreClient } from './RemoteStoreClient';
 import { Scope } from '../scope';
 import { lockThis } from '../lockThis';
-import { traverseClassInstance } from '../traverseClassInstance';
+import { traverse } from '../traverse';
 
 export function useService<
   TModule,
@@ -96,7 +96,7 @@ export function createView<
   });
 
   if (stateGetter) {
-    traverseClassInstance(state, methodName => {
+    traverse(state, methodName => {
       // console.log('create factory method', methodName);
       Object.defineProperty(result, methodName, {
         configurable: true,
@@ -117,7 +117,7 @@ export function createView<
   }
 
   if (viewFactory) {
-    traverseClassInstance(viewFactory, methodName => {
+    traverse(viewFactory, methodName => {
       // console.log('create factory method', methodName);
       Object.defineProperty(result, methodName, {
         configurable: true,

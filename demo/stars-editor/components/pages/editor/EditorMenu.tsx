@@ -5,6 +5,7 @@ import { EditorService } from '../../../services/editor.service';
 import { useModule } from '../../../../../lib';
 
 export function EditorMenu() {
+
   const {
     scenes,
     sceneItems,
@@ -12,6 +13,7 @@ export function EditorMenu() {
     activeItemId,
     onItemClick,
     onSceneClick,
+    componentView,
   } = useModule(EditorService).extend(editor => ({
 
     onSceneClick(ev: { key: string }) {
@@ -24,6 +26,8 @@ export function EditorMenu() {
     },
 
   }));
+
+  console.log('componentView for EditorMenu', componentView);
 
   return (
     <div>

@@ -1,3 +1,5 @@
+import { isPlainObject } from 'is-plain-object';
+
 let idCounter = 1;
 
 export function generateId() {
@@ -22,16 +24,32 @@ export function hasGetter(instance: any, getterName: string) {
 
 export type Dict<T> = Record<string, T>;
 
-export function forEach<T>(dict: Dict<T>, cb: (value: T, key?: string) => unknown) {
-  Object.keys(dict).forEach(key => cb(dict[key], key));
+
+export function forEach<TDict, TKey extends keyof TDict>(dict: TDict, cb: (val: TDict[TKey], key: TKey) => unknown) {
+  Object.keys(dict).forEach(propName => {
+    (cb as any)((dict as any)[propName], propName);
+  });
 }
 
-export function defineGetter(target: object, methodName: string, getter: () => any) {
+export function defineGetter(target: object, methodName: string, getter: () => any, descriptor?: Partial<PropertyDescriptor>) {
   Object.defineProperty(target, methodName, {
-    configurable: true,
-    enumerable: true,
+    configurable: descriptor?.configurable ?? true,
+    enumerable: descriptor?.enumerable ?? true,
     get: getter,
   });
+}
+
+export function defineSetter(target: object, methodName: string, setter: (val: any) => boolean, descriptor?: Partial<PropertyDescriptor>) {
+  Object.defineProperty(target, methodName, {
+    configurable: descriptor?.configurable ?? true,
+    enumerable: descriptor?.enumerable ?? true,
+    set: setter,
+  });
+}
+
+export function createConfig<TConfig>(configCreator: TConfig | (new (...args: any) => TConfig)): TConfig {
+  const config = isPlainObject(configCreator) ? configCreator : new (configCreator as any)();
+  return config;
 }
 
 export function capitalize(srt: string): string {

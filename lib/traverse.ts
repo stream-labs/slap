@@ -4,7 +4,9 @@
 import { isPlainObject } from 'is-plain-object';
 import { Dict } from './scope';
 
-export function traverseClassInstance<T extends object>(
+// helper methods to travers class instances prototype chains
+
+export function traverse<T extends object>(
   instance: T,
   cb: (propName: string, descriptor: PropertyDescriptor) => unknown,
 ) {
@@ -37,7 +39,7 @@ export function traverseClassInstance<T extends object>(
 
 export function getDescriptors<T>(instance: T): Dict<PropertyDescriptor>{
   const descriptors: Dict<PropertyDescriptor> = {}
-  traverseClassInstance(instance as any, (propName, descriptor) => {
+  traverse(instance as any, (propName, descriptor) => {
     descriptors[propName] = descriptor;
   });
   return descriptors;
@@ -45,7 +47,7 @@ export function getDescriptors<T>(instance: T): Dict<PropertyDescriptor>{
 
 export function getKeys<T>(instance: T): (keyof T)[]{
   const keys: any[] = [];
-  traverseClassInstance(instance as any, propName => {
+  traverse(instance as any, propName => {
     keys.push(propName);
   });
   return keys;

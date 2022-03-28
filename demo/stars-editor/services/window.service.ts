@@ -1,16 +1,16 @@
 import { injectState } from '../../../lib/slapp/injectState';
 
 export class WindowState {
-  state = {
-    activePage: 'editor',
-    pages: [
-      { title: 'Editor', id: 'editor' },
-      { title: 'About', id: 'about' },
-    ],
-  };
+  activePage = 'editor';
+
+  pages = [
+    { title: 'Editor', id: 'editor' },
+    { title: 'About', id: 'about' },
+    { title: 'Highload', id: 'highload' },
+  ];
 
   setActivePage(page: string) {
-    this.state.activePage = page;
+    this.activePage = page;
   }
 }
 

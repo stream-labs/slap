@@ -36,3 +36,11 @@ function isArrayEqual(a: any[], b: any[]) {
   }
   return true;
 }
+
+
+/**
+ * Shallow compare
+ */
+export function isEqual(obj1: any, obj2: any): boolean {
+  return isDeepEqual(obj1, obj2, 0, 1);
+}

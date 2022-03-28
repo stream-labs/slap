@@ -11,12 +11,12 @@ import { ModuleStateController } from '../../store';
 //   : never;
 
 // TODO use alternative
-export type PickState<TView> = StateView<GetModule<TView>, GetProps<TView> & GetState<TView>>
-export type GetState<TModuleView> = TModuleView extends StateView<{ state: infer TState }, any> ? TState : {}
+export type PickModuleState<TView> = StateView<GetModule<TView>, GetProps<TView> & GetState<TView>>
+export type GetModuleState<TModule> = TModule extends { state: infer TState } ? TState : {}
 
 
 
-export function pickState<
+export function pickModuleState<
   TModule,
   TProps,
 >(props: TProps, view: StateView<TModule, TProps>): PickState<StateView<TModule, TProps>> {

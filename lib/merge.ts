@@ -13,7 +13,7 @@
  * mergedObject.bar // 3
  * mergedObject.foo // 1
  */
-import { traverseClassInstance } from './traverseClassInstance';
+import { traverse } from './traverse';
 
 export function merge<
   T1 extends Object,
@@ -32,7 +32,7 @@ export function merge<
     const dataSourceFunction = typeof dataSource === 'function' && (dataSource as Function);
     const dataSourceObj = dataSourceFunction ? dataSourceFunction() : dataSource;
 
-    traverseClassInstance(dataSourceObj!, (propName => {
+    traverse(dataSourceObj!, (propName => {
       Object.defineProperty(mergeResult, propName, {
         configurable: true,
         enumerable: true,

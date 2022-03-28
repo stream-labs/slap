@@ -22,3 +22,5 @@ export type FilterConditionally<Source, Condition> = Pick<Source, {[K in keyof S
 // TODO do not use a deep version
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
 export type PickAndFlatten<T, K extends keyof T> = UnionToIntersection<T[K]>;
+
+export type TLoadingStatus = 'not-started' | 'loading' | 'done' | 'error';

@@ -1,13 +1,16 @@
 import ReactDOM from 'react-dom';
 import React from 'react';
 import {
-  RedumbxApp, Scope
+  createApp,
+  ReactModules, Scope
 } from '../../lib';
 import { AppService } from './services/app.service';
 import 'antd/dist/antd.css';
 import { ServerApp } from './components/ServerApp';
 import { BootstrapService } from '../../lib/slapp/bootstrap.service';
 import { ClientApp } from './components/ClientApp';
+import { EditorService } from './services/editor.service';
+import { WindowService } from './services/window.service';
 
 function main() {
 
@@ -21,14 +24,16 @@ function main() {
 
   // create the worker app
   if (!isChild) {
-    // rxdb app
-    const server = new Scope();
-    server.start(BootstrapService, AppService);
+    // // rxdb app
+    // const server = new Scope();
+    // server.start(BootstrapService, AppService);
+
+    const app = createApp({ AppService, WindowService, EditorService });
 
     ReactDOM.render(
-      <RedumbxApp moduleManager={server}>
+      <ReactModules app={app}>
         <ClientApp />
-      </RedumbxApp>,
+      </ReactModules>,
       document.getElementById('app'),
     );
   }

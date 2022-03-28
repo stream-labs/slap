@@ -1,145 +1,188 @@
 import { createNanoEvents } from 'nanoevents';
-import { TModuleClass, TModuleConstructorMap } from './interfaces';
+import {
+  TModuleClass,
+  TModuleConstructorMap, TModuleCreator, TModuleInstanceFor,
+  TModuleLocatorType,
+  TProviderFor,
+} from './interfaces';
 import { generateId } from './utils';
 import { Provider } from './provider';
 
 let currentScope: Scope | null = null;
 let currentProvider: Provider<any> | null = null;
 
+interface ScopeSettings {
+  parentScope: Scope | null,
+  autoregister: boolean,
+}
+
+const defaultScopeSettings = {
+  parentScope: null,
+  autoregister: false,
+};
+
+/**
+ * A Dependency injection container
+ */
 export class Scope {
   id!: string;
-
-  parent: Scope | null = null;
 
   childScopes: Record<string, Scope> = {};
 
   providers: Record<string, Provider<any>> = {};
 
-  settings = {
-
-  };
+  settings: ScopeSettings;
 
   constructor(
     dependencies: TModuleConstructorMap = {},
-    parentScope: Scope | null = null,
-    settings: Partial<Scope['settings']> | null = null,
+    settings: Partial<ScopeSettings> = {},
   ) {
     const uid = generateId();
+    const parentScope = settings?.parentScope;
+
     this.id = parentScope ? `${parentScope.id}__${uid}` : `root_${uid}`;
-    if (settings) Object.assign(this.settings, settings);
-    if (parentScope) this.parent = parentScope;
+
+    this.settings = parentScope
+      ? { ...parentScope.settings, ...settings }
+      : { ...defaultScopeSettings, ...settings };
+
     dependencies && this.registerMany(dependencies);
-  }
-
-  resolve<T extends TModuleClass>(moduleClassOrName: T | string): InstanceType<T> {
-    const provider = this.resolveProvider(moduleClassOrName);
-    if (provider.instance) return provider.instance as InstanceType<T>;
-    return this.init(moduleClassOrName, ...[] as any);
-  }
-
-  getInstance<T extends TModuleClass>(moduleClassOrName: T | string): InstanceType<T> | null {
-    const provider = this.getProvider(moduleClassOrName);
-    return provider ? provider.instance : null;
-  }
-
-  register(ModuleClass: TModuleClass, name?: string) {
-    const moduleName = name || ModuleClass.name;
-    if (this.providers[moduleName]) {
-      throw new Error(`${moduleName} already registered in the given Scope`);
-    }
-    console.log('register new class', moduleName);
-
-    const provider = new Provider(this, ModuleClass, moduleName);
-    this.providers[moduleName] = provider;
-
-    this.events.emit('onModuleRegister', provider);
   }
 
   registerMany(dependencies: TModuleConstructorMap) {
     Object.keys(dependencies).forEach(depName => this.register(dependencies[depName], depName));
   }
 
+  register<T extends TModuleCreator>(ModuleCreator: T, name?: string): TProviderFor<T> {
+    const moduleName = name || ModuleCreator.name || `AnonymousModule_${generateId()}`;
+    if (this.providers[moduleName]) {
+      throw new Error(`${moduleName} already registered in the given Scope`);
+    }
+
+    const provider = new Provider(this, ModuleCreator, moduleName);
+    this.providers[moduleName] = provider;
+
+    this.events.emit('onModuleRegister', provider);
+    return provider;
+  }
+
+  getProvider<T extends TModuleLocatorType>(moduleLocator: T): TProviderFor<T> | null {
+    const moduleName = typeof moduleLocator === 'string' ? moduleLocator : moduleLocator.name;
+    if (!moduleName) return null;
+
+    const provider = this.providers[moduleName];
+    if (provider) return provider;
+    if (!this.parent) return null;
+
+    return this.parent.getProvider(moduleName);
+  }
+
+  resolveProvider<T extends TModuleLocatorType>(moduleLocator: T): TProviderFor<T> {
+    const provider = this.getProvider(moduleLocator);
+    if (provider) return provider;
+
+    const shouldRegister = this.settings.autoregister && typeof moduleLocator !== 'string';
+    if (shouldRegister) return this.register(moduleLocator);
+
+    throw new Error(`Provider not found ${moduleLocator}`);
+  }
+
+  getInstance<T extends TModuleLocatorType>(locator: T) {
+    const provider = this.getProvider(locator);
+    return provider ? provider.instance : null;
+  }
+
+  resolve<T extends TModuleLocatorType>(locator: T): TModuleInstanceFor<T> {
+    const provider = this.resolveProvider(locator);
+    if (provider.instance) return provider.instance;
+    return this.init(locator, ...[] as any);
+  }
+
   unregister(ModuleClass: TModuleClass) {
     // TODO
   }
 
-  isRegistered(moduleClassOrName: TModuleClass | string): boolean {
-    return !!this.getProvider(moduleClassOrName);
+  // helper methods
+
+  isRegistered(moduleLocator: TModuleLocatorType): boolean {
+    return !!this.getProvider(moduleLocator);
   }
 
-  hasInstance(moduleClassOrName: TModuleClass | string): boolean {
-    const provider = this.resolveProvider(moduleClassOrName);
+  hasInstance(moduleLocator: TModuleLocatorType): boolean {
+    const provider = this.resolveProvider(moduleLocator);
     return !!provider?.instance;
   }
 
   /**
    * Instantiate a registered module
+   * TODO type for args
    */
-  init<
-    TServiceClass extends new (...args: any) => any,
-    >(moduleClassOrName: TServiceClass | string, ...args: ConstructorParameters<InstanceType<TServiceClass>>): InstanceType<TServiceClass> {
-    const provider = this.resolveProvider(moduleClassOrName);
-    if (!provider) throw new Error(`Can not init "${moduleClassOrName}", provider not found`);
+  init<T extends TModuleLocatorType>(locator: T, ...args: any[]): TModuleInstanceFor<T> {
+    const provider = this.resolveProvider(locator);
 
     if (provider.instance) {
       throw new Error(`The module ${provider.name} is already inited in the given scope`);
     }
 
-    const instance = this.create(provider.factory, ...args);
-    return instance;
+    return this.create(locator, ...args);
   }
 
   /**
    * Register and instantiate a module
+   * TODO add type for args
    */
-  start<
-    TServiceClass extends new (...args: any) => any,
-    >(moduleClass: TServiceClass, ...args: ConstructorParameters<TServiceClass>): InstanceType<TServiceClass> {
-    this.register(moduleClass);
-    const instance = this.init(moduleClass, ...args as any);
+  start<T extends TModuleCreator>(creator: T, ...args: any[]): TModuleInstanceFor<T> {
+    this.register(creator);
+    const instance = this.init(creator, ...args as any);
     return instance;
   }
 
-  // TODO optimize
-  create<
-    TServiceClass extends new (...args: any) => any,
-    >(ModuleClass: TServiceClass, ...args: ConstructorParameters<TServiceClass>): InstanceType<TServiceClass> {
-    console.log('create new class', ModuleClass.name);
-
+  /**
+   * create the instance and resolve injections
+   * every time returns a new instance
+   */
+  // TODO add type for args
+  create<TLocator extends TModuleLocatorType>(locator: TLocator, ...args: any): TModuleInstanceFor<TLocator> {
     const prevScope = currentScope;
     currentScope = this;
-    let provider: Provider<TServiceClass>;
 
-    const isRegistered = this.isRegistered(ModuleClass);
+    let provider: TProviderFor<TLocator>;
+
+    const isRegistered = this.isRegistered(locator);
     if (isRegistered) {
-      provider = this.resolveProvider(ModuleClass);
+      provider = this.resolveProvider(locator);
     } else {
-      provider = new Provider(this, ModuleClass);
+      provider = new Provider(this, locator);
     }
 
     const prevProvider = currentProvider;
     currentProvider = provider;
 
-    provider.createInstance(...args as any);
+    const instance = provider.createInstance(args);
     currentScope = prevScope;
     currentProvider = prevProvider;
 
     if (isRegistered) {
-      this.events.emit('onModuleInit', provider);
       provider.events.on('onModuleLoaded', () => {
         this.events.emit('onModuleLoad', provider);
       });
+      this.events.emit('onModuleInit', provider);
+      provider.setInited();
     }
 
-    return provider.instance as InstanceType<TServiceClass>;
+    return instance;
   }
 
-  createScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>) {
-    return new Scope(dependencies, this, settings);
+  createChildScope(
+    dependencies?: TModuleConstructorMap,
+    settings?: Omit<Partial<ScopeSettings>, 'parentScope'>,
+  ) {
+    return new Scope(dependencies, { ...settings, parentScope: this });
   }
 
+  // TODO refactor
   registerScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>) {
-    const scope = this.createScope({}, settings);
+    const scope = this.createChildScope({}, settings);
     this.childScopes[scope.id] = scope;
     scope.events = this.events;
     dependencies && scope.registerMany(dependencies);
@@ -173,22 +216,6 @@ export class Scope {
     if (!this.parent) this.events.events = {};
   }
 
-  resolveProvider<T extends TModuleClass>(moduleClasOrName: T | string): Provider<InstanceType<T>> {
-    const provider = this.getProvider(moduleClasOrName);
-    if (!provider) {
-      throw new Error(`Provider not found ${moduleClasOrName}`);
-    }
-    return provider;
-  }
-
-  getProvider<T extends TModuleClass>(moduleClasOrName: T | string): Provider<InstanceType<T>> | null {
-    const moduleName = typeof moduleClasOrName === 'string' ? moduleClasOrName : moduleClasOrName.name;
-    const provider = this.providers[moduleName];
-    if (provider) return provider;
-    if (!this.parent) return null;
-    return this.parent.getProvider(moduleName);
-  }
-
   getScheme(): any {
     return {
       id: this.id,
@@ -199,6 +226,10 @@ export class Scope {
 
   get isRoot() {
     return !!this.parent;
+  }
+
+  get parent() {
+    return this.settings.parentScope;
   }
 
   events = createNanoEvents<ScopeEvents>();

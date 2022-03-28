@@ -1,11 +1,4 @@
 import { v4 as uuid } from 'uuid';
-import { Observable } from 'rxjs';
-import {
-  useResolveModule, useComponentView, mutation,
-} from '../../../lib';
-import { traverseClassInstance } from '../../../lib/traverseClassInstance';
-import { TMerge } from '../../../lib/merge';
-import { Dict } from '../../../lib/scope';
 import { createSchema, injectCollection } from '../../../lib/slapp/db.service';
 
 export class UsersService {
@@ -31,7 +24,7 @@ export class UsersService {
     const users = this.usersCollection;
     users.items.find().$.subscribe(users => {
       console.log('users updated', users);
-      this.setUsersCnt(users.length);
+      // this.setUsersCnt(users.length);
     });// TODO unsubscribe
     await this.addUser();
     await this.addUser();
@@ -46,10 +39,10 @@ export class UsersService {
     });
   }
 
-  @mutation()
-  setUsersCnt(cnt: number) {
-    this.state.usersCnt = cnt;
-  }
+  // @mutation()
+  // setUsersCnt(cnt: number) {
+  //   this.state.usersCnt = cnt;
+  // }
 
   removeUser() {
     this.usersCollection.items.findOne().exec().then(item => item && item.remove());

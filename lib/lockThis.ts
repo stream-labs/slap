@@ -1,4 +1,4 @@
-import { traverseClassInstance } from './traverseClassInstance';
+import { traverse } from './traverse';
 
 /**
  * Re-bind this for all object's methods to ensure `this` is always defined
@@ -10,7 +10,7 @@ export function lockThis<T extends object>(instance: T, self?: T): T {
   self = self || instance;
   const result = {};
 
-  traverseClassInstance(instance, (propName, descriptor) => {
+  traverse(instance, (propName, descriptor) => {
     if (descriptor.get || typeof (instance as any)[propName] !== 'function') {
       Object.defineProperty(result, propName, {
         configurable: true,

@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { useEffect, useState } from 'react';
-import { useScope } from '../useModule';
+import { useAppContext } from '../useModule';
 import { DBService } from './db.service';
 
 /**
@@ -29,7 +29,7 @@ export function useObservable<T>(observable: Observable<T>): [T, any] {
 }
 
 export function useDB() {
-  return useScope().resolve(DBService).db;
+  return useAppContext().resolve(DBService).db;
 }
 
 export function useCollection(collectionName: string) {

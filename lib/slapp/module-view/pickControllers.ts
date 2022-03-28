@@ -1,24 +1,24 @@
-import { ModuleViewBuilder } from './module-view-builder';
-import { defineGetter } from '../../scope';
+import { GetModule, GetProps, StateView } from './state-view';
+import { traverse } from '../../traverse';
 
-export function pickControllers<TModule, TView>(builder: ModuleViewBuilder<TModule, TView>) {
+export function pickControllers<TModule, TProps>(props: TProps, view: StateView<TModule, TProps>): PickControllers<StateView<TModule, TProps>> {
 
-  const module = builder.module as any;
-  const view = builder.view as any;
+  const viewObject = view.module as any as object;
 
-  Object.keys(builder.moduleDescriptors).forEach(propName => {
+  traverse(viewObject, (propName, descr) => {
     if (!propName.endsWith('Controller')) return;
+    const shortName = propName.split('Controller')[0];
 
-    const controllerName = propName.split('Controller')[0];
-    defineGetter(view, controllerName, () => module[propName]);
+    view.stateSelector.defineProp({
+      type: 'Controller',
+      name: shortName,
+      getValue: () => (view.module as any)[propName],
+    });
   });
 
-  return view as TView & PickControllers<TModule>;
+  return view as any;
 }
 
-type GetControllerName<TStr> = TStr extends `${infer TName}Controller` ? TName : never;
-export type PickControllers<T> = {[K in keyof T as GetControllerName<K>]: T[K] }
-
-
-
-
+export type PickControllers<TModuleView> = StateView<GetModule<TModuleView>, GetProps<TModuleView> & GetControllerProps<GetModule<TModuleView>>>;
+export type GetControllerName<TStr> = TStr extends `${infer TName}Controller` ? TName : never;
+export type GetControllerProps<T> = {[K in keyof T as GetControllerName<K>]: T[K] }

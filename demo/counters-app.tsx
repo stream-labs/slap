@@ -1,41 +1,42 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {
-  mutation, RedumbxApp, useModule, useScope,
+  mutation, ReactModules, useModule, useAppContext,
 } from '../lib';
-import { ModuleRoot } from '../lib/RedumbxApp';
+// import { SlapModuleRoot } from '../lib/ReactSlap';
 import './index.css';
+import { injectState } from '../lib/slapp/injectState';
 
 function CountersApp() {
   return (
-    <RedumbxApp>
+    <ReactModules>
       <Counter />
       <MultipleCounters />
-      <MultipleIndependentCounters />
+      {/* <MultipleIndependentCounters /> */}
+      <MultipleIndependentCountersV2 />
       TODO
       <MultiplePersistentCounters />
-    </RedumbxApp>
+    </ReactModules>
   );
 }
 
 class CounterModule {
-  state = {
+  state = injectState({
     counter: 1,
-  };
 
-  @mutation()
-  increment() {
-    this.state.counter++;
-  }
+    increment() {
+      this.counter++;
+    },
 
-  @mutation()
-  decrement() {
-    this.state.counter--;
-  }
+    decrement() {
+      this.counter--;
+    },
+  });
+
 }
 
 export function Counter() {
-  const { counter, bigCounter } = useModule(CounterModule, view => ({
+  const { counter, bigCounter } = useModule(CounterModule).extend(view => ({
     get bigCounter() {
       return view.counter + 10;
     },
@@ -66,25 +67,42 @@ export function CounterButtons() {
 }
 
 export function MultipleCounters() {
+  useModule(CounterModule, true);
   return (
-    <ModuleRoot module={CounterModule}>
+    <>
       <h1>Multiple counters with shared state</h1>
       <Counter />
       <Counter />
-    </ModuleRoot>
+    </>
   );
 }
 
-export function IndependentCounter() {
-  return <ModuleRoot module={CounterModule}><Counter /></ModuleRoot>;
+// export function IndependentCounter() {
+//   return <SlapModuleRoot module={CounterModule}><Counter /></SlapModuleRoot>;
+// }
+
+export function IndependentCounterV2() {
+  useModule(CounterModule, { counter: 33 });
+  return <Counter />;
 }
 
-export function MultipleIndependentCounters() {
+//
+// export function MultipleIndependentCounters() {
+//   return (
+//     <>
+//       <h1>Multiple counters with independent state</h1>
+//       <IndependentCounter />
+//       <IndependentCounter />
+//     </>
+//   );
+// }
+
+export function MultipleIndependentCountersV2() {
   return (
     <>
-      <h1>Multiple counters with independent state</h1>
-      <IndependentCounter />
-      <IndependentCounter />
+      <h1>Multiple counters with independent state V2</h1>
+      <IndependentCounterV2 />
+      <IndependentCounterV2 />
     </>
   );
 }
@@ -92,7 +110,7 @@ export function MultipleIndependentCounters() {
 export class CounterService extends CounterModule {}
 
 export function PersistentCounter() {
-  const mm = useScope();
+  const mm = useAppContext().rootScope;
   if (!mm.isRegistered(CounterService)) mm.register(CounterService);
   const { counter, decrement, increment } = useModule(CounterService);
   return (
@@ -114,6 +132,5 @@ export function MultiplePersistentCounters() {
     </>
   );
 }
-
 
 ReactDOM.render(<CountersApp />, document.getElementById('app'));

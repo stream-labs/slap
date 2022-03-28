@@ -1,24 +1,24 @@
 import { TModuleClass } from './interfaces';
-import { generateId } from './utils';
+import { defineGetter, generateId } from './utils';
 import { getCurrentProvider } from './scope';
 import { Provider } from './provider';
+import { TLoadingStatus } from '../slapp/interfaces';
 
-export type TInjectorParams<T> = {
+export type TInjectorParams<TValue, TInitValue> = {
   type: Symbol;
-  loadingStatus?: TInjectorLoadingStatus,
-  init?(injector: Injector<T>): unknown;
-  load?(injector: Injector<T>): unknown;
-  getValue?(): T;
-  destroy?(currentInjector: Injector<T>): unknown;
+  loadingStatus?: TLoadingStatus,
+  init?(injector: Injector<TValue, TInitValue>): TInitValue;
+  load?(injector: Injector<TValue, TInitValue>): unknown;
+  getValue?(): TValue;
+  destroy?(currentInjector: Injector<TValue, TInitValue>): unknown;
 }
 
-export type TInjectorLoadingStatus = 'not-started' | 'loading' | 'done' | 'error';
-
-export class Injector<T> {
+export class Injector<TValue, TInitValue> {
   id = generateId();
-  params!: TInjectorParams<T>;
-  loadingStatus: TInjectorLoadingStatus = 'not-started';
+  params!: TInjectorParams<TValue, TInitValue>;
+  loadingStatus: TLoadingStatus = 'not-started';
   propertyName = '';
+
   constructor(public provider: Provider<any>) {
   }
 
@@ -26,12 +26,7 @@ export class Injector<T> {
     this.params.init && this.params.init(this);
     const getValue = this.params.getValue;
     if (getValue) {
-      Object.defineProperty(this.provider.instance, this.propertyName, {
-        get() {
-          return getValue();
-        },
-        enumerable: true,
-      });
+      defineGetter(this.provider.instance, this.propertyName, getValue);
     }
 
     const load = this.params.load;
@@ -41,8 +36,6 @@ export class Injector<T> {
       loadResult.then(() => {
         this.setLoadingStatus('done');
       });
-    } else if (load) {
-      this.loadingStatus = 'not-started';
     } else {
       this.loadingStatus = 'done';
     }
@@ -53,7 +46,7 @@ export class Injector<T> {
     this.propertyName = propertyName;
   }
 
-  setLoadingStatus(loadingStatus: TInjectorLoadingStatus) {
+  setLoadingStatus(loadingStatus: TLoadingStatus) {
     const prevStatus = this.loadingStatus;
     this.loadingStatus = loadingStatus;
     this.provider.handleInjectorStatusChange(this, this.loadingStatus, prevStatus);
@@ -63,7 +56,7 @@ export class Injector<T> {
     this.params.destroy && this.params.destroy(this);
   }
 
-  resolveValue(): T {
+  resolveValue(): TValue {
     return this.provider.instance[this.propertyName];
   }
 
@@ -72,12 +65,17 @@ export class Injector<T> {
   }
 }
 
-export function createInjector<TParams extends TInjectorParams<any>, TValue = TParams extends { getValue(): infer R} ? R : unknown>(paramsCreator: (injector: Injector<any>) => TParams) {
+export function createInjector<
+  TParams extends TInjectorParams<any, any>,
+  TValue = TParams extends { getValue(): infer R} ? R : unknown,
+  TInitParams = TParams extends { init(): infer R} ? R : unknown
+  >
+(paramsCreator: (injector: Injector<any, any>) => TParams) {
   const provider = getCurrentProvider();
   if (!provider) {
     throw new Error('Injections a not allowed for objects outside the Scope. Create this object via Scope.resolve() or Scope.init() or Scope.create()');
   }
-  const injector = new Injector<TValue>(provider);
+  const injector = new Injector<TValue, TInitParams>(provider);
   injector.params = paramsCreator(injector);
   return injector as any as TValue;
 }

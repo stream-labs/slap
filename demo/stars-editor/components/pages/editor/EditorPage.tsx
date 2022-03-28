@@ -20,6 +20,9 @@ export function EditorPage() {
             <EditorCanvas />
           </Layout.Content>
         </Layout>
+        <Layout.Sider width={200} className="site-layout-background">
+          <EditorMenu />
+        </Layout.Sider>
       </Layout>
       )}
     </>

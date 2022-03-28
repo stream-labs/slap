@@ -1,48 +1,60 @@
 import { useEffect, useRef } from 'react';
 import { useForceUpdate } from './hooks';
 import { isSimilar } from './isDeepEqual';
-import { useScope } from './useModule';
+import { ReactStoreAdapter } from './react/react-store-adapter';
 import { Store } from './store';
+import { useAppContext } from './ReactModules';
 
 export function useSelector(cb: Function) {
-  const servicesRevisionRef = useRef<Record<string, number>>({});
-  const selectorResultRef = useRef<Record<string, any>>({});
+  const affectedModulesRef = useRef<Record<string, number>>({});
+  const currentSelectorStateRef = useRef<Record<string, any>>({});
   const forceUpdate = useForceUpdate();
-  const moduleManager = useScope();
-  const store = moduleManager.resolve(Store);
+  const scope = useAppContext().modulesScope;
+  const store = scope.resolve(Store);
+  const reactStore = scope.resolve(ReactStoreAdapter);
 
   useEffect(() => {
-    servicesRevisionRef.current = store.runAndSaveAccessors(() => {
-      selectorResultRef.current = cb();
+    affectedModulesRef.current = store.listenAffectedModules(() => {
+      currentSelectorStateRef.current = cb();
     });
 
     // TODO do not run watchers for non-observable component views
 
-    const watcherId = store.watchers.create(() => {
-      const prevRevisions = servicesRevisionRef.current;
-      const currentRevisions = store.modulesRevisions;
+    const watcherId = reactStore.createWatcher(() => {
+      const prevRevisions = affectedModulesRef.current;
+      const currentRevisions = store.moduleRevisions;
+
       let modulesHasChanged = false;
       for (const moduleName in prevRevisions) {
         if (prevRevisions[moduleName] !== currentRevisions[moduleName]) {
           modulesHasChanged = true;
           break;
         }
+
+        if (!modulesHasChanged) {
+          // dependent modules don't have changes in the state
+          // do not re-render
+          return;
+        }
       }
 
-      if (!modulesHasChanged) return;
+      const prevSelectorState = currentSelectorStateRef.current;
 
-      const prevSelectorResult = selectorResultRef.current;
-
-      servicesRevisionRef.current = store.runAndSaveAccessors(() => {
-        selectorResultRef.current = cb();
+      affectedModulesRef.current = store.listenAffectedModules(() => {
+        currentSelectorStateRef.current = cb();
       });
 
-      if (!isSimilar(prevSelectorResult, selectorResultRef.current)) {
+      if (prevSelectorState && Array.isArray(prevSelectorState[0])) {
+        debugger;
+      }
+
+      if (!isSimilar(prevSelectorState, currentSelectorStateRef.current)) {
+        // TODO try batched updates
         forceUpdate();
       }
     });
     return () => {
-      store.watchers.remove(watcherId);
+      reactStore.removeWatcher(watcherId);
     };
   }, []);
 }
