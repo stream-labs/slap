@@ -1,34 +1,35 @@
-import { GetModule, GetProps, StateView } from './state-view';
+import { GetProps, StateView } from './state-view';
 import { getKeys } from '../../traverse';
 import { Store, TStateControllerFor } from '../../store';
 import { getInstanceMetadata, Provider } from '../../scope/provider';
 import { TLoadingStatus } from '../interfaces';
 
-export function pickLoadingState<TModule, TProps>(props: TProps, view: StateView<TModule, TProps>): PickLoadingState<StateView<TModule, TProps>> {
+export function pickLoadingState<TView extends StateView<any>>(module: unknown): (props: GetProps<TView>, view: TView) => PickLoadingState<TView> {
 
-  const provider = getInstanceMetadata(view.module).provider;
-  const stateName = getLoadingStateName(provider.instanceId);
-  const store = provider.scope.resolve(Store);
-  const stateController = store.getMetadata(stateName)?.controller;
+  return function (props, view) {
 
-  if (!stateController) return view as any; // module is not stateful
+    const provider = getInstanceMetadata(module).provider;
+    const stateName = getLoadingStateName(provider.instanceId);
+    const store = provider.scope.resolve(Store);
+    const stateController = store.getMetadata(stateName)?.controller;
 
-  getKeys(stateController).forEach(propName => {
-    view.stateSelector.defineProp({
-      type: 'LoadingState',
-      name: propName,
-      getValue: () => stateController[propName],
-    });
-  });
+    if (!stateController) return view as any; // module is not stateful
 
-  return view as any;
+    getKeys(stateController)
+      .forEach(propName => {
+        view.defineProp({
+          type: 'LoadingState',
+          name: propName,
+          getValue: () => stateController[propName],
+        });
+      });
+
+    return view as any;
+  };
 }
 
-export type PickLoadingState<TModuleView> =
-  StateView<
-    GetModule<TModuleView>,
-    GetProps<TModuleView> & TStateControllerFor<LoadingState>
-  >;
+export type PickLoadingState<TView> = StateView<GetProps<TView> & GetLoadingState>;
+export type GetLoadingState = TStateControllerFor<LoadingState>;
 
 export class LoadingState {
   loadingStatus: TLoadingStatus = 'not-started';

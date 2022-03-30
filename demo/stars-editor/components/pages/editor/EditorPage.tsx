@@ -4,6 +4,7 @@ import { EditorMenu } from './EditorMenu';
 import { EditorCanvas } from './EditorCanvas';
 import { EditorService } from '../../../services/editor.service';
 import { useModule } from '../../../../../lib';
+import { ItemProps } from './ItemProps';
 
 export function EditorPage() {
   const { isLoading } = useModule(EditorService);
@@ -21,7 +22,7 @@ export function EditorPage() {
           </Layout.Content>
         </Layout>
         <Layout.Sider width={200} className="site-layout-background">
-          <EditorMenu />
+          <ItemProps />
         </Layout.Sider>
       </Layout>
       )}

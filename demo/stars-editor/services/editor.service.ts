@@ -1,6 +1,7 @@
 import { createSchema } from '../../../lib/slapp/db.service';
 import { injectState } from '../../../lib/slapp/injectState';
 import { inject, injectScope } from '../../../lib/scope/injector';
+import { createFormBinding } from '../../../lib/slapp/module-view/form-binding';
 
 export class EditorState {
   readonly persistent = true;
@@ -14,7 +15,7 @@ export class EditorState {
     return this.sceneItems.find(item => item.id === this.activeItemId);
   }
 
-  updateItem(itemId: string, patch: Omit<Partial<TSceneItem>, 'id' | 'sceneId'>) {
+  updateItem(itemId: string, patch: Omit<Partial<TSceneItem>, 'id'>) {
     const item = this.sceneItems.find(item => item.id === itemId);
     Object.assign(item, patch);
   }
@@ -49,6 +50,12 @@ export class EditorService {
     ]);
     this.state.setActiveSceneId('scene1');
   }
+
+  get myRandomVal() {
+    return this.state.activeItemId + 1;
+  }
+
+  bindActiveItem = createFormBinding(() => this.state.activeItem!, patch => this.state.updateItem(this.state.activeItemId, patch));
 
   // async addScene(scene: TScene) {
   //   // await this.scenesCollection.items.insert(scene);

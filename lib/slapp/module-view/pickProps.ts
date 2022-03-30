@@ -1,30 +1,25 @@
-import { GetModule, GetProps, StateView } from './state-view';
-import { getDescriptors, traverse } from '../../traverse';
-import { forEach } from '../../scope';
+import { GetProps, StateView } from './state-view';
+import { traverse } from '../../traverse';
 
-export type PickModuleProps<TView> = StateView<GetModule<TView>, GetProps<TView>>
+export type PickModuleProps<TView, TModule> = StateView<GetProps<TView> & TModule>
 
-export function pickProps<
-  TModule,
-  TProps,
-  >(props: TProps, view: StateView<TModule, TProps>): PickModuleProps<StateView<TModule, TProps>> {
+export function pickProps<TModule, TProps>(module: TModule): (props: TProps, view: StateView<TProps>) => StateView<TProps & TModule> {
 
+  return function (props, view) {
 
+    traverse(module as any as object, (propName, descr) => {
+      const isGetter = !!descr.get;
+      const isFunction = !isGetter && typeof descr.value === 'function';
+      const getValue = isFunction ? () => descr.value.bind(module) : () => (module as any)[propName];
 
-  const viewObject = view.module as any as object;
-
-  traverse(viewObject, (propName, descr) => {
-    const isGetter = !!descr.get;
-    const isFunction = !isGetter && typeof descr.value === 'function';
-    const getValue = isFunction ? () => descr.value.bind(view.module) : () => (view.module as any)[propName];
-
-    view.stateSelector.defineProp({
-      type: 'ModuleProp',
-      reactive: isGetter,
-      name: propName,
-      getValue,
+      view.defineProp({
+        type: 'ModuleProp',
+        reactive: isGetter,
+        name: propName,
+        getValue,
+      });
     });
-  });
 
-  return view as any as PickModuleProps<StateView<TModule, TProps>>;
+    return view as any;
+  };
 }

@@ -101,7 +101,7 @@ export function EditorCanvas() {
             onDragStart={(e, d) => startDrag(item)}
             onDragStop={(e, d) => { move(item.id, { x: d.x, y: d.y }); }}
           >
-            {item.id}
+            {item.name}
           </Rnd>
         ))}
       </div>

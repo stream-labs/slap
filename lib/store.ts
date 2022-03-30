@@ -2,7 +2,7 @@ import produce from 'immer';
 import {
   Scope, generateId, Dict, defineGetter, capitalize, createConfig, defineSetter,
 } from './scope';
-import { getDescriptors, traverse } from './traverse';
+import { traverse } from './traverse';
 import { createNanoEvents } from 'nanoevents';
 
 /**
@@ -17,16 +17,8 @@ export class Store {
   // keeps additional metadata
   modulesMetadata = { } as Dict<StatefulModule>;
 
-  // scope!: Scope;
   currentMutation: Mutation | null = null;
   moduleRevisions: Dict<number> = {};
-  // isReady = true;
-  // onReady = new Subject<boolean>();
-  //
-  // setIsReady(isReady: boolean) {
-  //   this.isReady = isReady;
-  //   this.onReady.next(isReady);
-  // }
 
   createState<TConfigCreator extends TStateConfigCreator>(stateName: string, configCreator: TConfigCreator): TStateControllerFor<TConfigCreator> {
 

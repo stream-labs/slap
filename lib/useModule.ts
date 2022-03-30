@@ -7,55 +7,49 @@ import { useModuleInstance } from './useResolveModule';
 import { generateId, TModuleInstanceFor, TModuleLocatorType } from './scope';
 import {
   ComponentView,
-  createDefaultModuleView, GetModule, GetProps, MergeViews,
-  StateView, TDefaultViewFor,
+  createStateViewForModule, GetProps, MergeViews,
+  StateView, TStateViewFor,
 } from './slapp/module-view/state-view';
-import { useEffect, useRef } from 'react';
-import { useAppContext } from './ReactModules';
-import { Store } from './store';
-import { ReactStoreAdapter } from './react/react-store-adapter';
-import { isSimilar } from './isDeepEqual';
-import { StateSelector } from './slapp/module-view/state-selector';
 
-export function useComponentView<TModuleView extends StateView<any, any>>(moduleView: TModuleView, id?: string): TModuleView['stateSelector']['props'] & {componentView: ComponentView<TModuleView>, extend: <TNewProps>(
-    newPropsFactory: (props: GetProps<TModuleView>) => TNewProps,
-  ) => (MergeViews<StateView<GetModule<TModuleView>, GetProps<TModuleView> & TNewProps>, TDefaultViewFor<TNewProps>>)['stateSelector']['props'] & {componentView: ComponentView<TModuleView> }} {
+export function useComponentView<TStateView extends StateView<any>>(moduleView: TStateView, id?: string): TStateView['props'] & {componentView: ComponentView<TStateView>, extend: <TNewProps>(
+    newPropsFactory: (props: GetProps<TStateView>) => TNewProps,
+  ) => (MergeViews<StateView<GetProps<TStateView> & TNewProps>, TStateViewFor<TNewProps>>)['props'] & {componentView: ComponentView<TStateView> }} {
   const forceUpdate = useForceUpdate();
 
   const { selector, componentId, componentView } = useOnCreate(() => {
 
     const componentId = id || generateId();
     const componentView = moduleView.registerComponent(componentId, forceUpdate);
-    const stateSelector = componentView.stateSelector;
+    const stateView = componentView.stateView;
 
     // check affected components
     function selector() {
-      if (!stateSelector.hasSelectedValues) return;
-      const reactiveValues = stateSelector.getSnapshot();
+      if (!stateView.hasSelectedProps) return;
+      const reactiveValues = stateView.getSnapshot();
       return reactiveValues;
     }
 
     function extend<TNewProps>(
-      newPropsFactory: (props: GetProps<TModuleView>) => TNewProps,
-    ): (MergeViews<StateView<GetModule<TModuleView>, GetProps<TModuleView> & TNewProps>, TDefaultViewFor<TNewProps>>)['stateSelector']['props'] {
+      newPropsFactory: (props: GetProps<TStateView>) => TNewProps,
+    ): (MergeViews<StateView<GetProps<TStateView> & TNewProps>, TStateViewFor<TNewProps>>)['props'] {
       const extendedView = moduleView.extend(newPropsFactory);
       return useComponentView(extendedView, componentId) as any;
     }
 
-    stateSelector.defineProp({
+    stateView.defineProp({
       type: 'extend',
       name: 'extend',
       getValue: () => extend,
     });
 
-    stateSelector.defineProp({
+    stateView.defineProp({
       type: 'ComponentView',
       name: 'componentView',
       getValue: () => componentView,
     });
 
     return {
-      selector, stateSelector, componentId, componentView,
+      selector, componentId, componentView,
     };
   });
 
@@ -68,12 +62,12 @@ export function useComponentView<TModuleView extends StateView<any, any>>(module
   // call selector to make selected props reactive
   useSelector(selector as any);
 
-  return componentView.stateSelector.proxy;
+  return componentView.stateView.proxy;
 }
 
 export function useModule<T extends TModuleLocatorType, TInitState extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps: TInitState|null = null, moduleName = '') {
   const module = useModuleInstance(locator, initProps, moduleName);
-  const moduleView = useOnCreate(() => createDefaultModuleView(module));
+  const moduleView = useOnCreate(() => createStateViewForModule(module));
   return useComponentView(moduleView);
 }
 

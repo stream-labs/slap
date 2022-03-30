@@ -12,7 +12,9 @@ type TCard = {
 class CardsModule {
 
   state = injectState({
+
     cards: generateCards(),
+
     selectedCardId: '',
 
     updateCard(patch: Partial<TCard>) {
@@ -41,7 +43,9 @@ class CardsModule {
 
 export function HighloadPage () {
 
-  const { cardsIds, size } = useModule(CardsModule);
+  const { cardsIds, size, componentView } = useModule(CardsModule);
+
+  console.log(componentView);
 
   return (
     <>
@@ -61,13 +65,20 @@ function Card(props: {id: string}) {
 
   console.log('render card ', props.id);
 
-  const { card, isSelected, setSelectedCardId } = useModule(CardsModule).extend(cards => ({
+  const {
+    card,
+    isSelected,
+    setSelectedCardId,
+  } = useModule(CardsModule).extend(cards => ({
+
     get card() {
-      return cards.state.cards[props.id];
+      return cards.cards[props.id];
     },
+
     get isSelected() {
-      return cards.state.selectedCardId === props.id;
+      return cards.selectedCardId === props.id;
     },
+
   }));
 
   return (
@@ -88,7 +99,11 @@ function CardInput() {
 
   return (
     <div>
-      <input type="text" value={selectedCard?.title || ''} onChange={event => selectedCard && updateCard({ title: event.target.value })} />
+      <input
+        type="text"
+        value={selectedCard?.title || ''}
+        onChange={event => selectedCard && updateCard({ title: event.target.value })}
+      />
     </div>
   );
 }
@@ -100,4 +115,18 @@ function generateCards() {
     cards[id] = { id, title: `Card ${id}`, descr: `Description ${id}` };
   }
   return cards;
+}
+
+function MyComponent() {
+
+  // @ts-ignore
+  const { onItemClick } = useModule(() => ({
+
+    onItemClick() {
+      alert('Click!');
+    },
+
+  }));
+
+  return <button onClick={onItemClick}>Click me!</button>;
 }
