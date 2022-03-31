@@ -6,7 +6,7 @@ module.exports = {
     filename: 'index.js',
     path: path.resolve(__dirname, 'dist'),
     clean: true,
-    library: 'redumbx',
+    library: 'slap',
     libraryTarget: 'umd',
     globalObject: 'typeof self !== \'undefined\' ? self : this', // for usage in node-js
   },

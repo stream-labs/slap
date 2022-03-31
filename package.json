@@ -1,6 +1,6 @@
 {
-  "name": "redumbx",
-  "version": "0.1.25",
+  "name": "slap",
+  "version": "0.1.26",
   "description": "Simple and Scalable Redux Configuration",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
