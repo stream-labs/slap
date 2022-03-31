@@ -3,7 +3,7 @@ import { isPlainObject } from 'is-plain-object';
 import { Scope } from './scope';
 import { defineGetter, Dict, generateId } from './utils';
 import { Injector } from './injector';
-import { TLoadingStatus } from '../slapp/interfaces';
+import { TLoadingStatus } from './interfaces';
 
 export class Provider<TInstance, TInitParams extends [] = []> {
   id: string;

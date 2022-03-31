@@ -217,7 +217,32 @@ if (true) {
 
 /***/ }),
 
-/***/ 326:
+/***/ 18:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__webpack_require__(521), exports);
+__exportStar(__webpack_require__(152), exports);
+__exportStar(__webpack_require__(668), exports);
+__exportStar(__webpack_require__(31), exports);
+__exportStar(__webpack_require__(878), exports);
+__exportStar(__webpack_require__(309), exports);
+
+
+/***/ }),
+
+/***/ 668:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -244,10 +269,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReactModules = exports.createApp = exports.useAppContext = exports.SlapContext = void 0;
 const jsx_runtime_1 = __webpack_require__(893);
 const react_1 = __importStar(__webpack_require__(156));
-const store_1 = __webpack_require__(971);
-const hooks_1 = __webpack_require__(886);
+const hooks_1 = __webpack_require__(985);
 const scope_1 = __webpack_require__(527);
-const react_store_adapter_1 = __webpack_require__(918);
+const react_store_adapter_1 = __webpack_require__(160);
+const store_1 = __webpack_require__(152);
 exports.SlapContext = react_1.default.createContext(null);
 function useAppContext() {
     return (0, react_1.useContext)(exports.SlapContext);
@@ -269,7 +294,7 @@ exports.ReactModules = ReactModules;
 
 /***/ }),
 
-/***/ 886:
+/***/ 985:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -349,94 +374,7 @@ exports.useForceUpdate = useForceUpdate;
 
 /***/ }),
 
-/***/ 18:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-__exportStar(__webpack_require__(603), exports);
-__exportStar(__webpack_require__(521), exports);
-__exportStar(__webpack_require__(971), exports);
-__exportStar(__webpack_require__(326), exports);
-__exportStar(__webpack_require__(599), exports);
-__exportStar(__webpack_require__(685), exports);
-
-
-/***/ }),
-
-/***/ 723:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isEqual = exports.isSimilar = exports.isDeepEqual = void 0;
-const is_plain_object_1 = __webpack_require__(57);
-/**
- * Compare 2 object with limited depth
- */
-function isDeepEqual(obj1, obj2, currentDepth, maxDepth) {
-    if (obj1 === obj2)
-        return true;
-    if (currentDepth === maxDepth)
-        return false;
-    if (Array.isArray(obj1) && Array.isArray(obj2))
-        return isArrayEqual(obj1, obj2);
-    if ((0, is_plain_object_1.isPlainObject)(obj1) && (0, is_plain_object_1.isPlainObject)(obj2)) {
-        const [keys1, keys2] = [Object.keys(obj1), Object.keys(obj2)];
-        if (keys1.length !== keys2.length)
-            return false;
-        for (const key of keys1) {
-            if (!isDeepEqual(obj1[key], obj2[key], currentDepth + 1, maxDepth))
-                return false;
-        }
-        return true;
-    }
-    return false;
-}
-exports.isDeepEqual = isDeepEqual;
-/**
- * consider isSimilar as isDeepEqual with depth 2
- */
-function isSimilar(obj1, obj2) {
-    return isDeepEqual(obj1, obj2, 0, 2);
-}
-exports.isSimilar = isSimilar;
-/**
- * Shallow comparison of 2 arrays
- */
-function isArrayEqual(a, b) {
-    if (a === b)
-        return true;
-    if (a.length !== b.length)
-        return false;
-    for (let i = 0; i < a.length; i++) {
-        if (a[i] !== b[i])
-            return false;
-    }
-    return true;
-}
-/**
- * Shallow compare
- */
-function isEqual(obj1, obj2) {
-    return isDeepEqual(obj1, obj2, 0, 1);
-}
-exports.isEqual = isEqual;
-
-
-/***/ }),
-
-/***/ 918:
+/***/ 160:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -444,7 +382,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReactStoreAdapter = void 0;
 // TODO move to react folder
 const scope_1 = __webpack_require__(527);
-const store_1 = __webpack_require__(971);
+const store_1 = __webpack_require__(152);
 const injector_1 = __webpack_require__(869);
 const react_dom_1 = __webpack_require__(598);
 class ReactStoreAdapter {
@@ -477,6 +415,180 @@ class ReactStoreAdapter {
     }
 }
 exports.ReactStoreAdapter = ReactStoreAdapter;
+
+
+/***/ }),
+
+/***/ 309:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.useModule = exports.useComponentView = void 0;
+const hooks_1 = __webpack_require__(985);
+const useSelector_1 = __webpack_require__(31);
+const useModuleInstance_1 = __webpack_require__(878);
+const scope_1 = __webpack_require__(527);
+const StateView_1 = __webpack_require__(32);
+function useComponentView(moduleView, id) {
+    const forceUpdate = (0, hooks_1.useForceUpdate)();
+    const { selector, componentId, componentView } = (0, hooks_1.useOnCreate)(() => {
+        const componentId = id || (0, scope_1.generateId)();
+        const componentView = moduleView.registerComponent(componentId, forceUpdate);
+        const stateView = componentView.stateView;
+        // check affected components
+        function selector() {
+            if (!stateView.hasSelectedProps)
+                return;
+            const reactiveValues = stateView.getSnapshot();
+            return reactiveValues;
+        }
+        function extend(newPropsFactory) {
+            const extendedView = moduleView.extend(newPropsFactory);
+            return useComponentView(extendedView, componentId);
+        }
+        stateView.defineProp({
+            type: 'extend',
+            name: 'extend',
+            getValue: () => extend,
+        });
+        stateView.defineProp({
+            type: 'ComponentView',
+            name: 'componentView',
+            getValue: () => componentView,
+        });
+        return {
+            selector, componentId, componentView,
+        };
+    });
+    (0, hooks_1.useOnDestroy)(() => {
+        moduleView.destroyComponent(componentId);
+    });
+    // useDetectChanges
+    // call selector to make selected props reactive
+    (0, useSelector_1.useSelector)(selector);
+    return componentView.stateView.proxy;
+}
+exports.useComponentView = useComponentView;
+function useModule(locator, initProps = null, moduleName = '') {
+    const module = (0, useModuleInstance_1.useModuleInstance)(locator, initProps, moduleName);
+    const moduleView = (0, hooks_1.useOnCreate)(() => (0, StateView_1.createStateViewForModule)(module));
+    return useComponentView(moduleView);
+}
+exports.useModule = useModule;
+
+
+/***/ }),
+
+/***/ 878:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.useModuleInstance = void 0;
+const react_1 = __webpack_require__(156);
+const hooks_1 = __webpack_require__(985);
+const ReactModules_1 = __webpack_require__(668);
+const store_1 = __webpack_require__(152);
+function useModuleInstance(locator, initProps = null, name = '') {
+    const rootScope = (0, ReactModules_1.useAppContext)().modulesScope;
+    const { instance, moduleName, scope, isRoot, store, } = (0, hooks_1.useOnCreate)(() => {
+        const moduleName = name || typeof locator === 'string' ? locator : locator.name;
+        const store = rootScope.resolve(store_1.Store);
+        let isRoot = !!initProps;
+        let scope = isRoot ? rootScope : store.currentContext[moduleName];
+        if (!scope) {
+            if (rootScope.isRegistered(locator)) {
+                scope = rootScope;
+            }
+            else {
+                isRoot = true;
+            }
+        }
+        if (isRoot)
+            scope = rootScope.registerScope({}, { autoregister: true });
+        const instance = scope.resolve(locator);
+        if (initProps && typeof initProps === 'object') {
+            instance.state['updateState'](initProps);
+        }
+        return {
+            instance,
+            store,
+            isRoot,
+            scope,
+            moduleName,
+        };
+    });
+    isRoot && store.setModuleContext(moduleName, scope);
+    (0, react_1.useEffect)(() => {
+        isRoot && store.resetModuleContext(moduleName);
+    }, []);
+    // unregister the component from the module onDestroy
+    (0, hooks_1.useOnDestroy)(() => {
+        if (isRoot)
+            scope.dispose();
+    });
+    return instance;
+}
+exports.useModuleInstance = useModuleInstance;
+
+
+/***/ }),
+
+/***/ 31:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.useSelector = void 0;
+const react_1 = __webpack_require__(156);
+const hooks_1 = __webpack_require__(985);
+const ReactModules_1 = __webpack_require__(668);
+const store_1 = __webpack_require__(152);
+const react_store_adapter_1 = __webpack_require__(160);
+const isDeepEqual_1 = __webpack_require__(233);
+function useSelector(cb) {
+    const affectedModulesRef = (0, react_1.useRef)({});
+    const currentSelectorStateRef = (0, react_1.useRef)({});
+    const forceUpdate = (0, hooks_1.useForceUpdate)();
+    const scope = (0, ReactModules_1.useAppContext)().modulesScope;
+    const store = scope.resolve(store_1.Store);
+    const reactStore = scope.resolve(react_store_adapter_1.ReactStoreAdapter);
+    (0, react_1.useEffect)(() => {
+        affectedModulesRef.current = store.listenAffectedModules(() => {
+            currentSelectorStateRef.current = cb();
+        });
+        // TODO do not run watchers for non-observable component views
+        const watcherId = reactStore.createWatcher(() => {
+            const prevRevisions = affectedModulesRef.current;
+            const currentRevisions = store.moduleRevisions;
+            let modulesHasChanged = false;
+            for (const moduleName in prevRevisions) {
+                if (prevRevisions[moduleName] !== currentRevisions[moduleName]) {
+                    modulesHasChanged = true;
+                    break;
+                }
+                if (!modulesHasChanged) {
+                    // dependent modules don't have changes in the state
+                    // do not re-render
+                    return;
+                }
+            }
+            const prevSelectorState = currentSelectorStateRef.current;
+            affectedModulesRef.current = store.listenAffectedModules(() => {
+                currentSelectorStateRef.current = cb();
+            });
+            if (!(0, isDeepEqual_1.isSimilar)(prevSelectorState, currentSelectorStateRef.current)) {
+                // TODO try batched updates
+                forceUpdate();
+            }
+        });
+        return () => {
+            reactStore.removeWatcher(watcherId);
+        };
+    }, []);
+}
+exports.useSelector = useSelector;
 
 
 /***/ }),
@@ -592,17 +704,6 @@ exports.injectScope = injectScope;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-// class Logger {
-//   foo: '1';
-// }
-//
-// const blogger = {
-//   bar: '1',
-// };
-//
-// const t1: TModuleInstanceFor<Logger>;
-// const t2: TModuleInstanceFor<typeof blogger>;
-// t;
 
 
 /***/ }),
@@ -1018,12 +1119,11 @@ exports.Subscription = Subscription;
 /***/ }),
 
 /***/ 986:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.capitalize = exports.createConfig = exports.defineSetter = exports.defineGetter = exports.forEach = exports.hasGetter = exports.getDefined = exports.assertIsDefined = exports.generateId = void 0;
-const is_plain_object_1 = __webpack_require__(57);
+exports.capitalize = exports.defineSetter = exports.defineGetter = exports.forEach = exports.hasGetter = exports.getDefined = exports.assertIsDefined = exports.generateId = void 0;
 let idCounter = 1;
 function generateId() {
     return (idCounter++).toString();
@@ -1069,11 +1169,6 @@ function defineSetter(target, methodName, setter, descriptor) {
     });
 }
 exports.defineSetter = defineSetter;
-function createConfig(configCreator) {
-    const config = (0, is_plain_object_1.isPlainObject)(configCreator) ? configCreator : new configCreator();
-    return config;
-}
-exports.createConfig = createConfig;
 function capitalize(srt) {
     return srt.charAt(0).toUpperCase() + srt.slice(1);
 }
@@ -1082,218 +1177,22 @@ exports.capitalize = capitalize;
 
 /***/ }),
 
-/***/ 262:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickControllers = void 0;
-const traverse_1 = __webpack_require__(325);
-function pickControllers(module) {
-    return function (props, view) {
-        (0, traverse_1.traverse)(module, (propName, descr) => {
-            if (!propName.endsWith('Controller'))
-                return;
-            const shortName = propName.split('Controller')[0];
-            view.defineProp({
-                type: 'Controller',
-                name: shortName,
-                getValue: () => module[propName],
-            });
-        });
-        return view;
-    };
-}
-exports.pickControllers = pickControllers;
-
-
-/***/ }),
-
-/***/ 720:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getLoadingStateName = exports.createLoadingState = exports.LoadingState = exports.pickLoadingState = void 0;
-const traverse_1 = __webpack_require__(325);
-const store_1 = __webpack_require__(971);
-const provider_1 = __webpack_require__(370);
-function pickLoadingState(module) {
-    return function (props, view) {
-        var _a;
-        const provider = (0, provider_1.getInstanceMetadata)(module).provider;
-        const stateName = getLoadingStateName(provider.instanceId);
-        const store = provider.scope.resolve(store_1.Store);
-        const stateController = (_a = store.getMetadata(stateName)) === null || _a === void 0 ? void 0 : _a.controller;
-        if (!stateController)
-            return view; // module is not stateful
-        (0, traverse_1.getKeys)(stateController)
-            .forEach(propName => {
-            view.defineProp({
-                type: 'LoadingState',
-                name: propName,
-                getValue: () => stateController[propName],
-            });
-        });
-        return view;
-    };
-}
-exports.pickLoadingState = pickLoadingState;
-class LoadingState {
-    constructor() {
-        this.loadingStatus = 'not-started';
-    }
-    get isLoading() {
-        return this.loadingStatus === 'loading';
-    }
-    get isLoaded() {
-        return this.loadingStatus === 'done';
-    }
-}
-exports.LoadingState = LoadingState;
-function createLoadingState(store, moduleProvider) {
-    const stateName = getLoadingStateName(moduleProvider.instanceId);
-    const loadingState = store.createState(stateName, LoadingState);
-    moduleProvider.waitForLoad.then(() => {
-        loadingState.setLoadingStatus('done');
-    });
-    // moduleProvider.events.on('onModuleLoaded', () => {
-    //   console.log('Module is loaded', stateName);
-    //   loadingState.setLoadingStatus('done');
-    // });
-}
-exports.createLoadingState = createLoadingState;
-function getLoadingStateName(moduleStateName) {
-    return moduleStateName + '__loading_state';
-}
-exports.getLoadingStateName = getLoadingStateName;
-
-
-/***/ }),
-
-/***/ 885:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickProps = void 0;
-const traverse_1 = __webpack_require__(325);
-function pickProps(module) {
-    return function (props, view) {
-        (0, traverse_1.traverse)(module, (propName, descr) => {
-            const isGetter = !!descr.get;
-            const isFunction = !isGetter && typeof descr.value === 'function';
-            const getValue = isFunction ? () => descr.value.bind(module) : () => module[propName];
-            view.defineProp({
-                type: 'ModuleProp',
-                reactive: isGetter,
-                name: propName,
-                getValue,
-            });
-        });
-        return view;
-    };
-}
-exports.pickProps = pickProps;
-
-
-/***/ }),
-
-/***/ 299:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickState = void 0;
-const traverse_1 = __webpack_require__(325);
-const store_1 = __webpack_require__(971);
-function pickState(module) {
-    return function (props, view) {
-        const stateController = module.state; // TODO allow picking multiple states?
-        if (!(stateController instanceof store_1.ModuleStateController))
-            return view;
-        const metadata = stateController.metadata;
-        const controller = stateController;
-        (0, traverse_1.traverse)(stateController, stateKey => {
-            if (stateKey in metadata.mutations) {
-                view.defineProp({
-                    type: 'StateMutation',
-                    name: stateKey,
-                    getValue: () => controller[stateKey],
-                });
-                return;
-            }
-            if (stateKey in stateController.state) {
-                view.defineProp({
-                    type: 'StateProp',
-                    name: stateKey,
-                    reactive: true,
-                    getValue: () => controller[stateKey],
-                });
-                return;
-            }
-            view.defineProp({
-                type: 'StateGetter',
-                name: stateKey,
-                reactive: true,
-                getValue: () => controller[stateKey],
-            });
-        });
-        return view;
-    };
-}
-exports.pickState = pickState;
-
-
-/***/ }),
-
-/***/ 113:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickStateViews = void 0;
-const state_view_1 = __webpack_require__(664);
-const traverse_1 = __webpack_require__(325);
-function pickStateViews(module) {
-    return function (props, view) {
-        const anyModule = module;
-        (0, traverse_1.traverse)(module, (propName) => {
-            const stateView = anyModule[propName];
-            if (!(anyModule[propName] instanceof state_view_1.StateView))
-                return;
-            view.defineProp({
-                type: 'StateView',
-                name: propName,
-                reactive: true,
-                stateView,
-                getValue: () => stateView.proxy,
-            });
-        });
-        return view;
-    };
-}
-exports.pickStateViews = pickStateViews;
-
-
-/***/ }),
-
-/***/ 664:
+/***/ 32:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ComponentView = exports.createStateViewForModule = exports.StateView = void 0;
-const scope_1 = __webpack_require__(527);
-const pickState_1 = __webpack_require__(299);
-const pickControllers_1 = __webpack_require__(262);
-const pickLoadingState_1 = __webpack_require__(720);
-const pickProps_1 = __webpack_require__(885);
-const provider_1 = __webpack_require__(370);
-const pickStateViews_1 = __webpack_require__(113);
 // composition layer
 // construct a ReactiveObject based on given presets
 // has module,stateSelector and allow extending
+const scope_1 = __webpack_require__(527);
+const provider_1 = __webpack_require__(370);
+const pickProps_1 = __webpack_require__(49);
+const pickStateViews_1 = __webpack_require__(223);
+const pickLoadingState_1 = __webpack_require__(209);
+const pickState_1 = __webpack_require__(948);
+const pickControllers_1 = __webpack_require__(351);
 class StateView {
     constructor(scope) {
         this.scope = scope;
@@ -1416,11 +1315,11 @@ function createStateViewForModule(module) {
     const scope = (0, provider_1.getInstanceMetadata)(module).provider.scope;
     const stateView = new StateView(scope);
     return stateView
-        .extend((0, pickProps_1.pickProps)(module))
-        .extend((0, pickStateViews_1.pickStateViews)(module))
-        .extend((0, pickLoadingState_1.pickLoadingState)(module))
-        .extend((0, pickState_1.pickState)(module))
-        .extend((0, pickControllers_1.pickControllers)(module));
+        .extend((0, pickProps_1.pickProps)(module)) // expose the module props
+        .extend((0, pickStateViews_1.pickStateViews)(module)) // expose children stateViews
+        .extend((0, pickLoadingState_1.pickLoadingState)(module)) // expose the module loading state
+        .extend((0, pickState_1.pickState)(module)) // expose the reactive state
+        .extend((0, pickControllers_1.pickControllers)(module)); // expose controllers
 }
 exports.createStateViewForModule = createStateViewForModule;
 class ComponentView {
@@ -1435,7 +1334,199 @@ exports.ComponentView = ComponentView;
 
 /***/ }),
 
-/***/ 971:
+/***/ 351:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickControllers = void 0;
+const traverse_1 = __webpack_require__(222);
+function pickControllers(module) {
+    return function (props, view) {
+        (0, traverse_1.traverse)(module, (propName, descr) => {
+            if (!propName.endsWith('Controller'))
+                return;
+            const shortName = propName.split('Controller')[0];
+            view.defineProp({
+                type: 'Controller',
+                name: shortName,
+                getValue: () => module[propName],
+            });
+        });
+        return view;
+    };
+}
+exports.pickControllers = pickControllers;
+
+
+/***/ }),
+
+/***/ 209:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getLoadingStateName = exports.createLoadingState = exports.LoadingState = exports.pickLoadingState = void 0;
+const provider_1 = __webpack_require__(370);
+const traverse_1 = __webpack_require__(222);
+const store_1 = __webpack_require__(152);
+function pickLoadingState(module) {
+    return function (props, view) {
+        var _a;
+        const provider = (0, provider_1.getInstanceMetadata)(module).provider;
+        const stateName = getLoadingStateName(provider.instanceId);
+        const store = provider.scope.resolve(store_1.Store);
+        const stateController = (_a = store.getMetadata(stateName)) === null || _a === void 0 ? void 0 : _a.controller;
+        if (!stateController)
+            return view; // module is not stateful
+        (0, traverse_1.getKeys)(stateController)
+            .forEach(propName => {
+            view.defineProp({
+                type: 'LoadingState',
+                name: propName,
+                getValue: () => stateController[propName],
+            });
+        });
+        return view;
+    };
+}
+exports.pickLoadingState = pickLoadingState;
+class LoadingState {
+    constructor() {
+        this.loadingStatus = 'not-started';
+    }
+    get isLoading() {
+        return this.loadingStatus === 'loading';
+    }
+    get isLoaded() {
+        return this.loadingStatus === 'done';
+    }
+}
+exports.LoadingState = LoadingState;
+function createLoadingState(store, moduleProvider) {
+    const stateName = getLoadingStateName(moduleProvider.instanceId);
+    const loadingState = store.createState(stateName, LoadingState);
+    moduleProvider.waitForLoad.then(() => {
+        loadingState.setLoadingStatus('done');
+    });
+}
+exports.createLoadingState = createLoadingState;
+function getLoadingStateName(moduleStateName) {
+    return moduleStateName + '__loading_state';
+}
+exports.getLoadingStateName = getLoadingStateName;
+
+
+/***/ }),
+
+/***/ 49:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickProps = void 0;
+const traverse_1 = __webpack_require__(222);
+function pickProps(module) {
+    return function (props, view) {
+        (0, traverse_1.traverse)(module, (propName, descr) => {
+            const isGetter = !!descr.get;
+            const isFunction = !isGetter && typeof descr.value === 'function';
+            const getValue = isFunction ? () => descr.value.bind(module) : () => module[propName];
+            view.defineProp({
+                type: 'ModuleProp',
+                reactive: isGetter,
+                name: propName,
+                getValue,
+            });
+        });
+        return view;
+    };
+}
+exports.pickProps = pickProps;
+
+
+/***/ }),
+
+/***/ 948:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickState = void 0;
+const traverse_1 = __webpack_require__(222);
+const store_1 = __webpack_require__(152);
+function pickState(module) {
+    return function (props, view) {
+        const stateController = module.state; // TODO allow picking multiple states?
+        if (!(stateController instanceof store_1.ModuleStateController))
+            return view;
+        const metadata = stateController.metadata;
+        const controller = stateController;
+        (0, traverse_1.traverse)(stateController, stateKey => {
+            if (stateKey in metadata.mutations) {
+                view.defineProp({
+                    type: 'StateMutation',
+                    name: stateKey,
+                    getValue: () => controller[stateKey],
+                });
+                return;
+            }
+            if (stateKey in stateController.state) {
+                view.defineProp({
+                    type: 'StateProp',
+                    name: stateKey,
+                    reactive: true,
+                    getValue: () => controller[stateKey],
+                });
+                return;
+            }
+            view.defineProp({
+                type: 'StateGetter',
+                name: stateKey,
+                reactive: true,
+                getValue: () => controller[stateKey],
+            });
+        });
+        return view;
+    };
+}
+exports.pickState = pickState;
+
+
+/***/ }),
+
+/***/ 223:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickStateViews = void 0;
+const StateView_1 = __webpack_require__(32);
+const traverse_1 = __webpack_require__(222);
+function pickStateViews(module) {
+    return function (props, view) {
+        const anyModule = module;
+        (0, traverse_1.traverse)(module, (propName) => {
+            const stateView = anyModule[propName];
+            if (!(anyModule[propName] instanceof StateView_1.StateView))
+                return;
+            view.defineProp({
+                type: 'StateView',
+                name: propName,
+                reactive: true,
+                stateView,
+                getValue: () => stateView.proxy,
+            });
+        });
+        return view;
+    };
+}
+exports.pickStateViews = pickStateViews;
+
+
+/***/ }),
+
+/***/ 152:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1443,11 +1534,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.defaultStateConfig = exports.mutation = exports.ModuleStateController = exports.Store = void 0;
+exports.createConfig = exports.defaultStateConfig = exports.mutation = exports.ModuleStateController = exports.Store = void 0;
 const immer_1 = __importDefault(__webpack_require__(172));
 const scope_1 = __webpack_require__(527);
-const traverse_1 = __webpack_require__(325);
+const traverse_1 = __webpack_require__(222);
 const nanoevents_1 = __webpack_require__(111);
+const is_plain_object_1 = __webpack_require__(57);
 /**
  * All React related code should be handled in ReactAdapter
  * Framework agnostic store
@@ -1471,7 +1563,7 @@ class Store {
         if (this.modulesMetadata[stateName]) {
             throw new Error(`State with a name "${stateName}" is already created`);
         }
-        const config = (0, scope_1.createConfig)(configCreator);
+        const config = createConfig(configCreator);
         console.log('REGISTER STORE', stateName);
         const controller = new ModuleStateController(this, stateName, config);
         return controller;
@@ -1668,11 +1760,78 @@ exports.defaultStateConfig = {
 // persistent: false,
 // autogenerateMutations: true,
 };
+function createConfig(configCreator) {
+    const config = (0, is_plain_object_1.isPlainObject)(configCreator) ? configCreator : new configCreator();
+    return config;
+}
+exports.createConfig = createConfig;
 
 
 /***/ }),
 
-/***/ 325:
+/***/ 233:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isEqual = exports.isSimilar = exports.isDeepEqual = void 0;
+const is_plain_object_1 = __webpack_require__(57);
+/**
+ * Compare 2 object with limited depth
+ */
+function isDeepEqual(obj1, obj2, currentDepth, maxDepth) {
+    if (obj1 === obj2)
+        return true;
+    if (currentDepth === maxDepth)
+        return false;
+    if (Array.isArray(obj1) && Array.isArray(obj2))
+        return isArrayEqual(obj1, obj2);
+    if ((0, is_plain_object_1.isPlainObject)(obj1) && (0, is_plain_object_1.isPlainObject)(obj2)) {
+        const [keys1, keys2] = [Object.keys(obj1), Object.keys(obj2)];
+        if (keys1.length !== keys2.length)
+            return false;
+        for (const key of keys1) {
+            if (!isDeepEqual(obj1[key], obj2[key], currentDepth + 1, maxDepth))
+                return false;
+        }
+        return true;
+    }
+    return false;
+}
+exports.isDeepEqual = isDeepEqual;
+/**
+ * consider isSimilar as isDeepEqual with depth 2
+ */
+function isSimilar(obj1, obj2) {
+    return isDeepEqual(obj1, obj2, 0, 2);
+}
+exports.isSimilar = isSimilar;
+/**
+ * Shallow comparison of 2 arrays
+ */
+function isArrayEqual(a, b) {
+    if (a === b)
+        return true;
+    if (a.length !== b.length)
+        return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i])
+            return false;
+    }
+    return true;
+}
+/**
+ * Shallow compare
+ */
+function isEqual(obj1, obj2) {
+    return isDeepEqual(obj1, obj2, 0, 1);
+}
+exports.isEqual = isEqual;
+
+
+/***/ }),
+
+/***/ 222:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
@@ -1732,284 +1891,6 @@ function filterKeys(obj, filterFn) {
     return Object.fromEntries(Object.entries(obj).filter(([key]) => filterFn(key)));
 }
 exports.filterKeys = filterKeys;
-
-
-/***/ }),
-
-/***/ 603:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useModule = exports.useComponentView = void 0;
-const hooks_1 = __webpack_require__(886);
-const useSelector_1 = __webpack_require__(599);
-const useResolveModule_1 = __webpack_require__(685);
-const scope_1 = __webpack_require__(527);
-const state_view_1 = __webpack_require__(664);
-function useComponentView(moduleView, id) {
-    const forceUpdate = (0, hooks_1.useForceUpdate)();
-    const { selector, componentId, componentView } = (0, hooks_1.useOnCreate)(() => {
-        const componentId = id || (0, scope_1.generateId)();
-        const componentView = moduleView.registerComponent(componentId, forceUpdate);
-        const stateView = componentView.stateView;
-        // check affected components
-        function selector() {
-            if (!stateView.hasSelectedProps)
-                return;
-            const reactiveValues = stateView.getSnapshot();
-            return reactiveValues;
-        }
-        function extend(newPropsFactory) {
-            const extendedView = moduleView.extend(newPropsFactory);
-            return useComponentView(extendedView, componentId);
-        }
-        stateView.defineProp({
-            type: 'extend',
-            name: 'extend',
-            getValue: () => extend,
-        });
-        stateView.defineProp({
-            type: 'ComponentView',
-            name: 'componentView',
-            getValue: () => componentView,
-        });
-        return {
-            selector, componentId, componentView,
-        };
-    });
-    (0, hooks_1.useOnDestroy)(() => {
-        moduleView.destroyComponent(componentId);
-    });
-    // useDetectChanges
-    // call selector to make selected props reactive
-    (0, useSelector_1.useSelector)(selector);
-    return componentView.stateView.proxy;
-}
-exports.useComponentView = useComponentView;
-function useModule(locator, initProps = null, moduleName = '') {
-    const module = (0, useResolveModule_1.useModuleInstance)(locator, initProps, moduleName);
-    const moduleView = (0, hooks_1.useOnCreate)(() => (0, state_view_1.createStateViewForModule)(module));
-    return useComponentView(moduleView);
-}
-exports.useModule = useModule;
-//
-// export function useDetectChanges(componentView: ComponentView<unknown>) {
-//   const affectedModulesRef = useRef<Record<string, number>>({});
-//   const currentSelectorStateRef = useRef<Record<string, any>>({});
-//   const forceUpdate = useForceUpdate();
-//   const scope = useAppContext().modulesScope;
-//   const store = scope.resolve(Store);
-//   const reactStore = scope.resolve(ReactStoreAdapter);
-//
-//   useEffect(() => {
-//     affectedModulesRef.current = store.listenAffectedModules(() => {
-//       currentSelectorStateRef.current = cb();
-//     });
-//
-//     // TODO do not run watchers for non-observable component views
-//
-//     const watcherId = reactStore.createWatcher(() => {
-//       const prevRevisions = affectedModulesRef.current;
-//       const currentRevisions = store.moduleRevisions;
-//
-//       let modulesHasChanged = false;
-//       for (const moduleName in prevRevisions) {
-//         if (prevRevisions[moduleName] !== currentRevisions[moduleName]) {
-//           modulesHasChanged = true;
-//           break;
-//         }
-//
-//         if (!modulesHasChanged) {
-//           // dependent modules don't have changes in the state
-//           // do not re-render
-//           return;
-//         }
-//       }
-//
-//       const prevSelectorState = currentSelectorStateRef.current;
-//
-//       affectedModulesRef.current = store.listenAffectedModules(() => {
-//         currentSelectorStateRef.current = cb();
-//       });
-//
-//       if (!isSimilar(prevSelectorState, currentSelectorStateRef.current)) {
-//         // TODO try batched updates
-//         forceUpdate();
-//       }
-//     });
-//     return () => {
-//       reactStore.removeWatcher(watcherId);
-//     };
-//   }, []);
-// }
-
-
-/***/ }),
-
-/***/ 685:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useModuleInstance = void 0;
-const react_1 = __webpack_require__(156);
-const hooks_1 = __webpack_require__(886);
-const store_1 = __webpack_require__(971);
-const ReactModules_1 = __webpack_require__(326);
-//
-// export function useResolveModule<TModule>
-// (ModuleClass: new(...args: any[]) => TModule, createView?: (module: TModule) => any) {
-//   const componentId = useComponentId();
-//   const moduleManager = useScope();
-//
-//   const {
-//     provider,
-//     scope,
-//     isRoot,
-//     store,
-//   } = useOnCreate(() => {
-//     const moduleName = ModuleClass.name;
-//     const store = moduleManager.resolve(Store);
-//
-//     let scope = store.currentContext[moduleName];
-//
-//     let isRoot = false;
-//
-//     if (!scope) {
-//       if (moduleManager.isRegistered(ModuleClass)) {
-//         scope = moduleManager;
-//       } else {
-//         scope = moduleManager.registerScope({ ModuleClass });
-//         isRoot = true;
-//       }
-//     }
-//
-//     const moduleInstance = scope.resolve(ModuleClass);
-//     const provider = scope.resolveProvider(ModuleClass);
-//
-//     return {
-//       provider,
-//       store,
-//       isRoot,
-//       scope,
-//     };
-//   });
-//
-//   isRoot && store.setModuleContext(provider.name, scope);
-//   useEffect(() => {
-//     isRoot && store.resetModuleContext(provider.name);
-//   }, []);
-//
-//   // unregister the component from the module onDestroy
-//   useOnDestroy(() => {
-//     if (isRoot) scope.dispose();
-//   });
-//
-//   return provider;
-// }
-function useModuleInstance(locator, initProps = null, name = '') {
-    const rootScope = (0, ReactModules_1.useAppContext)().modulesScope;
-    const { instance, moduleName, scope, isRoot, store, } = (0, hooks_1.useOnCreate)(() => {
-        const moduleName = name || typeof locator === 'string' ? locator : locator.name;
-        const store = rootScope.resolve(store_1.Store);
-        let isRoot = !!initProps;
-        let scope = isRoot ? rootScope : store.currentContext[moduleName];
-        if (!scope) {
-            if (rootScope.isRegistered(locator)) {
-                scope = rootScope;
-            }
-            else {
-                isRoot = true;
-            }
-        }
-        if (isRoot)
-            scope = rootScope.registerScope({}, { autoregister: true });
-        const instance = scope.resolve(locator);
-        if (initProps && typeof initProps === 'object') {
-            instance.state['updateState'](initProps);
-        }
-        return {
-            instance,
-            store,
-            isRoot,
-            scope,
-            moduleName,
-        };
-    });
-    isRoot && store.setModuleContext(moduleName, scope);
-    (0, react_1.useEffect)(() => {
-        isRoot && store.resetModuleContext(moduleName);
-    }, []);
-    // unregister the component from the module onDestroy
-    (0, hooks_1.useOnDestroy)(() => {
-        if (isRoot)
-            scope.dispose();
-    });
-    return instance;
-}
-exports.useModuleInstance = useModuleInstance;
-
-
-/***/ }),
-
-/***/ 599:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useSelector = void 0;
-const react_1 = __webpack_require__(156);
-const hooks_1 = __webpack_require__(886);
-const isDeepEqual_1 = __webpack_require__(723);
-const react_store_adapter_1 = __webpack_require__(918);
-const store_1 = __webpack_require__(971);
-const ReactModules_1 = __webpack_require__(326);
-function useSelector(cb) {
-    const affectedModulesRef = (0, react_1.useRef)({});
-    const currentSelectorStateRef = (0, react_1.useRef)({});
-    const forceUpdate = (0, hooks_1.useForceUpdate)();
-    const scope = (0, ReactModules_1.useAppContext)().modulesScope;
-    const store = scope.resolve(store_1.Store);
-    const reactStore = scope.resolve(react_store_adapter_1.ReactStoreAdapter);
-    (0, react_1.useEffect)(() => {
-        affectedModulesRef.current = store.listenAffectedModules(() => {
-            currentSelectorStateRef.current = cb();
-        });
-        // TODO do not run watchers for non-observable component views
-        const watcherId = reactStore.createWatcher(() => {
-            const prevRevisions = affectedModulesRef.current;
-            const currentRevisions = store.moduleRevisions;
-            let modulesHasChanged = false;
-            for (const moduleName in prevRevisions) {
-                if (prevRevisions[moduleName] !== currentRevisions[moduleName]) {
-                    modulesHasChanged = true;
-                    break;
-                }
-                if (!modulesHasChanged) {
-                    // dependent modules don't have changes in the state
-                    // do not re-render
-                    return;
-                }
-            }
-            const prevSelectorState = currentSelectorStateRef.current;
-            affectedModulesRef.current = store.listenAffectedModules(() => {
-                currentSelectorStateRef.current = cb();
-            });
-            if (prevSelectorState && Array.isArray(prevSelectorState[0])) {
-                debugger;
-            }
-            if (!(0, isDeepEqual_1.isSimilar)(prevSelectorState, currentSelectorStateRef.current)) {
-                // TODO try batched updates
-                forceUpdate();
-            }
-        });
-        return () => {
-            reactStore.removeWatcher(watcherId);
-        };
-    }, []);
-}
-exports.useSelector = useSelector;
 
 
 /***/ }),

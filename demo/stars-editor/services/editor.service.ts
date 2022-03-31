@@ -1,7 +1,6 @@
-import { createSchema } from '../../../lib/slapp/db.service';
-import { injectState } from '../../../lib/slapp/injectState';
+import { injectState } from '../../../lib/store/injectState';
 import { inject, injectScope } from '../../../lib/scope/injector';
-import { createFormBinding } from '../../../lib/slapp/module-view/form-binding';
+import { createFormBinding } from '../../../lib/store/form-binding';
 
 export class EditorState {
   readonly persistent = true;
@@ -57,14 +56,6 @@ export class EditorService {
 
   bindActiveItem = createFormBinding(() => this.state.activeItem!, patch => this.state.updateItem(this.state.activeItemId, patch));
 
-  // async addScene(scene: TScene) {
-  //   // await this.scenesCollection.items.insert(scene);
-  // }
-  //
-  // async addSceneItem(sceneItem: TSceneItem) {
-  //   // await this.itemsCollection.items.insert(sceneItem);
-  // }
-
   getSceneController(id: string) {
     return this.scope.create(SceneController, id);
   }
@@ -104,47 +95,20 @@ export class SceneItemController {
     return this.editor.state.activeItemId === this.id;
   }
 
-
 }
 
-const sceneSchema = createSchema({
-  name: 'scenes',
-  version: 0,
-  primaryKey: 'id',
-  type: 'object',
-  properties: {
-    id: { type: 'string' },
-    name: { type: 'string' },
-    backgroundColor: { type: 'string' },
-  },
-  required: ['id', 'name'],
-} as const);
+export type TScene = {
+  id: string,
+  name: string,
+}
 
-const sceneItemSchema = createSchema({
-  name: 'scene_items',
-  version: 0,
-  title: 'Scene schema',
-  description: 'describes scenes',
-  primaryKey: 'id',
-  type: 'object',
-  properties: {
-    id: { type: 'string' },
-    sceneId: { type: 'string' },
-    name: { type: 'string' },
-    color: { type: 'string' },
-    position: {
-      type: 'object',
-      properties: {
-        x: { type: 'number' },
-        y: { type: 'number' },
-      },
-    },
-  },
-  required: ['id', 'sceneId', 'name', 'position', 'color'],
-} as const);
-
-export type TScene = typeof sceneSchema.docType;
-export type TSceneItem = typeof sceneItemSchema.docType;
+export type TSceneItem = {
+  id: string,
+  sceneId: string,
+  name: string,
+  color: string,
+  position: { x: number, y: number },
+}
 
 const initialScenes: TScene[] = [
   { id: 'scene1', name: 'Scene 1' },

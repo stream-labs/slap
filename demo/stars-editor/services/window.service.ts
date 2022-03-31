@@ -1,4 +1,4 @@
-import { injectState } from '../../../lib/slapp/injectState';
+import { injectState } from '../../../lib/store/injectState';
 
 export class WindowState {
   activePage = 'editor';
@@ -16,7 +16,4 @@ export class WindowState {
 
 export class WindowService {
   state = injectState(WindowState);
-
-  init() {
-  }
 }

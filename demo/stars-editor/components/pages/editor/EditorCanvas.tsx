@@ -2,16 +2,8 @@ import React, { CSSProperties } from 'react';
 import { Rnd } from 'react-rnd';
 import { EditorService, TSceneItem } from '../../../services/editor.service';
 import { inject } from '../../../../../lib/scope/injector';
-import { injectState } from '../../../../../lib/slapp/injectState';
 import { useModule } from '../../../../../lib';
-// import {
-//   useModule, inject, mutation, TModuleView,
-// } from '../../../../../lib';
-// import {
-//   EditorService, SceneItemState,
-// } from '../../../services/editor';
-// import { ISceneItemState } from '../../../interfeaces';
-// import { injectViews } from '../../../../../lib/plugins/injectView';
+import { injectState } from '../../../../../lib/store/injectState';
 
 const wrapperStyle: CSSProperties = {
   height: '100%',

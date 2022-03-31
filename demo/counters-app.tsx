@@ -1,11 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import {
-  mutation, ReactModules, useModule, useAppContext,
-} from '../lib';
 // import { SlapModuleRoot } from '../lib/ReactSlap';
 import './index.css';
-import { injectState } from '../lib/slapp/injectState';
+import { injectState } from '../lib/store/injectState';
+import { ReactModules, useAppContext } from '../lib/react-bindings/ReactModules';
+import { useModule } from '../lib/react-bindings/useModule';
 
 function CountersApp() {
   return (

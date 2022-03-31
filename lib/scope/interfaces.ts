@@ -26,15 +26,4 @@ export type TModuleInstanceFor<TModuleLocator> =
     TModuleLocator extends string ? unknown: TModuleLocator
 
 export type TProviderFor<TModuleLocator extends TModuleLocatorType> = Provider<TModuleInstanceFor<TModuleLocator>>
-
-// class Logger {
-//   foo: '1';
-// }
-//
-// const blogger = {
-//   bar: '1',
-// };
-//
-// const t1: TModuleInstanceFor<Logger>;
-// const t2: TModuleInstanceFor<typeof blogger>;
-// t;
+export type TLoadingStatus = 'not-started' | 'loading' | 'done' | 'error';

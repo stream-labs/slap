@@ -1,8 +1,7 @@
-import { TModuleClass } from './interfaces';
+import { TLoadingStatus, TModuleClass } from './interfaces';
 import { defineGetter, generateId } from './utils';
 import { getCurrentProvider } from './scope';
 import { Provider } from './provider';
-import { TLoadingStatus } from '../slapp/interfaces';
 
 export type TInjectorParams<TValue, TInitValue> = {
   type: Symbol;

@@ -6,8 +6,6 @@ import {
 } from '../../lib';
 import { AppService } from './services/app.service';
 import 'antd/dist/antd.css';
-import { ServerApp } from './components/ServerApp';
-import { BootstrapService } from '../../lib/slapp/bootstrap.service';
 import { ClientApp } from './components/ClientApp';
 import { EditorService } from './services/editor.service';
 import { WindowService } from './services/window.service';
