@@ -233,7 +233,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(521), exports);
-__exportStar(__webpack_require__(152), exports);
+__exportStar(__webpack_require__(338), exports);
 __exportStar(__webpack_require__(668), exports);
 __exportStar(__webpack_require__(31), exports);
 __exportStar(__webpack_require__(878), exports);
@@ -1330,6 +1330,92 @@ class ComponentView {
     }
 }
 exports.ComponentView = ComponentView;
+
+
+/***/ }),
+
+/***/ 938:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createFormBinding = void 0;
+const StateView_1 = __webpack_require__(32);
+function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
+    const stateView = new StateView_1.StateView();
+    stateView.defineWildcardProp(propName => {
+        stateView.defineProp({
+            type: 'InputBinding',
+            name: propName,
+            reactive: true,
+            getValue: () => (Object.assign({ name: propName, value: stateGetter()[propName], onChange: (newVal) => stateSetter({ [propName]: newVal }) }, (extraPropsGenerator ? extraPropsGenerator(propName) : {}))),
+        });
+    });
+    return stateView;
+}
+exports.createFormBinding = createFormBinding;
+
+
+/***/ }),
+
+/***/ 338:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__webpack_require__(152), exports);
+__exportStar(__webpack_require__(32), exports);
+__exportStar(__webpack_require__(307), exports);
+__exportStar(__webpack_require__(938), exports);
+
+
+/***/ }),
+
+/***/ 307:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectState = exports.StateInjectorType = void 0;
+const injector_1 = __webpack_require__(869);
+const pickLoadingState_1 = __webpack_require__(209);
+const store_1 = __webpack_require__(152);
+exports.StateInjectorType = Symbol('stateInjector');
+function injectState(configCreator) {
+    return (0, injector_1.createInjector)(injector => {
+        function createState() {
+            return createStateForModule(injector.provider, configCreator);
+        }
+        let state = null;
+        return {
+            type: exports.StateInjectorType,
+            load: () => {
+                state = createState();
+            },
+            getValue() {
+                return state;
+            },
+        };
+    });
+}
+exports.injectState = injectState;
+function createStateForModule(provider, stateConfig) {
+    const stateName = provider.instanceId;
+    const store = provider.scope.resolve(store_1.Store);
+    const moduleState = store.createState(stateName, stateConfig);
+    (0, pickLoadingState_1.createLoadingState)(store, provider);
+    return moduleState;
+}
 
 
 /***/ }),
