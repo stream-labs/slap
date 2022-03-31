@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("react"), require("reactDOM"));
+		module.exports = factory(require("react"), require("react-dom"));
 	else if(typeof define === 'function' && define.amd)
-		define(["react", "reactDOM"], factory);
+		define(["react", "react-dom"], factory);
 	else if(typeof exports === 'object')
-		exports["redumbx"] = factory(require("react"), require("reactDOM"));
+		exports["slap"] = factory(require("react"), require("react-dom"));
 	else
-		root["redumbx"] = factory(root["react"], root["reactDOM"]);
-})(typeof self !== 'undefined' ? self : this, function(__WEBPACK_EXTERNAL_MODULE__156__, __WEBPACK_EXTERNAL_MODULE__598__) {
+		root["slap"] = factory(root["react"], root["react-dom"]);
+})(typeof self !== 'undefined' ? self : this, function(__WEBPACK_EXTERNAL_MODULE__156__, __WEBPACK_EXTERNAL_MODULE__386__) {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
@@ -384,7 +384,7 @@ exports.ReactStoreAdapter = void 0;
 const scope_1 = __webpack_require__(527);
 const store_1 = __webpack_require__(152);
 const injector_1 = __webpack_require__(869);
-const react_dom_1 = __webpack_require__(598);
+const react_dom_1 = __webpack_require__(386);
 class ReactStoreAdapter {
     constructor() {
         this.store = (0, injector_1.inject)(store_1.Store);
@@ -1902,10 +1902,10 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__156__;
 
 /***/ }),
 
-/***/ 598:
+/***/ 386:
 /***/ ((module) => {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE__598__;
+module.exports = __WEBPACK_EXTERNAL_MODULE__386__;
 
 /***/ }),
 

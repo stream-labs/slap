@@ -39,7 +39,8 @@ module.exports = {
 
   externals: {
     react: 'react', // Case matters here
-    'react-dom': 'reactDOM', // Case matters here
+    'react-dom': 'react-dom', // Case matters here
+    // 'react-dom': 'reactDOM', // Case matters here
   },
   // externals: {
   //   react: {
