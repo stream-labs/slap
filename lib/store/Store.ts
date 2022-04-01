@@ -122,6 +122,7 @@ export class ModuleStateController {
       controller,
       rev: 0,
       mutations: {},
+      getters: {},
     };
     store.modulesMetadata[stateName] = metadata;
 
@@ -141,13 +142,17 @@ export class ModuleStateController {
 
       // register state getters
       if (descriptor.get) {
-        defineGetter(controller, propName, descriptor.get);
+        const getter = descriptor.get.bind(controller);
+        metadata.getters[propName] = getter;
+        defineGetter(controller, propName, getter);
         return;
       }
 
       // register getter functions
       if (propName.startsWith('get')) {
-        defineGetter(controller, propName, descriptor.value);
+        const getter = (config as any)[propName].bind(controller);
+        metadata.getters[propName] = getter;
+        defineGetter(controller, propName, getter);
         return;
       }
 
@@ -294,6 +299,7 @@ export interface StatefulModule {
   config: TStateConfig;
   controller: ModuleStateController;
   mutations: Dict<Function>;
+  getters: Dict<Function>;
 }
 
 // todo refactor

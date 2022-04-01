@@ -1,6 +1,7 @@
 import { GetProps, StateView } from '../StateView';
 import { traverse } from '../../utils/traverse';
 import { ModuleStateController } from '../Store';
+import { forEach } from '../../scope';
 
 
 export type PickState<TView, TModule> = StateView<GetProps<TView> & GetModuleState<TModule>>
@@ -16,34 +17,31 @@ export function pickState<TView extends StateView<any>, TModule>(module: TModule
     const metadata = stateController.metadata;
     const controller = stateController as any;
 
-    traverse(stateController, stateKey => {
-
-      if (stateKey in metadata.mutations) {
-        view.defineProp({
-          type: 'StateMutation',
-          name: stateKey,
-          getValue: () => controller[stateKey],
-        });
-        return;
-      }
-
-      if (stateKey in stateController.state) {
-        view.defineProp({
-          type: 'StateProp',
-          name: stateKey,
-          reactive: true,
-          getValue: () => controller[stateKey],
-        });
-        return;
-      }
-
+    traverse(controller.state, stateKey => {
       view.defineProp({
-        type: 'StateGetter',
+        type: 'StateProp',
         name: stateKey,
         reactive: true,
         getValue: () => controller[stateKey],
       });
+    });
 
+    traverse(metadata.mutations, stateKey => {
+      view.defineProp({
+        type: 'StateMutation',
+        name: stateKey,
+        reactive: false,
+        getValue: () => controller[stateKey],
+      });
+    });
+
+    traverse(metadata.getters, (propName) => {
+      view.defineProp({
+        type: 'StateGetter',
+        name: propName,
+        reactive: true,
+        getValue: () => controller[propName],
+      });
     });
 
     return view;

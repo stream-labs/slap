@@ -1459,6 +1459,7 @@ class ModuleStateController {
             controller,
             rev: 0,
             mutations: {},
+            getters: {},
         };
         store.modulesMetadata[stateName] = metadata;
         // generate getters
@@ -1475,12 +1476,16 @@ class ModuleStateController {
                 return;
             // register state getters
             if (descriptor.get) {
-                (0, scope_1.defineGetter)(controller, propName, descriptor.get);
+                const getter = descriptor.get.bind(controller);
+                metadata.getters[propName] = getter;
+                (0, scope_1.defineGetter)(controller, propName, getter);
                 return;
             }
             // register getter functions
             if (propName.startsWith('get')) {
-                (0, scope_1.defineGetter)(controller, propName, descriptor.value);
+                const getter = config[propName].bind(controller);
+                metadata.getters[propName] = getter;
+                (0, scope_1.defineGetter)(controller, propName, getter);
                 return;
             }
             // register mutations
@@ -1814,29 +1819,28 @@ function pickState(module) {
             return view;
         const metadata = stateController.metadata;
         const controller = stateController;
-        (0, traverse_1.traverse)(stateController, stateKey => {
-            if (stateKey in metadata.mutations) {
-                view.defineProp({
-                    type: 'StateMutation',
-                    name: stateKey,
-                    getValue: () => controller[stateKey],
-                });
-                return;
-            }
-            if (stateKey in stateController.state) {
-                view.defineProp({
-                    type: 'StateProp',
-                    name: stateKey,
-                    reactive: true,
-                    getValue: () => controller[stateKey],
-                });
-                return;
-            }
+        (0, traverse_1.traverse)(controller.state, stateKey => {
             view.defineProp({
-                type: 'StateGetter',
+                type: 'StateProp',
                 name: stateKey,
                 reactive: true,
                 getValue: () => controller[stateKey],
+            });
+        });
+        (0, traverse_1.traverse)(metadata.mutations, stateKey => {
+            view.defineProp({
+                type: 'StateMutation',
+                name: stateKey,
+                reactive: false,
+                getValue: () => controller[stateKey],
+            });
+        });
+        (0, traverse_1.traverse)(metadata.getters, (propName) => {
+            view.defineProp({
+                type: 'StateGetter',
+                name: propName,
+                reactive: true,
+                getValue: () => controller[propName],
             });
         });
         return view;

@@ -52,6 +52,7 @@ export interface StatefulModule {
     config: TStateConfig;
     controller: ModuleStateController;
     mutations: Dict<Function>;
+    getters: Dict<Function>;
 }
 export declare type TConfigFor<TConfigCreator> = TConfigCreator extends new (...args: any) => infer TConfig ? TConfig extends TStateConfig ? TConfig : never : TConfigCreator extends TStateConfig ? TConfigCreator : never;
 export declare type TStateConfigFor<TConfigCreator> = TConfigCreator extends new (...args: any) => infer TConfig ? TConfig extends TStateConfig ? TConfig : never : TConfigCreator extends TStateConfig ? TConfigCreator : never;
