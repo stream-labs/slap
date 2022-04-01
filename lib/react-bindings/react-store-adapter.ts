@@ -1,6 +1,6 @@
 // TODO move to react folder
 import { generateId } from '../scope';
-import { Store } from '../store/store';
+import { Store } from '../store/Store';
 import { inject } from '../scope/injector';
 import { unstable_batchedUpdates } from 'react-dom';
 

@@ -1,10 +1,10 @@
 import produce from 'immer';
+import { createNanoEvents } from 'nanoevents';
+import { isPlainObject } from 'is-plain-object';
 import {
   Scope, generateId, Dict, defineGetter, capitalize, defineSetter,
 } from '../scope';
 import { traverse } from '../utils/traverse';
-import { createNanoEvents } from 'nanoevents';
-import { isPlainObject } from 'is-plain-object';
 
 /**
  * All React related code should be handled in ReactAdapter
@@ -29,7 +29,6 @@ export class Store {
 
     const config = createConfig(configCreator);
 
-
     console.log('REGISTER STORE', stateName);
     const controller = new ModuleStateController(this, stateName, config);
 
@@ -40,7 +39,6 @@ export class Store {
     console.log('RUN MUTATION', mutation);
     const stateName = mutation.stateName;
     const stateController = this.modulesMetadata[stateName].controller;
-
 
     if (this.currentMutation) {
       throw new Error('Can not run mutation while previous mutation is not completed');
@@ -103,11 +101,9 @@ export class Store {
   events = createNanoEvents<StoreEvents>();
 }
 
-
 export interface StoreEvents {
   onMutation: (mutation: Mutation, store: Store) => void
 }
-
 
 export class ModuleStateController {
 
@@ -129,18 +125,19 @@ export class ModuleStateController {
     };
     store.modulesMetadata[stateName] = metadata;
 
+    // generate getters
+    Object.keys(defaultState).forEach(propName => {
+      defineGetter(controller, propName, () => controller.state[propName]);
+      defineSetter(controller, propName, val => {
+        controller.state[propName] = val;
+        return true;
+      });
+    });
+
     // find and register other mutations and getters
     traverse(config, (propName, descriptor) => {
 
-      // generate getters
-      if (propName in defaultState) {
-        defineGetter(controller, propName, () => controller.state[propName]);
-        defineSetter(controller, propName, val => {
-          controller.state[propName] = val;
-          return true;
-        });
-        return;
-      }
+      if (propName in defaultState) return;
 
       // register state getters
       if (descriptor.get) {
@@ -155,11 +152,13 @@ export class ModuleStateController {
       }
 
       // register mutations
-      this.registerMutation(propName, (config as any)[propName]);
+      if (typeof descriptor.value === 'function') {
+        this.registerMutation(propName, (config as any)[propName]);
+      }
     });
 
     // create auto-generated mutations
-    Object.keys(config).forEach(propertyName => {
+    Object.keys(defaultState).forEach(propertyName => {
       const mutationName = `set${capitalize(propertyName)}`;
       if (metadata.mutations[mutationName]) return;
 
@@ -244,6 +243,16 @@ export class ModuleStateController {
 
 function getDefaultStateFromConfig(config: any) {
   const defaultState: Dict<any> = {};
+
+  // if the `state` variable is set in the config, then pick the default state from it
+  if (config.state) {
+    traverse(config.state, (propName, descr) => {
+      defaultState[propName] = config.state[propName];
+    });
+    return defaultState;
+  }
+
+  // otherwise, use writable config variables as default state
   traverse(config, (propName, descr) => {
     if (descr.get) return;
     const propVal = descr.value;
@@ -251,18 +260,6 @@ function getDefaultStateFromConfig(config: any) {
     defaultState[propName] = propVal;
   });
   return defaultState;
-}
-
-// TODO remove
-/**
- * A decorator that registers the object method as an mutation
- */
-export function mutation() {
-  return function (target: any, methodName: string) {
-    target.mutations = target.mutations || [];
-    // mark the method as an mutation
-    target.mutations.push(methodName);
-  };
 }
 
 export interface Mutation {
@@ -321,19 +318,19 @@ export type TStateConfigFor<TConfigCreator> =
 
 export type TStateControllerFor<TConfigCreator, TConfig = TStateConfigFor<TConfigCreator>>
   = TConfig extends TStateConfig ?
-  WritablePart<TConfig> &
+  PickDefaultState<TConfig> &
   ModuleStateController &
-  PickGeneratedMutations<TConfig> &
+  PickGeneratedMutations<PickDefaultState<TConfig>> &
   Omit<TConfig, keyof TStateConfig>
   : never
 
 type GetSetterName<TPropName> = TPropName extends string ? `set${Capitalize<TPropName>}` : never;
 
-export type PickGeneratedMutations<TConfig extends TStateConfig> = {
-  [K in keyof TConfig as GetSetterName<K>]: (value: TConfig[K]) => unknown
+export type PickDefaultState<TConfig extends TStateConfig> = TConfig extends { state: infer TState } ? TState : WritablePart<TConfig>;
+
+export type PickGeneratedMutations<TState> = {
+  [K in keyof TState as GetSetterName<K>]: (value: TState[K]) => unknown
 }
-
-
 
 // Create a WritablePart helper
 // https://github.com/Microsoft/TypeScript/issues/27024#issuecomment-421529650
@@ -346,7 +343,6 @@ type WritableKeysOf<T> = {
 }[keyof T];
 
 type WritablePart<T> = Pick<T, WritableKeysOf<T>>;
-
 
 export function createConfig<TConfig>(configCreator: TConfig | (new (...args: any) => TConfig)): TConfig {
   const config = isPlainObject(configCreator) ? configCreator : new (configCreator as any)();

@@ -272,14 +272,14 @@ const react_1 = __importStar(__webpack_require__(156));
 const hooks_1 = __webpack_require__(985);
 const scope_1 = __webpack_require__(527);
 const react_store_adapter_1 = __webpack_require__(160);
-const store_1 = __webpack_require__(152);
+const Store_1 = __webpack_require__(607);
 exports.SlapContext = react_1.default.createContext(null);
 function useAppContext() {
     return (0, react_1.useContext)(exports.SlapContext);
 }
 exports.useAppContext = useAppContext;
 function createApp(Services = {}) {
-    const rootScope = new scope_1.Scope(Object.assign(Object.assign({}, Services), { Store: store_1.Store, ReactStoreAdapter: react_store_adapter_1.ReactStoreAdapter }));
+    const rootScope = new scope_1.Scope(Object.assign(Object.assign({}, Services), { Store: Store_1.Store, ReactStoreAdapter: react_store_adapter_1.ReactStoreAdapter }));
     const modulesScope = rootScope.createChildScope({}, { autoregister: true });
     rootScope.init(react_store_adapter_1.ReactStoreAdapter);
     return { rootScope, modulesScope };
@@ -382,12 +382,12 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReactStoreAdapter = void 0;
 // TODO move to react folder
 const scope_1 = __webpack_require__(527);
-const store_1 = __webpack_require__(152);
+const Store_1 = __webpack_require__(607);
 const injector_1 = __webpack_require__(869);
 const react_dom_1 = __webpack_require__(386);
 class ReactStoreAdapter {
     constructor() {
-        this.store = (0, injector_1.inject)(store_1.Store);
+        this.store = (0, injector_1.inject)(Store_1.Store);
         this.watchers = {};
         this.watchersOrder = [];
     }
@@ -489,12 +489,12 @@ exports.useModuleInstance = void 0;
 const react_1 = __webpack_require__(156);
 const hooks_1 = __webpack_require__(985);
 const ReactModules_1 = __webpack_require__(668);
-const store_1 = __webpack_require__(152);
+const Store_1 = __webpack_require__(607);
 function useModuleInstance(locator, initProps = null, name = '') {
     const rootScope = (0, ReactModules_1.useAppContext)().modulesScope;
     const { instance, moduleName, scope, isRoot, store, } = (0, hooks_1.useOnCreate)(() => {
         const moduleName = name || typeof locator === 'string' ? locator : locator.name;
-        const store = rootScope.resolve(store_1.Store);
+        const store = rootScope.resolve(Store_1.Store);
         let isRoot = !!initProps;
         let scope = isRoot ? rootScope : store.currentContext[moduleName];
         if (!scope) {
@@ -544,7 +544,7 @@ exports.useSelector = void 0;
 const react_1 = __webpack_require__(156);
 const hooks_1 = __webpack_require__(985);
 const ReactModules_1 = __webpack_require__(668);
-const store_1 = __webpack_require__(152);
+const Store_1 = __webpack_require__(607);
 const react_store_adapter_1 = __webpack_require__(160);
 const isDeepEqual_1 = __webpack_require__(233);
 function useSelector(cb) {
@@ -552,7 +552,7 @@ function useSelector(cb) {
     const currentSelectorStateRef = (0, react_1.useRef)({});
     const forceUpdate = (0, hooks_1.useForceUpdate)();
     const scope = (0, ReactModules_1.useAppContext)().modulesScope;
-    const store = scope.resolve(store_1.Store);
+    const store = scope.resolve(Store_1.Store);
     const reactStore = scope.resolve(react_store_adapter_1.ReactStoreAdapter);
     (0, react_1.useEffect)(() => {
         affectedModulesRef.current = store.listenAffectedModules(() => {
@@ -1334,285 +1334,7 @@ exports.ComponentView = ComponentView;
 
 /***/ }),
 
-/***/ 938:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createFormBinding = void 0;
-const StateView_1 = __webpack_require__(32);
-function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
-    const stateView = new StateView_1.StateView();
-    stateView.defineWildcardProp(propName => {
-        stateView.defineProp({
-            type: 'InputBinding',
-            name: propName,
-            reactive: true,
-            getValue: () => (Object.assign({ name: propName, value: stateGetter()[propName], onChange: (newVal) => stateSetter({ [propName]: newVal }) }, (extraPropsGenerator ? extraPropsGenerator(propName) : {}))),
-        });
-    });
-    return stateView;
-}
-exports.createFormBinding = createFormBinding;
-
-
-/***/ }),
-
-/***/ 338:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-__exportStar(__webpack_require__(152), exports);
-__exportStar(__webpack_require__(32), exports);
-__exportStar(__webpack_require__(307), exports);
-__exportStar(__webpack_require__(938), exports);
-
-
-/***/ }),
-
-/***/ 307:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectState = exports.StateInjectorType = void 0;
-const injector_1 = __webpack_require__(869);
-const pickLoadingState_1 = __webpack_require__(209);
-const store_1 = __webpack_require__(152);
-exports.StateInjectorType = Symbol('stateInjector');
-function injectState(configCreator) {
-    return (0, injector_1.createInjector)(injector => {
-        function createState() {
-            return createStateForModule(injector.provider, configCreator);
-        }
-        let state = null;
-        return {
-            type: exports.StateInjectorType,
-            load: () => {
-                state = createState();
-            },
-            getValue() {
-                return state;
-            },
-        };
-    });
-}
-exports.injectState = injectState;
-function createStateForModule(provider, stateConfig) {
-    const stateName = provider.instanceId;
-    const store = provider.scope.resolve(store_1.Store);
-    const moduleState = store.createState(stateName, stateConfig);
-    (0, pickLoadingState_1.createLoadingState)(store, provider);
-    return moduleState;
-}
-
-
-/***/ }),
-
-/***/ 351:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickControllers = void 0;
-const traverse_1 = __webpack_require__(222);
-function pickControllers(module) {
-    return function (props, view) {
-        (0, traverse_1.traverse)(module, (propName, descr) => {
-            if (!propName.endsWith('Controller'))
-                return;
-            const shortName = propName.split('Controller')[0];
-            view.defineProp({
-                type: 'Controller',
-                name: shortName,
-                getValue: () => module[propName],
-            });
-        });
-        return view;
-    };
-}
-exports.pickControllers = pickControllers;
-
-
-/***/ }),
-
-/***/ 209:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getLoadingStateName = exports.createLoadingState = exports.LoadingState = exports.pickLoadingState = void 0;
-const provider_1 = __webpack_require__(370);
-const traverse_1 = __webpack_require__(222);
-const store_1 = __webpack_require__(152);
-function pickLoadingState(module) {
-    return function (props, view) {
-        var _a;
-        const provider = (0, provider_1.getInstanceMetadata)(module).provider;
-        const stateName = getLoadingStateName(provider.instanceId);
-        const store = provider.scope.resolve(store_1.Store);
-        const stateController = (_a = store.getMetadata(stateName)) === null || _a === void 0 ? void 0 : _a.controller;
-        if (!stateController)
-            return view; // module is not stateful
-        (0, traverse_1.getKeys)(stateController)
-            .forEach(propName => {
-            view.defineProp({
-                type: 'LoadingState',
-                name: propName,
-                getValue: () => stateController[propName],
-            });
-        });
-        return view;
-    };
-}
-exports.pickLoadingState = pickLoadingState;
-class LoadingState {
-    constructor() {
-        this.loadingStatus = 'not-started';
-    }
-    get isLoading() {
-        return this.loadingStatus === 'loading';
-    }
-    get isLoaded() {
-        return this.loadingStatus === 'done';
-    }
-}
-exports.LoadingState = LoadingState;
-function createLoadingState(store, moduleProvider) {
-    const stateName = getLoadingStateName(moduleProvider.instanceId);
-    const loadingState = store.createState(stateName, LoadingState);
-    moduleProvider.waitForLoad.then(() => {
-        loadingState.setLoadingStatus('done');
-    });
-}
-exports.createLoadingState = createLoadingState;
-function getLoadingStateName(moduleStateName) {
-    return moduleStateName + '__loading_state';
-}
-exports.getLoadingStateName = getLoadingStateName;
-
-
-/***/ }),
-
-/***/ 49:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickProps = void 0;
-const traverse_1 = __webpack_require__(222);
-function pickProps(module) {
-    return function (props, view) {
-        (0, traverse_1.traverse)(module, (propName, descr) => {
-            const isGetter = !!descr.get;
-            const isFunction = !isGetter && typeof descr.value === 'function';
-            const getValue = isFunction ? () => descr.value.bind(module) : () => module[propName];
-            view.defineProp({
-                type: 'ModuleProp',
-                reactive: isGetter,
-                name: propName,
-                getValue,
-            });
-        });
-        return view;
-    };
-}
-exports.pickProps = pickProps;
-
-
-/***/ }),
-
-/***/ 948:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickState = void 0;
-const traverse_1 = __webpack_require__(222);
-const store_1 = __webpack_require__(152);
-function pickState(module) {
-    return function (props, view) {
-        const stateController = module.state; // TODO allow picking multiple states?
-        if (!(stateController instanceof store_1.ModuleStateController))
-            return view;
-        const metadata = stateController.metadata;
-        const controller = stateController;
-        (0, traverse_1.traverse)(stateController, stateKey => {
-            if (stateKey in metadata.mutations) {
-                view.defineProp({
-                    type: 'StateMutation',
-                    name: stateKey,
-                    getValue: () => controller[stateKey],
-                });
-                return;
-            }
-            if (stateKey in stateController.state) {
-                view.defineProp({
-                    type: 'StateProp',
-                    name: stateKey,
-                    reactive: true,
-                    getValue: () => controller[stateKey],
-                });
-                return;
-            }
-            view.defineProp({
-                type: 'StateGetter',
-                name: stateKey,
-                reactive: true,
-                getValue: () => controller[stateKey],
-            });
-        });
-        return view;
-    };
-}
-exports.pickState = pickState;
-
-
-/***/ }),
-
-/***/ 223:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickStateViews = void 0;
-const StateView_1 = __webpack_require__(32);
-const traverse_1 = __webpack_require__(222);
-function pickStateViews(module) {
-    return function (props, view) {
-        const anyModule = module;
-        (0, traverse_1.traverse)(module, (propName) => {
-            const stateView = anyModule[propName];
-            if (!(anyModule[propName] instanceof StateView_1.StateView))
-                return;
-            view.defineProp({
-                type: 'StateView',
-                name: propName,
-                reactive: true,
-                stateView,
-                getValue: () => stateView.proxy,
-            });
-        });
-        return view;
-    };
-}
-exports.pickStateViews = pickStateViews;
-
-
-/***/ }),
-
-/***/ 152:
+/***/ 607:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -1620,12 +1342,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createConfig = exports.defaultStateConfig = exports.mutation = exports.ModuleStateController = exports.Store = void 0;
+exports.createConfig = exports.defaultStateConfig = exports.ModuleStateController = exports.Store = void 0;
 const immer_1 = __importDefault(__webpack_require__(172));
-const scope_1 = __webpack_require__(527);
-const traverse_1 = __webpack_require__(222);
 const nanoevents_1 = __webpack_require__(111);
 const is_plain_object_1 = __webpack_require__(57);
+const scope_1 = __webpack_require__(527);
+const traverse_1 = __webpack_require__(222);
 /**
  * All React related code should be handled in ReactAdapter
  * Framework agnostic store
@@ -1715,17 +1437,18 @@ class ModuleStateController {
             mutations: {},
         };
         store.modulesMetadata[stateName] = metadata;
+        // generate getters
+        Object.keys(defaultState).forEach(propName => {
+            (0, scope_1.defineGetter)(controller, propName, () => controller.state[propName]);
+            (0, scope_1.defineSetter)(controller, propName, val => {
+                controller.state[propName] = val;
+                return true;
+            });
+        });
         // find and register other mutations and getters
         (0, traverse_1.traverse)(config, (propName, descriptor) => {
-            // generate getters
-            if (propName in defaultState) {
-                (0, scope_1.defineGetter)(controller, propName, () => controller.state[propName]);
-                (0, scope_1.defineSetter)(controller, propName, val => {
-                    controller.state[propName] = val;
-                    return true;
-                });
+            if (propName in defaultState)
                 return;
-            }
             // register state getters
             if (descriptor.get) {
                 (0, scope_1.defineGetter)(controller, propName, descriptor.get);
@@ -1737,10 +1460,12 @@ class ModuleStateController {
                 return;
             }
             // register mutations
-            this.registerMutation(propName, config[propName]);
+            if (typeof descriptor.value === 'function') {
+                this.registerMutation(propName, config[propName]);
+            }
         });
         // create auto-generated mutations
-        Object.keys(config).forEach(propertyName => {
+        Object.keys(defaultState).forEach(propertyName => {
             const mutationName = `set${(0, scope_1.capitalize)(propertyName)}`;
             if (metadata.mutations[mutationName])
                 return;
@@ -1813,6 +1538,14 @@ class ModuleStateController {
 exports.ModuleStateController = ModuleStateController;
 function getDefaultStateFromConfig(config) {
     const defaultState = {};
+    // if the `state` variable is set in the config, then pick the default state from it
+    if (config.state) {
+        (0, traverse_1.traverse)(config.state, (propName, descr) => {
+            defaultState[propName] = config.state[propName];
+        });
+        return defaultState;
+    }
+    // otherwise, use writable config variables as default state
     (0, traverse_1.traverse)(config, (propName, descr) => {
         if (descr.get)
             return;
@@ -1823,18 +1556,6 @@ function getDefaultStateFromConfig(config) {
     });
     return defaultState;
 }
-// TODO remove
-/**
- * A decorator that registers the object method as an mutation
- */
-function mutation() {
-    return function (target, methodName) {
-        target.mutations = target.mutations || [];
-        // mark the method as an mutation
-        target.mutations.push(methodName);
-    };
-}
-exports.mutation = mutation;
 //
 // /**
 //  * use immerjs API to clone the object
@@ -1851,6 +1572,284 @@ function createConfig(configCreator) {
     return config;
 }
 exports.createConfig = createConfig;
+
+
+/***/ }),
+
+/***/ 938:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createFormBinding = void 0;
+const StateView_1 = __webpack_require__(32);
+function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
+    const stateView = new StateView_1.StateView();
+    stateView.defineWildcardProp(propName => {
+        stateView.defineProp({
+            type: 'InputBinding',
+            name: propName,
+            reactive: true,
+            getValue: () => (Object.assign({ name: propName, value: stateGetter()[propName], onChange: (newVal) => stateSetter({ [propName]: newVal }) }, (extraPropsGenerator ? extraPropsGenerator(propName) : {}))),
+        });
+    });
+    return stateView;
+}
+exports.createFormBinding = createFormBinding;
+
+
+/***/ }),
+
+/***/ 338:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__webpack_require__(607), exports);
+__exportStar(__webpack_require__(32), exports);
+__exportStar(__webpack_require__(307), exports);
+__exportStar(__webpack_require__(938), exports);
+
+
+/***/ }),
+
+/***/ 307:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectState = exports.StateInjectorType = void 0;
+const injector_1 = __webpack_require__(869);
+const pickLoadingState_1 = __webpack_require__(209);
+const Store_1 = __webpack_require__(607);
+exports.StateInjectorType = Symbol('stateInjector');
+function injectState(configCreator) {
+    return (0, injector_1.createInjector)(injector => {
+        function createState() {
+            return createStateForModule(injector.provider, configCreator);
+        }
+        let state = null;
+        return {
+            type: exports.StateInjectorType,
+            load: () => {
+                state = createState();
+            },
+            getValue() {
+                return state;
+            },
+        };
+    });
+}
+exports.injectState = injectState;
+function createStateForModule(provider, stateConfig) {
+    const stateName = provider.instanceId;
+    const store = provider.scope.resolve(Store_1.Store);
+    const moduleState = store.createState(stateName, stateConfig);
+    (0, pickLoadingState_1.createLoadingState)(store, provider);
+    return moduleState;
+}
+
+
+/***/ }),
+
+/***/ 351:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickControllers = void 0;
+const traverse_1 = __webpack_require__(222);
+function pickControllers(module) {
+    return function (props, view) {
+        (0, traverse_1.traverse)(module, (propName, descr) => {
+            if (!propName.endsWith('Controller'))
+                return;
+            const shortName = propName.split('Controller')[0];
+            view.defineProp({
+                type: 'Controller',
+                name: shortName,
+                getValue: () => module[propName],
+            });
+        });
+        return view;
+    };
+}
+exports.pickControllers = pickControllers;
+
+
+/***/ }),
+
+/***/ 209:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getLoadingStateName = exports.createLoadingState = exports.LoadingState = exports.pickLoadingState = void 0;
+const provider_1 = __webpack_require__(370);
+const traverse_1 = __webpack_require__(222);
+const Store_1 = __webpack_require__(607);
+function pickLoadingState(module) {
+    return function (props, view) {
+        var _a;
+        const provider = (0, provider_1.getInstanceMetadata)(module).provider;
+        const stateName = getLoadingStateName(provider.instanceId);
+        const store = provider.scope.resolve(Store_1.Store);
+        const stateController = (_a = store.getMetadata(stateName)) === null || _a === void 0 ? void 0 : _a.controller;
+        if (!stateController)
+            return view; // module is not stateful
+        (0, traverse_1.getKeys)(stateController)
+            .forEach(propName => {
+            view.defineProp({
+                type: 'LoadingState',
+                name: propName,
+                getValue: () => stateController[propName],
+            });
+        });
+        return view;
+    };
+}
+exports.pickLoadingState = pickLoadingState;
+class LoadingState {
+    constructor() {
+        this.loadingStatus = 'not-started';
+    }
+    get isLoading() {
+        return this.loadingStatus === 'loading';
+    }
+    get isLoaded() {
+        return this.loadingStatus === 'done';
+    }
+}
+exports.LoadingState = LoadingState;
+function createLoadingState(store, moduleProvider) {
+    const stateName = getLoadingStateName(moduleProvider.instanceId);
+    const loadingState = store.createState(stateName, LoadingState);
+    moduleProvider.waitForLoad.then(() => {
+        loadingState.setLoadingStatus('done');
+    });
+}
+exports.createLoadingState = createLoadingState;
+function getLoadingStateName(moduleStateName) {
+    return moduleStateName + '__loading_state';
+}
+exports.getLoadingStateName = getLoadingStateName;
+
+
+/***/ }),
+
+/***/ 49:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickProps = void 0;
+const traverse_1 = __webpack_require__(222);
+function pickProps(module) {
+    return function (props, view) {
+        (0, traverse_1.traverse)(module, (propName, descr) => {
+            const isGetter = !!descr.get;
+            const isFunction = !isGetter && typeof descr.value === 'function';
+            const getValue = isFunction ? () => descr.value.bind(module) : () => module[propName];
+            view.defineProp({
+                type: 'ModuleProp',
+                reactive: isGetter,
+                name: propName,
+                getValue,
+            });
+        });
+        return view;
+    };
+}
+exports.pickProps = pickProps;
+
+
+/***/ }),
+
+/***/ 948:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickState = void 0;
+const traverse_1 = __webpack_require__(222);
+const Store_1 = __webpack_require__(607);
+function pickState(module) {
+    return function (props, view) {
+        const stateController = module.state; // TODO allow picking multiple states?
+        if (!(stateController instanceof Store_1.ModuleStateController))
+            return view;
+        const metadata = stateController.metadata;
+        const controller = stateController;
+        (0, traverse_1.traverse)(stateController, stateKey => {
+            if (stateKey in metadata.mutations) {
+                view.defineProp({
+                    type: 'StateMutation',
+                    name: stateKey,
+                    getValue: () => controller[stateKey],
+                });
+                return;
+            }
+            if (stateKey in stateController.state) {
+                view.defineProp({
+                    type: 'StateProp',
+                    name: stateKey,
+                    reactive: true,
+                    getValue: () => controller[stateKey],
+                });
+                return;
+            }
+            view.defineProp({
+                type: 'StateGetter',
+                name: stateKey,
+                reactive: true,
+                getValue: () => controller[stateKey],
+            });
+        });
+        return view;
+    };
+}
+exports.pickState = pickState;
+
+
+/***/ }),
+
+/***/ 223:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickStateViews = void 0;
+const StateView_1 = __webpack_require__(32);
+const traverse_1 = __webpack_require__(222);
+function pickStateViews(module) {
+    return function (props, view) {
+        const anyModule = module;
+        (0, traverse_1.traverse)(module, (propName) => {
+            const stateView = anyModule[propName];
+            if (!(anyModule[propName] instanceof StateView_1.StateView))
+                return;
+            view.defineProp({
+                type: 'StateView',
+                name: propName,
+                reactive: true,
+                stateView,
+                getValue: () => stateView.proxy,
+            });
+        });
+        return view;
+    };
+}
+exports.pickStateViews = pickStateViews;
 
 
 /***/ }),

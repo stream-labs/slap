@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useOnCreate, useOnDestroy } from './hooks';
 import { useAppContext } from './ReactModules';
-import { Store } from '../store/store';
+import { Store } from '../store/Store';
 import { Scope, TModuleInstanceFor, TModuleLocatorType } from '../scope';
 
 export function useModuleInstance<T extends TModuleLocatorType, TInitProps extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps: TInitProps|null = null, name = ''): TModuleInstanceFor<T> {

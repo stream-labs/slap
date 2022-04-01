@@ -38,10 +38,6 @@ export declare class ModuleStateController {
     set state(val: any);
     get metadata(): StatefulModule;
 }
-/**
- * A decorator that registers the object method as an mutation
- */
-export declare function mutation(): (target: any, methodName: string) => void;
 export interface Mutation {
     id: number;
     stateName: string;
@@ -59,10 +55,13 @@ export interface StatefulModule {
 }
 export declare type TConfigFor<TConfigCreator> = TConfigCreator extends new (...args: any) => infer TConfig ? TConfig extends TStateConfig ? TConfig : never : TConfigCreator extends TStateConfig ? TConfigCreator : never;
 export declare type TStateConfigFor<TConfigCreator> = TConfigCreator extends new (...args: any) => infer TConfig ? TConfig extends TStateConfig ? TConfig : never : TConfigCreator extends TStateConfig ? TConfigCreator : never;
-export declare type TStateControllerFor<TConfigCreator, TConfig = TStateConfigFor<TConfigCreator>> = TConfig extends TStateConfig ? WritablePart<TConfig> & ModuleStateController & PickGeneratedMutations<TConfig> & Omit<TConfig, keyof TStateConfig> : never;
+export declare type TStateControllerFor<TConfigCreator, TConfig = TStateConfigFor<TConfigCreator>> = TConfig extends TStateConfig ? PickDefaultState<TConfig> & ModuleStateController & PickGeneratedMutations<PickDefaultState<TConfig>> & Omit<TConfig, keyof TStateConfig> : never;
 declare type GetSetterName<TPropName> = TPropName extends string ? `set${Capitalize<TPropName>}` : never;
-export declare type PickGeneratedMutations<TConfig extends TStateConfig> = {
-    [K in keyof TConfig as GetSetterName<K>]: (value: TConfig[K]) => unknown;
+export declare type PickDefaultState<TConfig extends TStateConfig> = TConfig extends {
+    state: infer TState;
+} ? TState : WritablePart<TConfig>;
+export declare type PickGeneratedMutations<TState> = {
+    [K in keyof TState as GetSetterName<K>]: (value: TState[K]) => unknown;
 };
 export declare type IfEquals<X, Y, A, B> = (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? A : B;
 declare type WritableKeysOf<T> = {

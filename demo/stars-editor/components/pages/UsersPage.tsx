@@ -1,23 +1,35 @@
 import React from 'react';
-import { useModule } from '../../../../lib';
-import { UsersService } from '../../services/users';
+import { useModule, injectState } from '../../../../lib';
+import { generateId } from '../../../../lib/scope';
+
+type TUser = {
+  id: string;
+  name: string;
+}
+
+export class UsersState {
+  state = {
+    selectedUser: '',
+    users: [] as TUser[],
+  };
+
+  addUser(id: string, name: string) {
+    this.state.users.push({ id, name });
+  }
+}
 
 export class UsersModule {
 
+  state = injectState(UsersState);
 
-  state = {
-    selectedUser: '',
-    users: [] as any,
-  };
-
-  init() {
-
+  createUser() {
+    const id = generateId();
+    this.state.addUser(id, `User ${id}`);
   }
-
 }
 
 export function UsersPage() {
-  const { users } = useModule(UsersService);
+  const { users, createUser } = useModule(UsersModule);
 
   // function openChildWindow() {
   //   const myWindow = window.open('?id=child', '_blank');
@@ -28,6 +40,7 @@ export function UsersPage() {
   return (
     <div>
       {users.map(user => <div key={user.id}>{user.name}</div>)}
+      <button onClick={createUser}>Add user</button>
       {/* <a onClick={openChildWindow}>Open the Child window</a> */}
     </div>
   );

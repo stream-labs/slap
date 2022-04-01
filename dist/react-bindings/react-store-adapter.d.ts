@@ -1,4 +1,4 @@
-import { Store } from '../store/store';
+import { Store } from '../store/Store';
 export declare class ReactStoreAdapter {
     store: Store;
     load(): void;

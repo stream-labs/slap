@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useForceUpdate } from './hooks';
 import { useAppContext } from './ReactModules';
-import { Store } from '../store/store';
+import { Store } from '../store/Store';
 import { ReactStoreAdapter } from './react-store-adapter';
 import { isSimilar } from '../utils/isDeepEqual';
 

@@ -1,6 +1,6 @@
 import { Provider } from '../../scope/provider';
 import { GetProps, StateView } from '../StateView';
-import { Store, TStateControllerFor } from '../store';
+import { Store, TStateControllerFor } from '../Store';
 import { TLoadingStatus } from '../../scope';
 export declare function pickLoadingState<TView extends StateView<any>>(module: unknown): (props: GetProps<TView>, view: TView) => PickLoadingState<TView>;
 export declare type PickLoadingState<TView> = StateView<GetProps<TView> & GetLoadingState>;

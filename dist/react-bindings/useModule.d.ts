@@ -8,17 +8,27 @@ export declare function useComponentView<TStateView extends StateView<any>>(modu
 };
 export declare function useModule<T extends TModuleLocatorType, TInitState extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps?: TInitState | null, moduleName?: string): TModuleInstanceFor<T> & import("../store/plugins/pickStateViews").GetStateViewProps<TModuleInstanceFor<T>> & {
     loadingStatus: import("../scope").TLoadingStatus;
-} & import("..").ModuleStateController & import("..").PickGeneratedMutations<import("../store/plugins/pickLoadingState").LoadingState> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>> & import("../store/plugins/pickControllers").GetControllerProps<TModuleInstanceFor<T>> & {
+} & import("..").ModuleStateController & import("..").PickGeneratedMutations<{
+    loadingStatus: import("../scope").TLoadingStatus;
+}> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>> & import("../store/plugins/pickControllers").GetControllerProps<TModuleInstanceFor<T>> & {
     componentView: ComponentView<import("../store/plugins/pickControllers").PickControllers<StateView<TModuleInstanceFor<T> & import("../store/plugins/pickStateViews").GetStateViewProps<TModuleInstanceFor<T>> & {
         loadingStatus: import("../scope").TLoadingStatus;
-    } & import("..").ModuleStateController & import("..").PickGeneratedMutations<import("../store/plugins/pickLoadingState").LoadingState> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>>>, TModuleInstanceFor<T>>>;
+    } & import("..").ModuleStateController & import("..").PickGeneratedMutations<{
+        loadingStatus: import("../scope").TLoadingStatus;
+    }> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>>>, TModuleInstanceFor<T>>>;
     extend: <TNewProps>(newPropsFactory: (props: TModuleInstanceFor<T> & import("../store/plugins/pickStateViews").GetStateViewProps<TModuleInstanceFor<T>> & {
         loadingStatus: import("../scope").TLoadingStatus;
-    } & import("..").ModuleStateController & import("..").PickGeneratedMutations<import("../store/plugins/pickLoadingState").LoadingState> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>> & import("../store/plugins/pickControllers").GetControllerProps<TModuleInstanceFor<T>>) => TNewProps) => TModuleInstanceFor<T> & import("../store/plugins/pickStateViews").GetStateViewProps<TModuleInstanceFor<T>> & {
+    } & import("..").ModuleStateController & import("..").PickGeneratedMutations<{
         loadingStatus: import("../scope").TLoadingStatus;
-    } & import("..").ModuleStateController & import("..").PickGeneratedMutations<import("../store/plugins/pickLoadingState").LoadingState> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>> & import("../store/plugins/pickControllers").GetControllerProps<TModuleInstanceFor<T>> & TNewProps & TModuleInstanceFor<TNewProps> & import("../store/plugins/pickStateViews").GetStateViewProps<TModuleInstanceFor<TNewProps>> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<TNewProps>> & import("../store/plugins/pickControllers").GetControllerProps<TModuleInstanceFor<TNewProps>> & {
+    }> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>> & import("../store/plugins/pickControllers").GetControllerProps<TModuleInstanceFor<T>>) => TNewProps) => TModuleInstanceFor<T> & import("../store/plugins/pickStateViews").GetStateViewProps<TModuleInstanceFor<T>> & {
+        loadingStatus: import("../scope").TLoadingStatus;
+    } & import("..").ModuleStateController & import("..").PickGeneratedMutations<{
+        loadingStatus: import("../scope").TLoadingStatus;
+    }> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>> & import("../store/plugins/pickControllers").GetControllerProps<TModuleInstanceFor<T>> & TNewProps & TModuleInstanceFor<TNewProps> & import("../store/plugins/pickStateViews").GetStateViewProps<TModuleInstanceFor<TNewProps>> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<TNewProps>> & import("../store/plugins/pickControllers").GetControllerProps<TModuleInstanceFor<TNewProps>> & {
         componentView: ComponentView<import("../store/plugins/pickControllers").PickControllers<StateView<TModuleInstanceFor<T> & import("../store/plugins/pickStateViews").GetStateViewProps<TModuleInstanceFor<T>> & {
             loadingStatus: import("../scope").TLoadingStatus;
-        } & import("..").ModuleStateController & import("..").PickGeneratedMutations<import("../store/plugins/pickLoadingState").LoadingState> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>>>, TModuleInstanceFor<T>>>;
+        } & import("..").ModuleStateController & import("..").PickGeneratedMutations<{
+            loadingStatus: import("../scope").TLoadingStatus;
+        }> & Omit<import("../store/plugins/pickLoadingState").LoadingState, never> & import("../store/plugins/pickState").GetModuleState<TModuleInstanceFor<T>>>, TModuleInstanceFor<T>>>;
     };
 };

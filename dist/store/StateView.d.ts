@@ -38,7 +38,9 @@ export declare class StateView<TProps = {}> {
 }
 export declare function createStateViewForModule<T>(module: T): import("./plugins/pickControllers").PickControllers<StateView<T & GetStateViewProps<T> & {
     loadingStatus: import("../scope").TLoadingStatus;
-} & import("./store").ModuleStateController & import("./store").PickGeneratedMutations<import("./plugins/pickLoadingState").LoadingState> & Omit<import("./plugins/pickLoadingState").LoadingState, never> & GetModuleState<T>>, T>;
+} & import("./Store").ModuleStateController & import("./Store").PickGeneratedMutations<{
+    loadingStatus: import("../scope").TLoadingStatus;
+}> & Omit<import("./plugins/pickLoadingState").LoadingState, never> & GetModuleState<T>>, T>;
 export declare type TStateViewFor<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = StateView<TModule & GetStateViewProps<TModule> & GetLoadingState & GetModuleState<TModule> & GetControllerProps<TModule>>;
 export declare type MergeViews<TView1 extends StateView<any>, TView2 extends StateView<any>> = StateView<GetProps<TView1> & GetProps<TView2>>;
 export declare class ComponentView<TStateView extends StateView<any>> {

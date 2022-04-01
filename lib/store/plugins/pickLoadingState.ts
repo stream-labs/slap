@@ -1,7 +1,7 @@
 import { getInstanceMetadata, Provider } from '../../scope/provider';
 import { getKeys } from '../../utils/traverse';
 import { GetProps, StateView } from '../StateView';
-import { Store, TStateControllerFor } from '../store';
+import { Store, TStateControllerFor } from '../Store';
 import { TLoadingStatus } from '../../scope';
 
 export function pickLoadingState<TView extends StateView<any>>(module: unknown): (props: GetProps<TView>, view: TView) => PickLoadingState<TView> {
