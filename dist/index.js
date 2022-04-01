@@ -391,6 +391,7 @@ __exportStar(__webpack_require__(985), exports);
 __exportStar(__webpack_require__(160), exports);
 __exportStar(__webpack_require__(668), exports);
 __exportStar(__webpack_require__(985), exports);
+__exportStar(__webpack_require__(309), exports);
 __exportStar(__webpack_require__(878), exports);
 __exportStar(__webpack_require__(31), exports);
 
@@ -438,6 +439,67 @@ class ReactStoreAdapter {
     }
 }
 exports.ReactStoreAdapter = ReactStoreAdapter;
+
+
+/***/ }),
+
+/***/ 309:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.useModule = exports.useComponentView = void 0;
+const hooks_1 = __webpack_require__(985);
+const useSelector_1 = __webpack_require__(31);
+const useModuleInstance_1 = __webpack_require__(878);
+const scope_1 = __webpack_require__(527);
+const StateView_1 = __webpack_require__(32);
+function useComponentView(moduleView, id) {
+    const forceUpdate = (0, hooks_1.useForceUpdate)();
+    const { selector, componentId, componentView } = (0, hooks_1.useOnCreate)(() => {
+        const componentId = id || (0, scope_1.generateId)();
+        const componentView = moduleView.registerComponent(componentId, forceUpdate);
+        const stateView = componentView.stateView;
+        // check affected components
+        function selector() {
+            if (!stateView.hasSelectedProps)
+                return;
+            const reactiveValues = stateView.getSnapshot();
+            return reactiveValues;
+        }
+        function extend(newPropsFactory) {
+            const extendedView = moduleView.extend(newPropsFactory);
+            return useComponentView(extendedView, componentId);
+        }
+        stateView.defineProp({
+            type: 'extend',
+            name: 'extend',
+            getValue: () => extend,
+        });
+        stateView.defineProp({
+            type: 'ComponentView',
+            name: 'componentView',
+            getValue: () => componentView,
+        });
+        return {
+            selector, componentId, componentView,
+        };
+    });
+    (0, hooks_1.useOnDestroy)(() => {
+        moduleView.destroyComponent(componentId);
+    });
+    // useDetectChanges
+    // call selector to make selected props reactive
+    (0, useSelector_1.useSelector)(selector);
+    return componentView.stateView.proxy;
+}
+exports.useComponentView = useComponentView;
+function useModule(locator, initProps = null, moduleName = '') {
+    const module = (0, useModuleInstance_1.useModuleInstance)(locator, initProps, moduleName);
+    const moduleView = (0, hooks_1.useOnCreate)(() => (0, StateView_1.createStateViewForModule)(module));
+    return useComponentView(moduleView);
+}
+exports.useModule = useModule;
 
 
 /***/ }),

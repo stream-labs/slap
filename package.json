@@ -1,6 +1,6 @@
 {
   "name": "slap",
-  "version": "0.1.32",
+  "version": "0.1.33",
   "description": "Simple and Scalable Redux Configuration",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
