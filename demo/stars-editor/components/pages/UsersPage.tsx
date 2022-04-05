@@ -13,6 +13,17 @@ export class UsersState {
     users: [] as TUser[],
   };
 
+  getters = {
+
+    get foo() {
+      return 'Foo';
+    },
+
+    getHelloWorld(tmpl: string) {
+      return 'Hello' + tmpl;
+    },
+  };
+
   addUser(id: string, name: string) {
     this.state.users.push({ id, name });
   }
@@ -29,7 +40,9 @@ export class UsersModule {
 }
 
 export function UsersPage() {
-  const { users, createUser } = useModule(UsersModule);
+  const {
+    users, createUser, foo, getHelloWorld,
+  } = useModule(UsersModule);
 
   // function openChildWindow() {
   //   const myWindow = window.open('?id=child', '_blank');
@@ -39,6 +52,10 @@ export function UsersPage() {
 
   return (
     <div>
+      <div>
+        Message: {getHelloWorld('Woaha')}
+        Foo: {foo}
+      </div>
       {users.map(user => <div key={user.id}>{user.name}</div>)}
       <button onClick={createUser}>Add user</button>
       {/* <a onClick={openChildWindow}>Open the Child window</a> */}

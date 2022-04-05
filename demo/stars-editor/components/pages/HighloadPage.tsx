@@ -18,7 +18,7 @@ class CardsModule {
     selectedCardId: '',
 
     updateCard(patch: Partial<TCard>) {
-      if (!this.selectedCardId) return 0;
+      if (!this.selectedCardId) return;
       Object.assign(this.cards[this.selectedCardId], patch);
     },
 

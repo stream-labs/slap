@@ -1,7 +1,7 @@
 import { createInjector } from '../scope/injector';
 import { Provider } from '../scope/provider';
 import { createLoadingState } from './plugins/pickLoadingState';
-import { Store, TStateConfigCreator, TStateControllerFor } from './Store';
+import { Store, TDraftConfigFor, TStateConfigCreator, TStateControllerFor } from './Store';
 
 export const StateInjectorType = Symbol('stateInjector');
 

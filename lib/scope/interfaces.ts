@@ -1,6 +1,12 @@
 import { Dict } from './utils';
 import { Provider } from './provider';
 
+export type PickFunctionPropertyNames<T> = {
+  [K in keyof T]: T[K] extends Function ? K : never;
+}[keyof T];
+export type PickFunctionProperties<T> = Pick<T, PickFunctionPropertyNames<T>>;
+
+
 export type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
   [P in keyof T]: InstanceType<T[P]>;
 };
