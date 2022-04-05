@@ -533,7 +533,7 @@ function useModuleInstance(locator, initProps = null, name = '') {
             scope = rootScope.registerScope({}, { autoregister: true });
         const instance = scope.resolve(locator);
         if (initProps && typeof initProps === 'object') {
-            instance.state['updateState'](initProps);
+            instance.state['bulkUpdateState'](initProps);
         }
         return {
             instance,
@@ -1366,12 +1366,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createConfig = exports.defaultStateConfig = exports.ModuleStateController = exports.Store = void 0;
+exports.defaultStateConfig = exports.ModuleStateController = exports.Store = void 0;
 const immer_1 = __importDefault(__webpack_require__(172));
 const nanoevents_1 = __webpack_require__(111);
-const is_plain_object_1 = __webpack_require__(57);
 const scope_1 = __webpack_require__(527);
-const traverse_1 = __webpack_require__(222);
+const parse_config_1 = __webpack_require__(890);
 /**
  * All React related code should be handled in ReactAdapter
  * Framework agnostic store
@@ -1395,7 +1394,7 @@ class Store {
         if (this.modulesMetadata[stateName]) {
             throw new Error(`State with a name "${stateName}" is already created`);
         }
-        const config = createConfig(configCreator);
+        const config = (0, parse_config_1.parseStateConfig)(configCreator);
         console.log('REGISTER STORE', stateName);
         const controller = new ModuleStateController(this, stateName, config);
         return controller;
@@ -1449,7 +1448,7 @@ class ModuleStateController {
         this.store = store;
         this.stateName = stateName;
         this.draftState = null;
-        const defaultState = getDefaultStateFromConfig(config);
+        const defaultState = config.state;
         // use immer to create an immutable state
         store.rootState[stateName] = (0, immer_1.default)(defaultState, () => { });
         // create metadata
@@ -1458,8 +1457,6 @@ class ModuleStateController {
             config,
             controller,
             rev: 0,
-            mutations: {},
-            getters: {},
         };
         store.modulesMetadata[stateName] = metadata;
         // generate getters
@@ -1470,44 +1467,33 @@ class ModuleStateController {
                 return true;
             });
         });
-        // find and register other mutations and getters
-        (0, traverse_1.traverse)(config, (propName, descriptor) => {
-            if (propName in defaultState)
-                return;
-            // register state getters
-            if (descriptor.get) {
-                const getter = descriptor.get.bind(controller);
-                metadata.getters[propName] = getter;
-                (0, scope_1.defineGetter)(controller, propName, getter);
-                return;
-            }
-            // register getter functions
-            if (propName.startsWith('get')) {
-                const getter = config[propName].bind(controller);
-                metadata.getters[propName] = getter;
-                (0, scope_1.defineGetter)(controller, propName, getter);
-                return;
-            }
-            // register mutations
-            if (typeof descriptor.value === 'function') {
-                this.registerMutation(propName, config[propName]);
-            }
+        Object.keys(config.getters).forEach(propName => {
+            (0, scope_1.defineGetter)(controller, propName, () => config.getters[propName].get.apply(controller));
+        });
+        Object.keys(config.getterMethods).forEach(propName => {
+            (0, scope_1.defineGetter)(controller, propName, (...args) => config.getterMethods[propName].apply(controller, args));
         });
         // create auto-generated mutations
         Object.keys(defaultState).forEach(propertyName => {
             const mutationName = `set${(0, scope_1.capitalize)(propertyName)}`;
-            if (metadata.mutations[mutationName])
+            if (config.mutations[mutationName])
                 return;
             const mutationMethod = (propVal) => controller[propertyName] = propVal;
+            config.mutations[mutationName] = mutationMethod;
             controller.registerMutation(mutationName, mutationMethod);
         });
-        // bulk state update mutation
-        controller.registerMutation('updateState', (statePatch) => Object.assign(controller, statePatch));
+        // create other mutations
+        Object.keys(config.mutations).forEach(propName => {
+            this.registerMutation(propName, config.mutations[propName]);
+        });
+        // define bulk state mutation
+        const bulkMutationName = 'bulkUpdateState';
+        config.mutations[bulkMutationName] = (statePatch) => Object.assign(controller, statePatch);
+        controller.registerMutation('bulkUpdateState', config.mutations[bulkMutationName]);
     }
     registerMutation(mutationName, mutationMethod) {
         const controller = this;
-        const { store, stateName, metadata } = controller;
-        metadata.mutations[mutationName] = mutationMethod;
+        const { store, stateName } = controller;
         // override the original Module method to dispatch mutations
         controller[mutationName] = function (...args) {
             // if this method was called from another mutation
@@ -1539,8 +1525,7 @@ class ModuleStateController {
         this.store.rootState[stateName] = (0, immer_1.default)(state, (draft) => {
             this.draftState = draft;
             const controller = this;
-            // eslint-disable-next-line prefer-spread
-            controller.metadata.mutations[mutationName].apply(controller, mutation.payload);
+            controller.metadata.config.mutations[mutationName].apply(controller, mutation.payload);
         });
         this.metadata.rev++;
         this.draftState = null;
@@ -1565,26 +1550,6 @@ class ModuleStateController {
     }
 }
 exports.ModuleStateController = ModuleStateController;
-function getDefaultStateFromConfig(config) {
-    const defaultState = {};
-    // if the `state` variable is set in the config, then pick the default state from it
-    if (config.state) {
-        (0, traverse_1.traverse)(config.state, (propName, descr) => {
-            defaultState[propName] = config.state[propName];
-        });
-        return defaultState;
-    }
-    // otherwise, use writable config variables as default state
-    (0, traverse_1.traverse)(config, (propName, descr) => {
-        if (descr.get)
-            return;
-        const propVal = descr.value;
-        if (typeof propVal === 'function')
-            return;
-        defaultState[propName] = propVal;
-    });
-    return defaultState;
-}
 //
 // /**
 //  * use immerjs API to clone the object
@@ -1596,11 +1561,20 @@ exports.defaultStateConfig = {
 // persistent: false,
 // autogenerateMutations: true,
 };
-function createConfig(configCreator) {
-    const config = (0, is_plain_object_1.isPlainObject)(configCreator) ? configCreator : new configCreator();
-    return config;
+class LoadingState {
+    constructor() {
+        this.loadingStatus = 'not-started';
+    }
+    reset() {
+        this.loadingStatus = 'not-started';
+    }
+    get isLoading() {
+        return this.loadingStatus === 'loading';
+    }
+    get isLoaded() {
+        return this.loadingStatus === 'done';
+    }
 }
-exports.createConfig = createConfig;
 
 
 /***/ }),
@@ -1686,6 +1660,100 @@ function createStateForModule(provider, stateConfig) {
     const moduleState = store.createState(stateName, stateConfig);
     (0, pickLoadingState_1.createLoadingState)(store, provider);
     return moduleState;
+}
+
+
+/***/ }),
+
+/***/ 890:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.parseStateConfig = void 0;
+const is_plain_object_1 = __webpack_require__(57);
+const utils_1 = __webpack_require__(225);
+/**
+ * Generate a unified state config from a configCreator object
+ */
+function parseStateConfig(configCreator) {
+    const configDraft = (0, is_plain_object_1.isPlainObject)(configCreator) ? configCreator : new configCreator();
+    const config = {
+        state: {},
+        getters: {},
+        getterMethods: {},
+        mutations: {},
+    };
+    config.state = parseDefaultState(configDraft);
+    // parse explicit getters
+    const explicitGetters = configDraft.getters;
+    if (explicitGetters) {
+        (0, utils_1.traverse)(explicitGetters, (propName, descriptor) => {
+            if (descriptor.get) {
+                config.getters[propName] = descriptor;
+                return;
+            }
+            const getterMethod = explicitGetters[propName];
+            if (typeof getterMethod !== 'function')
+                return;
+            config.getterMethods[propName] = function () {
+                return explicitGetters[propName];
+            };
+        });
+    }
+    // parse heuristic getters
+    if (configDraft) {
+        (0, utils_1.traverse)(configDraft, (propName, descriptor) => {
+            if (descriptor.get) {
+                config.getters[propName] = descriptor;
+                return;
+            }
+            const getterMethod = configDraft[propName];
+            if (typeof getterMethod !== 'function')
+                return;
+            const isValidGetterName = (propName.startsWith('get')
+                || propName.startsWith('is')
+                || propName.startsWith('should'));
+            if (!isValidGetterName)
+                return;
+            config.getterMethods[propName] = function () {
+                return configDraft[propName];
+            };
+        });
+    }
+    // parse mutations
+    (0, utils_1.traverse)(configDraft, (propName, descriptor) => {
+        if (descriptor.get)
+            return;
+        if (propName in config.getterMethods)
+            return;
+        const method = configDraft[propName];
+        if (typeof method !== 'function')
+            return;
+        config.mutations[propName] = configDraft[propName];
+    });
+    return config;
+}
+exports.parseStateConfig = parseStateConfig;
+function parseDefaultState(target) {
+    const defaultState = {};
+    // if the `state` variable is set in the config, then pick the default state from it
+    if (target.state) {
+        (0, utils_1.traverse)(target.state, (propName, descr) => {
+            defaultState[propName] = target.state[propName];
+        });
+    }
+    else {
+        (0, utils_1.traverse)(target, (propName, descr) => {
+            if (descr.get)
+                return;
+            const propVal = descr.value;
+            if (typeof propVal === 'function')
+                return;
+            defaultState[propName] = propVal;
+        });
+    }
+    return defaultState;
 }
 
 
@@ -1817,9 +1885,9 @@ function pickState(module) {
         const stateController = module.state; // TODO allow picking multiple states?
         if (!(stateController instanceof Store_1.ModuleStateController))
             return view;
-        const metadata = stateController.metadata;
+        const config = stateController.metadata.config;
         const controller = stateController;
-        (0, traverse_1.traverse)(controller.state, stateKey => {
+        (0, traverse_1.traverse)(config.state, stateKey => {
             view.defineProp({
                 type: 'StateProp',
                 name: stateKey,
@@ -1827,7 +1895,7 @@ function pickState(module) {
                 getValue: () => controller[stateKey],
             });
         });
-        (0, traverse_1.traverse)(metadata.mutations, stateKey => {
+        (0, traverse_1.traverse)(config.mutations, stateKey => {
             view.defineProp({
                 type: 'StateMutation',
                 name: stateKey,
@@ -1835,9 +1903,17 @@ function pickState(module) {
                 getValue: () => controller[stateKey],
             });
         });
-        (0, traverse_1.traverse)(metadata.getters, (propName) => {
+        (0, traverse_1.traverse)(config.getters, (propName) => {
             view.defineProp({
                 type: 'StateGetter',
+                name: propName,
+                reactive: true,
+                getValue: () => controller[propName],
+            });
+        });
+        (0, traverse_1.traverse)(config.getterMethods, (propName) => {
+            view.defineProp({
+                type: 'StateGetterMethod',
                 name: propName,
                 reactive: true,
                 getValue: () => controller[propName],
