@@ -32,7 +32,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     if (typeof creator === 'function') {
 
       // TODO find a better way to distinguish Class and Function
-      const isClass = this.name.charAt(0) === this.name.charAt(0).toUpperCase();
+      const isClass = creator.name && creator.name.charAt(0) === creator.name.charAt(0).toUpperCase();
 
       if (isClass) {
         this.factory = (args: TInitParams) => new (creator as any)(...args);

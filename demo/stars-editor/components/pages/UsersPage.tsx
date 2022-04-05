@@ -1,5 +1,5 @@
 import React from 'react';
-import { useModule, injectState } from '../../../../lib';
+import { useModule, injectState, TModuleInstanceFor } from '../../../../lib';
 import { generateId } from '../../../../lib/scope';
 
 type TUser = {
@@ -53,11 +53,12 @@ export function UsersPage() {
 
       <UsersList />
       <button onClick={createUser}>Add user</button>
-      {/* <a onClick={openChildWindow}>Open the Child window</a> */}
+      <UsersFooter />
     </div>
   );
 }
 
+// nested store
 export function UsersList() {
   const { users, selectedUserId, setSelectedUserId } = useModule(UsersModule).extend(users => ({
 
@@ -81,3 +82,35 @@ export function UsersList() {
     </div>
   );
 }
+
+export function UsersFooter() {
+
+  const stateView = useModule(() => ({
+
+    state: injectState({
+      counter: 1,
+    }),
+
+    onButtonClick() {
+      // eslint-disable-next-line react/no-this-in-sfc
+      this.state.setCounter(this.state.counter + 1);
+      console.log('Button clicked');
+    },
+  }));
+
+  const { onButtonClick, counter } = stateView;
+
+  return <button onClick={onButtonClick}> Inc counter {counter}</button>;
+}
+
+// const buttonModule = () => ({
+//
+//   onButtonClick() {
+//     console.log('Button clicked');
+//     return 1;
+//   },
+// });
+//
+// const mi: TModuleInstanceFor<typeof buttonModule>;
+// const { onButtonClick } = mi;
+// onButtonClick();

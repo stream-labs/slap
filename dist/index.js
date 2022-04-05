@@ -760,7 +760,7 @@ class Provider {
         this.id = `${this.name}__${this.scope.id}__${(0, utils_1.generateId)()}`;
         if (typeof creator === 'function') {
             // TODO find a better way to distinguish Class and Function
-            const isClass = this.name.charAt(0) === this.name.charAt(0).toUpperCase();
+            const isClass = creator.name && creator.name.charAt(0) === creator.name.charAt(0).toUpperCase();
             if (isClass) {
                 this.factory = (args) => new creator(...args);
                 return;
