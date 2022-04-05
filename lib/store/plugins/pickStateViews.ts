@@ -10,7 +10,8 @@ export function pickStateViews<
 
     const anyModule = module as any;
 
-    traverse(module as any, (propName) => {
+    traverse(module as any, (propName, descriptor) => {
+      if (descriptor.get) return;
       const stateView: StateView<any> = anyModule[propName];
       if (!(anyModule[propName] instanceof StateView)) return;
 

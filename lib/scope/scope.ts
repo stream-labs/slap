@@ -98,8 +98,10 @@ export class Scope {
     return this.init(locator, ...[] as any);
   }
 
-  unregister(ModuleClass: TModuleClass) {
-    // TODO
+  unregister<T extends TModuleLocatorType>(locator: T) {
+    const provider = this.resolveProvider(locator);
+    provider.destroyInstance();
+    delete this.providers[provider.id];
   }
 
   // helper methods

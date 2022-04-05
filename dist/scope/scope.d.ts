@@ -1,4 +1,4 @@
-import { TModuleClass, TModuleConstructorMap, TModuleCreator, TModuleInstanceFor, TModuleLocatorType, TProviderFor } from './interfaces';
+import { TModuleConstructorMap, TModuleCreator, TModuleInstanceFor, TModuleLocatorType, TProviderFor } from './interfaces';
 import { Provider } from './provider';
 interface ScopeSettings {
     parentScope: Scope | null;
@@ -19,7 +19,7 @@ export declare class Scope {
     resolveProvider<T extends TModuleLocatorType>(moduleLocator: T): TProviderFor<T>;
     getInstance<T extends TModuleLocatorType>(locator: T): TModuleInstanceFor<T> | null;
     resolve<T extends TModuleLocatorType>(locator: T): TModuleInstanceFor<T>;
-    unregister(ModuleClass: TModuleClass): void;
+    unregister<T extends TModuleLocatorType>(locator: T): void;
     isRegistered(moduleLocator: TModuleLocatorType): boolean;
     hasInstance(moduleLocator: TModuleLocatorType): boolean;
     /**

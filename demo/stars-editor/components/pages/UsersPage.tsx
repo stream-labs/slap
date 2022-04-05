@@ -9,8 +9,10 @@ type TUser = {
 
 export class UsersState {
   state = {
-    selectedUser: '',
-    users: [] as TUser[],
+    users: [
+      { id: 'user1', name: 'User 1' },
+      { id: 'user2', name: 'User 2' },
+    ] as TUser[],
   };
 
   getters = {
@@ -40,15 +42,7 @@ export class UsersModule {
 }
 
 export function UsersPage() {
-  const {
-    users, createUser, foo, getHelloWorld,
-  } = useModule(UsersModule);
-
-  // function openChildWindow() {
-  //   const myWindow = window.open('?id=child', '_blank');
-  //   console.log('open window', myWindow);
-  //   console.log('opener', myWindow?.opener);
-  // }
+  const { createUser, foo, getHelloWorld } = useModule(UsersModule);
 
   return (
     <div>
@@ -56,9 +50,34 @@ export function UsersPage() {
         Message: {getHelloWorld('Woaha')}
         Foo: {foo}
       </div>
-      {users.map(user => <div key={user.id}>{user.name}</div>)}
+
+      <UsersList />
       <button onClick={createUser}>Add user</button>
       {/* <a onClick={openChildWindow}>Open the Child window</a> */}
+    </div>
+  );
+}
+
+export function UsersList() {
+  const { users, selectedUserId, setSelectedUserId } = useModule(UsersModule).extend(users => ({
+
+    state: injectState({
+      selectedUserId: 'user2',
+    }),
+  }));
+
+  return (
+    <div>
+      {users.map(user => (
+        <div
+          role="button"
+          onClick={() => setSelectedUserId(user.id)}
+          style={{ outline: selectedUserId === user.id ? '1px solid green' : 'none' }}
+          key={user.id}
+        >
+          {user.name}
+        </div>
+      ))}
     </div>
   );
 }

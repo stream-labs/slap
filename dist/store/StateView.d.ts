@@ -28,8 +28,8 @@ export declare class StateView<TProps = {}> {
      *   return new ModuleView(module)
      * })
      */
-    extend<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView;
-    extend<TNewProps>(newProps: TNewProps): MergeViews<StateView<TProps>, TStateViewFor<TNewProps>>;
+    select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView;
+    extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): MergeViews<StateView<TProps>, TStateViewFor<TNewProps>>;
     clone(): StateView<TProps>;
     mergeView<TExtension extends StateView<any>, TResult = MergeViews<StateView<TProps>, TExtension>>(extension: TExtension): TResult;
     components: Dict<ComponentView<any>>;

@@ -1,7 +1,7 @@
 import { injectState } from '../../../lib/store/injectState';
 
 export class WindowState {
-  activePage = 'editor';
+  activePage = 'users';
 
   pages = [
     { title: 'Editor', id: 'editor' },

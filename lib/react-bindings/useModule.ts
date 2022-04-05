@@ -17,7 +17,7 @@ export function useComponentView<TStateView extends StateView<any>>(moduleView: 
 
   const { selector, componentId, componentView } = useOnCreate(() => {
 
-    const componentId = id || generateId();
+    const componentId = id || `component__${generateId()}`;
     const componentView = moduleView.registerComponent(componentId, forceUpdate);
     const stateView = componentView.stateView;
 
@@ -31,7 +31,7 @@ export function useComponentView<TStateView extends StateView<any>>(moduleView: 
     function extend<TNewProps>(
       newPropsFactory: (props: GetProps<TStateView>) => TNewProps,
     ): (MergeViews<StateView<GetProps<TStateView> & TNewProps>, TStateViewFor<TNewProps>>)['props'] {
-      const extendedView = moduleView.extend(newPropsFactory);
+      const extendedView = moduleView.extend(newPropsFactory, componentId);
       return useComponentView(extendedView, componentId) as any;
     }
 

@@ -457,7 +457,7 @@ const StateView_1 = __webpack_require__(32);
 function useComponentView(moduleView, id) {
     const forceUpdate = (0, hooks_1.useForceUpdate)();
     const { selector, componentId, componentView } = (0, hooks_1.useOnCreate)(() => {
-        const componentId = id || (0, scope_1.generateId)();
+        const componentId = id || `component__${(0, scope_1.generateId)()}`;
         const componentView = moduleView.registerComponent(componentId, forceUpdate);
         const stateView = componentView.stateView;
         // check affected components
@@ -468,7 +468,7 @@ function useComponentView(moduleView, id) {
             return reactiveValues;
         }
         function extend(newPropsFactory) {
-            const extendedView = moduleView.extend(newPropsFactory);
+            const extendedView = moduleView.extend(newPropsFactory, componentId);
             return useComponentView(extendedView, componentId);
         }
         stateView.defineProp({
@@ -760,7 +760,7 @@ class Provider {
         this.id = `${this.name}__${this.scope.id}__${(0, utils_1.generateId)()}`;
         if (typeof creator === 'function') {
             // TODO find a better way to distinguish Class and Function
-            const isClass = creator.name.charAt(0) === creator.name.charAt(0).toUpperCase();
+            const isClass = this.name.charAt(0) === this.name.charAt(0).toUpperCase();
             if (isClass) {
                 this.factory = (args) => new creator(...args);
                 return;
@@ -988,8 +988,10 @@ class Scope {
             return provider.instance;
         return this.init(locator, ...[]);
     }
-    unregister(ModuleClass) {
-        // TODO
+    unregister(locator) {
+        const provider = this.resolveProvider(locator);
+        provider.destroyInstance();
+        delete this.providers[provider.id];
     }
     // helper methods
     isRegistered(moduleLocator) {
@@ -1227,6 +1229,7 @@ class StateView {
         this.hasSelectedProps = false;
         this.hasWildcardProps = false;
         this.wildcardPropCreator = null;
+        // TODO remove components
         this.components = {};
         this.proxy = new Proxy({
             __proxyName: 'StateViewProxy', // set proxy name for debugging
@@ -1293,22 +1296,36 @@ class StateView {
     getAnalytics() {
         // TODO ?
     }
+    // DEFINE MULTIPLE WAYS FOR EXTENDING THE ModuleView
+    // TODO: remove overloads that we will never use
+    /**
+     * // Extend with a factory returning a new ModuleView
+     *
+     * module.extend((props, view) => {
+     *   const module = scope.resolve(MyModule)
+     *   return new ModuleView(module)
+     * })
+     */
+    select(newViewFactory) {
+        return newViewFactory(this.props, this);
+    }
     // eslint-disable-next-line no-dupe-class-members
-    extend(fn) {
-        const extendResult = fn(this.props, this);
-        if (extendResult instanceof StateView) {
-            return extendResult;
+    extend(newPropsFactory, name) {
+        if (!this.scope) {
+            throw new Error('You should define a Scope to use .extend()');
         }
-        if (typeof extendResult === 'object') {
-            if (!this.scope) {
-                throw new Error('You should define a Scope to use .extend()');
-            }
-            const extendedModule = this.scope.create(extendResult); // TODO destroy module after component destroy, create a component scope
+        if (!this.scope.isRegistered(name)) {
+            const factory = () => newPropsFactory(this.props, this);
+            const provider = this.scope.register(factory, name);
+            const extendedModule = this.scope.resolve(name);
             const extendedModuleView = createStateViewForModule(extendedModule); // TODO do not use the same pickers
-            const result = this.mergeView(extendedModuleView);
-            return result;
+            const mergedView = this.mergeView(extendedModuleView);
+            provider.setMetadata('StateView', mergedView);
+            // TODO destroy module after component destroy, create a component scope
         }
-        throw new Error('Can not extend the module');
+        const provider = this.scope.resolveProvider(name);
+        const extendedView = provider.getMetadata('StateView');
+        return extendedView;
     }
     clone() {
         const clone = new StateView(this.scope);
@@ -1328,6 +1345,10 @@ class StateView {
         return componentView;
     }
     destroyComponent(componentId) {
+        var _a;
+        if ((_a = this.scope) === null || _a === void 0 ? void 0 : _a.isRegistered(componentId)) {
+            this.scope.unregister(componentId);
+        }
         const componentView = this.components[componentId];
         if (!componentView)
             return;
@@ -1339,11 +1360,11 @@ function createStateViewForModule(module) {
     const scope = (0, provider_1.getInstanceMetadata)(module).provider.scope;
     const stateView = new StateView(scope);
     return stateView
-        .extend((0, pickProps_1.pickProps)(module)) // expose the module props
-        .extend((0, pickStateViews_1.pickStateViews)(module)) // expose children stateViews
-        .extend((0, pickLoadingState_1.pickLoadingState)(module)) // expose the module loading state
-        .extend((0, pickState_1.pickState)(module)) // expose the reactive state
-        .extend((0, pickControllers_1.pickControllers)(module)); // expose controllers
+        .select((0, pickProps_1.pickProps)(module)) // expose the module props
+        .select((0, pickStateViews_1.pickStateViews)(module)) // expose children stateViews
+        .select((0, pickLoadingState_1.pickLoadingState)(module)) // expose the module loading state
+        .select((0, pickState_1.pickState)(module)) // expose the reactive state
+        .select((0, pickControllers_1.pickControllers)(module)); // expose controllers
 }
 exports.createStateViewForModule = createStateViewForModule;
 class ComponentView {
@@ -1938,7 +1959,9 @@ const traverse_1 = __webpack_require__(222);
 function pickStateViews(module) {
     return function (props, view) {
         const anyModule = module;
-        (0, traverse_1.traverse)(module, (propName) => {
+        (0, traverse_1.traverse)(module, (propName, descriptor) => {
+            if (descriptor.get)
+                return;
             const stateView = anyModule[propName];
             if (!(anyModule[propName] instanceof StateView_1.StateView))
                 return;

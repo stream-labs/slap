@@ -1,7 +1,9 @@
 // composition layer
 // construct a ReactiveObject based on given presets
 // has module,stateSelector and allow extending
-import { defineGetter, Dict, forEach, Scope, TModuleInstanceFor } from '../scope';
+import {
+  defineGetter, Dict, forEach, Scope, TModuleInstanceFor,
+} from '../scope';
 import { getInstanceMetadata } from '../scope/provider';
 import { pickProps } from './plugins/pickProps';
 import { GetStateViewProps, pickStateViews } from './plugins/pickStateViews';
@@ -113,29 +115,29 @@ export class StateView<TProps = {}> {
    *   return new ModuleView(module)
    * })
    */
-  extend<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView;
+  select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView {
+    return newViewFactory(this.props, this);
+  }
 
   // eslint-disable-next-line no-dupe-class-members
-  extend<TNewProps>(newProps: TNewProps): MergeViews<StateView<TProps>, TStateViewFor<TNewProps>>;
-  // eslint-disable-next-line no-dupe-class-members
-  extend(fn: Function): StateView<any> {
-    const extendResult = fn(this.props, this);
-
-    if (extendResult instanceof StateView) {
-      return extendResult;
+  extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): MergeViews<StateView<TProps>, TStateViewFor<TNewProps>> {
+    if (!this.scope) {
+      throw new Error('You should define a Scope to use .extend()');
     }
 
-    if (typeof extendResult === 'object') {
-      if (!this.scope) {
-        throw new Error('You should define a Scope to use .extend()');
-      }
-      const extendedModule = this.scope.create(extendResult);// TODO destroy module after component destroy, create a component scope
+    if (!this.scope.isRegistered(name)) {
+      const factory = () => newPropsFactory(this.props, this);
+      const provider = this.scope.register(factory, name);
+      const extendedModule = this.scope.resolve(name);
       const extendedModuleView = createStateViewForModule(extendedModule); // TODO do not use the same pickers
-      const result = this.mergeView(extendedModuleView);
-      return result;
+      const mergedView = this.mergeView(extendedModuleView);
+      provider.setMetadata('StateView', mergedView);
+      // TODO destroy module after component destroy, create a component scope
     }
 
-    throw new Error('Can not extend the module');
+    const provider = this.scope.resolveProvider(name);
+    const extendedView = provider.getMetadata('StateView');
+    return extendedView;
   }
 
   clone() {
@@ -155,6 +157,8 @@ export class StateView<TProps = {}> {
     return mergeResult as any as TResult;
   }
 
+  // TODO remove components
+
   components = {} as Dict<ComponentView<any>>;
 
   registerComponent<TView extends StateView<TProps>>(componentId: string, forceUpdate: Function): ComponentView<TView> {
@@ -164,6 +168,9 @@ export class StateView<TProps = {}> {
   }
 
   destroyComponent(componentId: string) {
+    if (this.scope?.isRegistered(componentId)) {
+      this.scope.unregister(componentId);
+    }
     const componentView = this.components[componentId];
     if (!componentView) return;
 
@@ -176,11 +183,11 @@ export function createStateViewForModule<T>(module: T) {
   const scope = getInstanceMetadata(module).provider.scope;
   const stateView = new StateView(scope);
   return stateView
-    .extend(pickProps(module)) // expose the module props
-    .extend(pickStateViews(module)) // expose children stateViews
-    .extend(pickLoadingState(module)) // expose the module loading state
-    .extend(pickState(module)) // expose the reactive state
-    .extend(pickControllers(module)); // expose controllers
+    .select(pickProps(module)) // expose the module props
+    .select(pickStateViews(module)) // expose children stateViews
+    .select(pickLoadingState(module)) // expose the module loading state
+    .select(pickState(module)) // expose the reactive state
+    .select(pickControllers(module)); // expose controllers
 }
 
 export type TStateViewFor<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> =
@@ -276,4 +283,3 @@ export type TModulePropDescriptor<TValue> = {
 export type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'type' | 'name' | 'getValue'>>
 export type TGetDescriptorsForProps<TProps extends Dict<any>> = {[P in keyof TProps]: TModulePropDescriptor<TProps[P]>}
 export type GetProps<TModuleView> = TModuleView extends StateView<infer TProps> ? TProps : never;
-
