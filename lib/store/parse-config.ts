@@ -30,9 +30,7 @@ export function parseStateConfig<TConfigDraft>(configCreator: TConfigDraft | (ne
       const getterMethod = explicitGetters[propName];
       if (typeof getterMethod !== 'function') return;
 
-      config.getterMethods[propName] = function () {
-        return explicitGetters[propName];
-      };
+      config.getterMethods[propName] = explicitGetters[propName];
     });
   }
 
@@ -56,9 +54,7 @@ export function parseStateConfig<TConfigDraft>(configCreator: TConfigDraft | (ne
 
       if (!isValidGetterName) return;
 
-      config.getterMethods[propName] = function () {
-        return configDraft[propName];
-      };
+      config.getterMethods[propName] = configDraft[propName];
     });
   }
 

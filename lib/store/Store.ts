@@ -146,7 +146,7 @@ export class ModuleStateController {
     });
 
     Object.keys(config.getterMethods).forEach(propName => {
-      defineGetter(controller, propName, (...args) => config.getterMethods[propName].apply(controller, args));
+      defineGetter(controller, propName, () => (...args: any) => config.getterMethods[propName].apply(controller, args));
     });
 
     // create auto-generated mutations
@@ -305,22 +305,6 @@ export type PickMethods<
   TExplicitGetterMethods = TDraftConfig extends { getterMethods: infer TGetterMethods } ? TGetterMethods : {},
   TExplicitMutations = TDraftConfig extends { getters: infer TMutations } ? TMutations : {}
   > = TRootMethods & TExplicitGetters & TExplicitGetterMethods & TExplicitMutations;
-
-class LoadingState {
-  loadingStatus: TLoadingStatus = 'not-started';
-
-  reset() {
-    this.loadingStatus = 'not-started';
-  }
-
-  get isLoading() {
-    return this.loadingStatus === 'loading';
-  }
-
-  get isLoaded() {
-    return this.loadingStatus === 'done';
-  }
-}
 
 
 // const contr: TStateControllerFor<LoadingState>;

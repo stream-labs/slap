@@ -22,7 +22,7 @@ export class UsersState {
     },
 
     getHelloWorld(tmpl: string) {
-      return 'Hello' + tmpl;
+      return 'Hello' + tmpl + this.foo;
     },
   };
 

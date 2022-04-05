@@ -1501,7 +1501,7 @@ class ModuleStateController {
             (0, scope_1.defineGetter)(controller, propName, () => config.getters[propName].get.apply(controller));
         });
         Object.keys(config.getterMethods).forEach(propName => {
-            (0, scope_1.defineGetter)(controller, propName, (...args) => config.getterMethods[propName].apply(controller, args));
+            (0, scope_1.defineGetter)(controller, propName, () => (...args) => config.getterMethods[propName].apply(controller, args));
         });
         // create auto-generated mutations
         Object.keys(defaultState).forEach(propertyName => {
@@ -1591,20 +1591,6 @@ exports.defaultStateConfig = {
 // persistent: false,
 // autogenerateMutations: true,
 };
-class LoadingState {
-    constructor() {
-        this.loadingStatus = 'not-started';
-    }
-    reset() {
-        this.loadingStatus = 'not-started';
-    }
-    get isLoading() {
-        return this.loadingStatus === 'loading';
-    }
-    get isLoaded() {
-        return this.loadingStatus === 'done';
-    }
-}
 
 
 /***/ }),
@@ -1726,9 +1712,7 @@ function parseStateConfig(configCreator) {
             const getterMethod = explicitGetters[propName];
             if (typeof getterMethod !== 'function')
                 return;
-            config.getterMethods[propName] = function () {
-                return explicitGetters[propName];
-            };
+            config.getterMethods[propName] = explicitGetters[propName];
         });
     }
     // parse heuristic getters
@@ -1746,9 +1730,7 @@ function parseStateConfig(configCreator) {
                 || propName.startsWith('should'));
             if (!isValidGetterName)
                 return;
-            config.getterMethods[propName] = function () {
-                return configDraft[propName];
-            };
+            config.getterMethods[propName] = configDraft[propName];
         });
     }
     // parse mutations
