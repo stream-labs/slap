@@ -750,8 +750,11 @@ class Provider {
         this.metadata = {};
         this.injectors = {};
         this.isInited = false; // instance is added to Scope
+        // private resolveInit!: Function;
+        // waitForInit = new Promise(resolve => { this.resolveInit = resolve });
         this.injectionCompleted = false;
         this.loadMethodCompleted = false;
+        this.isAsync = false;
         this.isLoaded = false;
         this.waitForLoad = new Promise(resolve => { this.resolveLoad = resolve; });
         this.events = (0, nanoevents_1.createNanoEvents)();
@@ -787,6 +790,7 @@ class Provider {
     }
     setInited() {
         this.isInited = true;
+        this.events.emit('onModuleInit');
         this.checkModuleIsLoaded();
     }
     /**
@@ -819,8 +823,12 @@ class Provider {
             if (injector.loadingStatus !== 'done')
                 hasAsyncInjectors = true;
         });
-        if (!hasAsyncInjectors)
+        if (hasAsyncInjectors) {
+            this.isAsync = true;
+        }
+        else {
             this.handleInjectionsCompleted();
+        }
     }
     getMetadata(pluginName) {
         return this.metadata[pluginName];
@@ -866,6 +874,7 @@ class Provider {
         const instance = this.instance;
         const loadResult = instance.load && instance.load();
         if (loadResult === null || loadResult === void 0 ? void 0 : loadResult.then) {
+            this.isAsync = true;
             loadResult.then(() => {
                 this.loadMethodCompleted = true;
                 this.checkModuleIsLoaded();
@@ -1830,6 +1839,7 @@ function pickLoadingState(module) {
             view.defineProp({
                 type: 'LoadingState',
                 name: propName,
+                reactive: true,
                 getValue: () => stateController[propName],
             });
         });
@@ -1852,8 +1862,15 @@ exports.LoadingState = LoadingState;
 function createLoadingState(store, moduleProvider) {
     const stateName = getLoadingStateName(moduleProvider.instanceId);
     const loadingState = store.createState(stateName, LoadingState);
-    moduleProvider.waitForLoad.then(() => {
-        loadingState.setLoadingStatus('done');
+    moduleProvider.events.on('onModuleInit', () => {
+        if (!moduleProvider.isAsync) {
+            loadingState.setLoadingStatus('done');
+            return;
+        }
+        loadingState.setLoadingStatus('loading');
+        moduleProvider.waitForLoad.then(() => {
+            loadingState.setLoadingStatus('done');
+        });
     });
 }
 exports.createLoadingState = createLoadingState;

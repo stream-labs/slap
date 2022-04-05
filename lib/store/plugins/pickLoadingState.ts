@@ -20,6 +20,7 @@ export function pickLoadingState<TView extends StateView<any>>(module: unknown):
         view.defineProp({
           type: 'LoadingState',
           name: propName,
+          reactive: true,
           getValue: () => stateController[propName],
         });
       });
@@ -46,9 +47,20 @@ export class LoadingState {
 export function createLoadingState(store: Store, moduleProvider: Provider<any>) {
   const stateName = getLoadingStateName(moduleProvider.instanceId);
   const loadingState = store.createState(stateName, LoadingState);
-  moduleProvider.waitForLoad.then(() => {
-    loadingState.setLoadingStatus('done');
+
+  moduleProvider.events.on('onModuleInit', () => {
+
+    if (!moduleProvider.isAsync) {
+      loadingState.setLoadingStatus('done');
+      return;
+    }
+
+    loadingState.setLoadingStatus('loading');
+    moduleProvider.waitForLoad.then(() => {
+      loadingState.setLoadingStatus('done');
+    });
   });
+
 }
 
 export function getLoadingStateName(moduleStateName: string) {

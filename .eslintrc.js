@@ -50,5 +50,6 @@ module.exports = {
     'lines-between-class-members': 0,
     'padded-blocks': 0,
     'no-continue': 0,
+    'react/no-this-in-sfc': 0,
   },
 };

@@ -13,8 +13,13 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   factory: (args: TInitParams) => TInstance;
 
   isInited = false; // instance is added to Scope
+  // private resolveInit!: Function;
+  // waitForInit = new Promise(resolve => { this.resolveInit = resolve });
+
   injectionCompleted = false;
   loadMethodCompleted = false;
+  isAsync = false;
+
   isLoaded = false;
   private resolveLoad!: Function;
   waitForLoad = new Promise(resolve => { this.resolveLoad = resolve });
@@ -65,6 +70,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   setInited() {
     this.isInited = true;
+    this.events.emit('onModuleInit');
     this.checkModuleIsLoaded();
   }
 
@@ -98,7 +104,11 @@ export class Provider<TInstance, TInitParams extends [] = []> {
       if (injector.loadingStatus !== 'done') hasAsyncInjectors = true;
     });
 
-    if (!hasAsyncInjectors) this.handleInjectionsCompleted();
+    if (hasAsyncInjectors) {
+      this.isAsync = true;
+    } else {
+      this.handleInjectionsCompleted();
+    }
   }
 
   getMetadata(pluginName: string) {
@@ -156,6 +166,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     const instance = this.instance as any;
     const loadResult = instance.load && instance.load();
     if (loadResult?.then) {
+      this.isAsync = true;
       loadResult.then(() => {
         this.loadMethodCompleted = true;
         this.checkModuleIsLoaded();
@@ -213,5 +224,6 @@ export interface ProviderEvents {
     current: TLoadingStatus,
     prev: TLoadingStatus
   ) => unknown;
+  onModuleInit: () => unknown,
   onModuleLoaded: () => unknown,
 }

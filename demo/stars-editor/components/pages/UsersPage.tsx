@@ -35,6 +35,10 @@ export class UsersModule {
 
   state = injectState(UsersState);
 
+  async load() {
+    await new Promise(r => { setTimeout(r, 1000); });
+  }
+
   createUser() {
     const id = generateId();
     this.state.addUser(id, `User ${id}`);
@@ -53,7 +57,11 @@ export function UsersPage() {
 
       <UsersList />
       <button onClick={createUser}>Add user</button>
+
+      <RootLoadingState />
+      <NestedLoadingState />
       <UsersFooter />
+
     </div>
   );
 }
@@ -92,7 +100,6 @@ export function UsersFooter() {
     }),
 
     onButtonClick() {
-      // eslint-disable-next-line react/no-this-in-sfc
       this.state.setCounter(this.state.counter + 1);
       console.log('Button clicked');
     },
@@ -101,6 +108,41 @@ export function UsersFooter() {
   const { onButtonClick, counter } = stateView;
 
   return <button onClick={onButtonClick}> Inc counter {counter}</button>;
+}
+
+export function RootLoadingState() {
+  const { loadingStatus } = useModule(UsersModule);
+
+  return (
+    <div>
+      RootLoadingStatus <br/>
+      LoadingStatus: {loadingStatus},
+    </div>
+  );
+}
+
+export function NestedLoadingState() {
+
+  const { loadingStatus, loadedValues, componentView } = useModule(UsersModule).extend(() => ({
+
+    state: injectState({
+      loadedValues: '',
+    }),
+
+    async load() {
+      await new Promise(r => { setTimeout(r, 2000); });
+      this.state.setLoadedValues('Loaded Values');
+    },
+
+  }));
+
+  return (
+    <div>
+      NestedLoadingStatus <br/>
+      LoadingStatus: {loadingStatus},
+      LoadedValues: {loadedValues}
+    </div>
+  );
 }
 
 // const buttonModule = () => ({

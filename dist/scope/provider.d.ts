@@ -13,6 +13,7 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     isInited: boolean;
     injectionCompleted: boolean;
     loadMethodCompleted: boolean;
+    isAsync: boolean;
     isLoaded: boolean;
     private resolveLoad;
     waitForLoad: Promise<unknown>;
@@ -45,5 +46,6 @@ export declare function getInstanceMetadata(instance: any): {
 };
 export interface ProviderEvents {
     onInjectorStatusChange: (injector: Injector<unknown, unknown>, current: TLoadingStatus, prev: TLoadingStatus) => unknown;
+    onModuleInit: () => unknown;
     onModuleLoaded: () => unknown;
 }
