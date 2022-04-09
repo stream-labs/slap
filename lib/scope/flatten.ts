@@ -21,7 +21,4 @@ export type UnionToIntersection<U> = (U extends any
 export type Flatten<T> = Pick<T, NonObjectKeysOf<T>> &
   UnionToIntersection<ObjectValuesOf<T>>;
 
-// https://stackoverflow.com/questions/51435783/pick-and-flatten-a-type-signature-in-typescript
-// type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never;
-// export type Flatten<T, K extends keyof T> = UnionToIntersection<T[K]>;
 

@@ -4,3 +4,4 @@ export * from './provider';
 export * from './injector';
 export * from './subject';
 export * from './utils';
+export * from './flatten';

@@ -1,6 +1,6 @@
 {
   "name": "slap",
-  "version": "0.1.42",
+  "version": "0.1.43",
   "description": "Simple and Scalable Redux Configuration",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,7 +11,7 @@
     "start-sandbox": "npm run build-demo & webpack-dev-server --static ./dist/demo"
   },
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/lib/index.d.ts",
   "license": "MIT",
   "dependencies": {
     "immer": "^9.0.12",
