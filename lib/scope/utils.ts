@@ -50,3 +50,8 @@ export function defineSetter(target: object, methodName: string, setter: (val: a
 export function capitalize(srt: string): string {
   return srt.charAt(0).toUpperCase() + srt.slice(1);
 }
+
+export function isClass(object: any) {
+  // TODO find a better way to distinguish Class and Function
+  return typeof object === 'function' && object.name && object.name.charAt(0) === object.name.charAt(0).toUpperCase();
+}

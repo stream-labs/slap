@@ -17,12 +17,12 @@ export function EditorMenu() {
   } = useModule(EditorService).extend(editor => ({
 
     onSceneClick(ev: { key: string }) {
-      editor.getScene(ev.key).makeActive();
+      editor.getSceneController(ev.key).makeActive();
     },
 
     onItemClick(ev: { keyPath: string[]}) {
       const [itemId, sceneId] = ev.keyPath;
-      editor.getScene(sceneId).selectItem(itemId);
+      editor.getSceneController(sceneId).selectItem(itemId);
     },
 
   }));

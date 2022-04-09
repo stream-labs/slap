@@ -6,7 +6,7 @@ import {
   TProviderFor,
 } from './interfaces';
 import { generateId } from './utils';
-import { Provider } from './provider';
+import { Provider, ProviderOptions } from './provider';
 
 let currentScope: Scope | null = null;
 let currentProvider: Provider<any> | null = null;
@@ -14,6 +14,7 @@ let currentProvider: Provider<any> | null = null;
 interface ScopeSettings {
   parentScope: Scope | null,
   autoregister: boolean,
+  providerOptions?: Partial<ProviderOptions>
 }
 
 const defaultScopeSettings = {

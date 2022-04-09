@@ -1,4 +1,4 @@
-import { GetProps, StateView } from '../StateView';
+import { createStateViewForModule, GetProps, StateView } from '../StateView';
 import { traverse } from '../../utils/traverse';
 
 export function pickStateViews<
@@ -21,6 +21,7 @@ export function pickStateViews<
         reactive: true,
         stateView,
         getValue: () => stateView.proxy,
+        getRev: () => stateView.props,
       });
     });
 

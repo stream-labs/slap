@@ -1,24 +1,48 @@
 // TODO move to react folder
-import { generateId } from '../scope';
+import { Dict, generateId } from '../scope';
 import { Store } from '../store/Store';
 import { inject } from '../scope/injector';
 import { unstable_batchedUpdates } from 'react-dom';
+import { ComponentView } from '../store';
 
 export class ReactStoreAdapter {
 
   store = inject(Store);
 
   load() {
-    this.store.events.on('onMutation', () => this.updateUI());
+    this.store.events.on('onMutation', () => this.onMutation());
   }
 
   watchers = {} as Record<string, Function>;
 
   watchersOrder = [] as string[];
 
-  // TODO: rename to register-component ?
-  createWatcher(cb: Function) {
-    const watcherId = generateId();
+  // invalidatedComponents: ComponentView<any>[] = [];
+
+  components: Dict<ComponentView<any>> = {};
+  stateIsInvalidated = false;
+
+  createComponent(component: ComponentView<any>) {
+    this.components[component.id] = component;
+  }
+
+  mountComponent(component: ComponentView<any>) {
+    component.mount();
+    // if (this.stateIsInvalidated && !this.hasUnmountedComponents()) {
+    //   this.updateUI();
+    // }
+  }
+
+  hasUnmountedComponents() {
+    const hasUnmountedComponents = Object.keys(this.components).find(id => {
+      const comp = this.components[id];
+      return !comp.isMounted && !comp.isDestroyed;
+    });
+    return hasUnmountedComponents;
+  }
+
+  // TODO: rename to mount-component ?
+  createWatcher(watcherId: string, cb: Function) {
     this.watchersOrder.push(watcherId);
     this.watchers[watcherId] = cb;
     return watcherId;
@@ -30,11 +54,50 @@ export class ReactStoreAdapter {
     delete this.watchers[watcherId];
   }
 
+  updateIsInProgress = false;
+
+
+  onMutation() {
+    this.updateUI();
+    // if (this.stateIsInvalidated) return;
+    // this.stateIsInvalidated = true;
+    //
+    // if (!this.hasUnmountedComponents()) {
+    //   this.updateUI();
+    // }
+  }
+
   updateUI() {
-    // TODO: add batching here?
+    if (this.updateIsInProgress) {
+      throw new Error('Can not update ');
+    }
+    this.updateIsInProgress = true;
     const watchersIds = [...this.watchersOrder];
+
+    // force update components
     unstable_batchedUpdates(() => {
-      watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
+      watchersIds.forEach(id => {
+        this.watchers[id] && this.watchers[id]();
+        const component = this.components[id];
+        if (component.needUpdate()) {
+          component.forceUpdate();
+          component.setInvalidated(false);
+        }
+      });
     });
+
+    // // collect invalidated components
+    // watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
+    //
+    // // force update components
+    // unstable_batchedUpdates(() => {
+    //
+    //   watchersIds.forEach(id => {
+    //     this.components[id].needUpdate() && this.components[id].forceUpdate()
+    //   });
+    // });
+
+    this.stateIsInvalidated = false;
+    this.updateIsInProgress = false;
   }
 }

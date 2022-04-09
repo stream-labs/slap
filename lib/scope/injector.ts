@@ -3,20 +3,24 @@ import { defineGetter, generateId } from './utils';
 import { getCurrentProvider } from './scope';
 import { Provider } from './provider';
 
-export type TInjectorParams<TValue, TInitValue> = {
+// TODO allow only StateView instances for TViewValue
+
+export type TInjectorParams<TValue, TViewValue> = {
   type: Symbol;
   loadingStatus?: TLoadingStatus,
-  init?(injector: Injector<TValue, TInitValue>): TInitValue;
-  load?(injector: Injector<TValue, TInitValue>): unknown;
+  init?(injector: Injector<TValue, TViewValue>): TViewValue;
+  load?(injector: Injector<TValue, TViewValue>): unknown;
   getValue?(): TValue;
-  destroy?(currentInjector: Injector<TValue, TInitValue>): unknown;
+  getViewValue?(): TViewValue;
+  destroy?(currentInjector: Injector<TValue, TViewValue>): unknown;
 }
 
-export class Injector<TValue, TInitValue> {
+export class Injector<TValue, TViewValue> {
   id = generateId();
-  params!: TInjectorParams<TValue, TInitValue>;
+  params!: TInjectorParams<TValue, TViewValue>;
   loadingStatus: TLoadingStatus = 'not-started';
   propertyName = '';
+  isDestroyed = false;
 
   constructor(public provider: Provider<any>) {
   }
@@ -46,6 +50,7 @@ export class Injector<TValue, TInitValue> {
   }
 
   setLoadingStatus(loadingStatus: TLoadingStatus) {
+    if (this.isDestroyed) return;
     const prevStatus = this.loadingStatus;
     this.loadingStatus = loadingStatus;
     this.provider.handleInjectorStatusChange(this, this.loadingStatus, prevStatus);
@@ -53,10 +58,21 @@ export class Injector<TValue, TInitValue> {
 
   destroy() {
     this.params.destroy && this.params.destroy(this);
+    this.isDestroyed = true;
   }
 
   resolveValue(): TValue {
     return this.provider.instance[this.propertyName];
+  }
+
+  hasViewValue() {
+    return !!this.params.getViewValue;
+  }
+
+  resolveViewValue(): TViewValue {
+    return this.params.getViewValue
+      ? this.params.getViewValue()
+      : this.resolveValue() as any;
   }
 
   get type() {
@@ -67,16 +83,16 @@ export class Injector<TValue, TInitValue> {
 export function createInjector<
   TParams extends TInjectorParams<any, any>,
   TValue = TParams extends { getValue(): infer R} ? R : unknown,
-  TInitParams = TParams extends { init(): infer R} ? R : unknown
+  TViewValue = TParams extends { getViewValue(): infer R} ? R : unknown,
   >
 (paramsCreator: (injector: Injector<any, any>) => TParams) {
   const provider = getCurrentProvider();
   if (!provider) {
     throw new Error('Injections a not allowed for objects outside the Scope. Create this object via Scope.resolve() or Scope.init() or Scope.create()');
   }
-  const injector = new Injector<TValue, TInitParams>(provider);
+  const injector = new Injector<TValue, TViewValue>(provider);
   injector.params = paramsCreator(injector);
-  return injector as any as TValue;
+  return injector as any as InjectedProp<TValue, TViewValue>;
 }
 
 // DEFINE BUILT-IN INJECTORS
@@ -98,3 +114,5 @@ export function injectScope() {
     getValue: () => injector.provider.scope,
   }));
 }
+
+export type InjectedProp<TInjectedValue, TInjectedView> = TInjectedValue & { __injector: Injector<TInjectedValue, TInjectedView> }

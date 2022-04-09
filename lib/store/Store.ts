@@ -13,6 +13,7 @@ import {
 } from '../scope';
 import { traverse } from '../utils/traverse';
 import { parseStateConfig } from './parse-config';
+import { StateView } from './StateView';
 
 /**
  * All React related code should be handled in ReactAdapter
@@ -21,32 +22,36 @@ import { parseStateConfig } from './parse-config';
 export class Store {
 
   // keeps the state for all modules here as a map of immutable objects
-  rootState = { } as Dict<any>;
+  rootState = { } as Dict<Dict<any>>;
 
   // keeps additional metadata
-  modulesMetadata = { } as Dict<StatefulModuleMetadata>;
+  modulesMetadata = { } as Dict<Dict<StatefulModuleMetadata>>;
 
   currentMutation: Mutation | null = null;
   moduleRevisions: Dict<number> = {};
 
-  createState<TConfigCreator>(stateName: string, configCreator: TConfigCreator): TStateControllerFor<TConfigCreator> {
+  createState<TConfigCreator>(moduleName: string, sectionName: string, configCreator: TConfigCreator): TStateControllerFor<TConfigCreator> {
 
-    if (this.modulesMetadata[stateName]) {
-      throw new Error(`State with a name "${stateName}" is already created`);
+    if (this.modulesMetadata[moduleName] && this.modulesMetadata[sectionName]) {
+      throw new Error(`State with a name "${moduleName}" is already created`);
     }
 
     const config = parseStateConfig(configCreator);
 
-    console.log('REGISTER STORE', stateName);
-    const controller = new ModuleStateController(this, stateName, config);
+    console.log('REGISTER STORE', moduleName, sectionName);
+    const controller = new ModuleStateController(this, moduleName, sectionName, config);
 
     return controller as TStateControllerFor<TConfigCreator>;
   }
 
   dispatchMutation(mutation: Mutation) {
     console.log('RUN MUTATION', mutation);
-    const stateName = mutation.stateName;
-    const stateController = this.modulesMetadata[stateName].controller;
+    const moduleName = mutation.moduleName;
+    const sectionName = mutation.sectionName;
+    const metadata = this.modulesMetadata[moduleName];
+    if (!metadata) return; // state is destroyed
+
+    const stateController = this.modulesMetadata[moduleName][sectionName].controller;
 
     if (this.currentMutation) {
       throw new Error('Can not run mutation while previous mutation is not completed');
@@ -57,11 +62,7 @@ export class Store {
     this.currentMutation = null;
 
     // trigger subscribed components to re-render
-    this.events.emit('onMutation', mutation, this);
-  }
-
-  getMetadata(stateName: string) {
-    return this.modulesMetadata[stateName];
+    if (!mutation.silent) this.events.emit('onMutation', mutation, this);
   }
 
   toJSON() {
@@ -79,20 +80,23 @@ export class Store {
     delete this.currentScope[moduleName];
   }
 
-  destroyState(stateName: string) {
-    delete this.rootState[stateName];
+  destroyModule(moduleName: string) {
+    delete this.rootState[moduleName];
+    delete this.modulesMetadata[moduleName];
   }
 
-  isRecordingAccessors = false;
+  recordingAccessors = 0;
 
   affectedModules: Record<string, number> = {};
 
   listenAffectedModules(cb: Function) {
-    this.isRecordingAccessors = true;
+    this.recordingAccessors++;
     cb();
     const result = this.affectedModules;
-    this.isRecordingAccessors = false;
-    this.affectedModules = {};
+    this.recordingAccessors--;
+    if (!this.recordingAccessors) {
+      this.affectedModules = {};
+    }
     return result;
   }
 
@@ -106,6 +110,14 @@ export class Store {
     delete this.currentContext[moduleName];
   }
 
+  getMetadata(moduleName: string, sectionName: string) {
+    return this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName][sectionName];
+  }
+
+  getController(moduleName: string, sectionName: string) {
+    return this.getMetadata(moduleName, sectionName)?.controller;
+  }
+
   events = createNanoEvents<StoreEvents>();
 }
 
@@ -117,11 +129,17 @@ export class ModuleStateController {
 
   draftState: any = null;
 
-  constructor(public store: Store, public stateName: string, config: TStateConfig) {
+  constructor(
+    public store: Store,
+    public moduleName: string,
+    public sectionName: string,
+    config: TStateConfig,
+  ) {
     const defaultState = config.state;
 
     // use immer to create an immutable state
-    store.rootState[stateName] = produce(defaultState, () => {});
+    if (!store.rootState[moduleName]) store.rootState[moduleName] = {};
+    store.rootState[moduleName][sectionName] = produce(defaultState, () => {});
 
     // create metadata
     const controller = this;
@@ -130,7 +148,8 @@ export class ModuleStateController {
       controller,
       rev: 0,
     };
-    store.modulesMetadata[stateName] = metadata;
+    if (!store.modulesMetadata[moduleName]) store.modulesMetadata[moduleName] = {};
+    store.modulesMetadata[moduleName][sectionName] = metadata;
 
     // generate getters
     Object.keys(defaultState).forEach(propName => {
@@ -163,16 +182,15 @@ export class ModuleStateController {
       this.registerMutation(propName, config.mutations[propName]);
     });
 
-
-    // define bulk state mutation
-    const bulkMutationName = 'bulkUpdateState';
-    config.mutations[bulkMutationName] = (statePatch: object) => Object.assign(controller, statePatch);
-    controller.registerMutation('bulkUpdateState', config.mutations[bulkMutationName]);
+    // define bulk non-reactive state mutation
+    const nonReactiveUpdate = 'nonReactiveUpdate';
+    config.mutations[nonReactiveUpdate] = (statePatch: object) => Object.assign(controller, statePatch);
+    controller.registerMutation('nonReactiveUpdate', config.mutations[nonReactiveUpdate], true);
   }
 
-  registerMutation(mutationName: string, mutationMethod: Function) {
+  registerMutation(mutationName: string, mutationMethod: Function, silent = false) {
     const controller = this;
-    const { store, stateName } = controller;
+    const { store, moduleName, sectionName } = controller;
 
     // override the original Module method to dispatch mutations
     (controller as any)[mutationName] = function (...args: any[]) {
@@ -180,13 +198,13 @@ export class ModuleStateController {
       // we don't need to dispatch a new mutation again
       // just call the original method
       if (store.currentMutation) {
-        if (store.currentMutation.stateName !== stateName) {
+        if (store.currentMutation.moduleName !== moduleName) {
           const parentMutation = store.currentMutation;
-          const parentMutationName = `${parentMutation.stateName}_${parentMutation.mutationName}`;
-          const childMutationName = `${stateName}_${mutationName}`;
+          const parentMutationName = `${parentMutation.moduleName}_${parentMutation.mutationName}`;
+          const childMutationName = `${moduleName}_${mutationName}`;
 
           // TODO should we really prevent that?
-          throw new Error(`Can not run a mutation of another module. Call ${parentMutationName} from ${childMutationName}`);
+          console.warn(`Can not run a mutation of another module. Call ${parentMutationName} from ${childMutationName}`);
         }
         return mutationMethod.apply(controller, args);
       }
@@ -194,22 +212,27 @@ export class ModuleStateController {
       const mutation = {
         id: Number(generateId()),
         payload: args,
-        stateName,
+        moduleName,
+        sectionName,
         mutationName,
+        silent,
       };
       store.dispatchMutation(mutation);
     };
   }
 
   applyMutation(mutation: Mutation) {
-    const stateName = mutation.stateName;
+    const moduleName = mutation.moduleName;
+    const sectionName = mutation.sectionName;
     const mutationName = mutation.mutationName;
-    const state = this.store.rootState[stateName];
-    this.store.rootState[stateName] = produce(state, (draft: unknown) => {
+    const state = this.store.rootState[moduleName][sectionName];
+
+    this.store.rootState[moduleName][sectionName] = produce(state, (draft: unknown) => {
       this.draftState = draft;
       const controller = this as ModuleStateController;
       controller.metadata.config.mutations[mutationName].apply(controller, mutation.payload);
     });
+
     this.metadata.rev++;
     this.draftState = null;
   }
@@ -218,13 +241,14 @@ export class ModuleStateController {
     if (this.draftState) return this.draftState;
 
     const store = this.store;
-    const stateName = this.stateName;
+    const moduleName = this.moduleName;
+    const sectionName = this.sectionName;
 
-    if (store.isRecordingAccessors) {
-      store.affectedModules[stateName] = this.metadata.rev;
+    if (store.recordingAccessors) {
+      store.affectedModules[moduleName + '__' + sectionName] = this.metadata.rev;
     }
 
-    return store.rootState[stateName];
+    return store.rootState[moduleName][sectionName];
   }
 
   // TODO remove
@@ -234,15 +258,74 @@ export class ModuleStateController {
   }
 
   get metadata() {
-    return this.store.modulesMetadata[this.stateName];
+    return this.store.modulesMetadata[this.moduleName][this.sectionName];
   }
+
+  createView() {
+    const metadata = this.metadata;
+    const config = metadata.config;
+    const view = new StateView();
+    const controller = this as any;
+
+    view.defineProp({
+      type: 'StateRev',
+      name: 'getRev',
+      reactive: false,
+      getValue: () => {
+        // eslint-disable-next-line no-unused-expressions
+        controller.state; // read as reactive
+        return metadata.rev;
+      },
+    });
+
+    traverse(config.state, stateKey => {
+      view.defineProp({
+        type: 'StateProp',
+        name: stateKey,
+        reactive: true,
+        getValue: () => controller[stateKey],
+      });
+    });
+
+    traverse(config.mutations, stateKey => {
+      view.defineProp({
+        type: 'StateMutation',
+        name: stateKey,
+        reactive: false,
+        getValue: () => controller[stateKey],
+      });
+    });
+
+    traverse(config.getters, (propName) => {
+      view.defineProp({
+        type: 'StateGetter',
+        name: propName,
+        reactive: true,
+        getValue: () => controller[propName],
+      });
+    });
+
+    traverse(config.getterMethods, (propName) => {
+      view.defineProp({
+        type: 'StateGetterMethod',
+        name: propName,
+        reactive: false,
+        getValue: () => controller[propName],
+      });
+    });
+
+    return view;
+  }
+
 }
 
 export interface Mutation {
   id: number;
-  stateName: string;
+  moduleName: string;
+  sectionName: string;
   mutationName: string;
   payload: any;
+  silent?: boolean;
 }
 //
 // /**
@@ -280,7 +363,6 @@ export interface StatefulModuleMetadata {
 
 // todo refactor
 
-
 export type TDraftConfigFor<TConfigCreator> =
   TConfigCreator extends new (...args: any) => infer TDraftConfigFromConstructor ?
     TDraftConfigFromConstructor :
@@ -295,7 +377,6 @@ export type TStateConfigFor<TDraftConfig> = {
   mutations: any;
 }
 
-
 export type TStateFor<TDraftConfig> = TDraftConfig extends { state: infer TState } ? TState : WritablePart<TDraftConfig>;
 
 export type PickMethods<
@@ -306,7 +387,6 @@ export type PickMethods<
   TExplicitMutations = TDraftConfig extends { getters: infer TMutations } ? TMutations : {}
   > = TRootMethods & TExplicitGetters & TExplicitGetterMethods & TExplicitMutations;
 
-
 // const contr: TStateControllerFor<LoadingState>;
 // const draftConf: TDraftConfigFor<LoadingState>;
 // const methods: PickMethods<typeof draftConf>;
@@ -315,7 +395,6 @@ export type PickMethods<
 // contr.metadata
 // draftConf
 // contr.state
-
 
 type GetHeuristicGetterName<TPropName> = TPropName extends string ? `${'get'|'is'|'should'|'will'}${Capitalize<TPropName>}` : never;
 
@@ -327,14 +406,15 @@ export type TStateControllerFor<
   TConfigCreator,
   TDraftConfig = TDraftConfigFor<TConfigCreator>,
   TState = PickDefaultState<TDraftConfig>,
-  > =
+> =
   ModuleStateController &
   TState &
-  { state: TState} &
-  PickAutogeneratedMutations<TState> &
+  { state: TState, nonReactiveUpdate: (patch: Partial<TState>) => unknown} &
+  Omit<PickAutogeneratedMutations<TState>, keyof PickMethods<TDraftConfig>> &
   PickMethods<TDraftConfig> &
   Exclude<TDraftConfig, keyof TStateConfig>
 
+export type TStateViewForStateConfig<TConfigCreator> = Omit<TStateControllerFor<TConfigCreator>, 'state'>;
 
 type GetSetterName<TPropName> = TPropName extends string ? `set${Capitalize<TPropName>}` : never;
 

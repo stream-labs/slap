@@ -1,8 +1,10 @@
 import React from 'react';
 import { useModule, injectState, TModuleInstanceFor } from '../../../../lib';
 import { generateId } from '../../../../lib/scope';
+import { injectQuery } from '../../../../lib/store/Query';
+import { injectLoading } from '../../../../lib/store/plugins/pickLoadingState';
 
-type TUser = {
+export type TUser = {
   id: string;
   name: string;
 }
@@ -31,9 +33,31 @@ export class UsersState {
   }
 }
 
+async function fetchBannedUsers() {
+  return new Promise<TUser[]>(r => {
+    setTimeout(() => r([{ id: 'banned1', name: 'Banned User 1' }, { id: 'banned2', name: 'Banned User 2' }]), 2000);
+  });
+}
+
+async function fetchOnlineUsers() {
+  return new Promise<TUser[]>(r => {
+    setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
+  });
+}
+
 export class UsersModule {
 
   state = injectState(UsersState);
+  loading = injectLoading();
+
+  bannedUsersQuery = injectQuery({
+    fetch: fetchBannedUsers,
+  });
+
+  onlineUsersQuery = injectQuery({
+    fetch: fetchOnlineUsers,
+    initialData: [{ name: 'Default Online User', id: 2 }],
+  });
 
   async load() {
     await new Promise(r => { setTimeout(r, 1000); });
@@ -57,6 +81,7 @@ export function UsersPage() {
 
       <UsersList />
       <button onClick={createUser}>Add user</button>
+      <UsersQueries />
 
       <RootLoadingState />
       <NestedLoadingState />
@@ -66,9 +91,34 @@ export function UsersPage() {
   );
 }
 
+function UsersQueries() {
+  const { bannedUsersQuery, onlineUsersQuery } = useModule(UsersModule);
+  const bu = bannedUsersQuery.data;
+  const ou = onlineUsersQuery.data;
+
+  return (
+    <div>
+      <h2>Banned users:</h2>
+      {bu && bu.map(user => (
+        <div key={user.id}>
+          {user.name}
+        </div>
+      ))}
+      <h2>Online users:</h2>
+      {ou && ou.map(user => (
+        <div key={user.id}>
+          {user.name}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // nested store
 export function UsersList() {
   const { users, selectedUserId, setSelectedUserId } = useModule(UsersModule).extend(users => ({
+
+    extendedFoo: 1,
 
     state: injectState({
       selectedUserId: 'user2',
@@ -115,7 +165,7 @@ export function RootLoadingState() {
 
   return (
     <div>
-      RootLoadingStatus <br/>
+      RootLoadingStatus <br />
       LoadingStatus: {loadingStatus},
     </div>
   );
@@ -123,7 +173,7 @@ export function RootLoadingState() {
 
 export function NestedLoadingState() {
 
-  const { loadingStatus, loadedValues, componentView } = useModule(UsersModule).extend(() => ({
+  const { loadingStatus, loadedValues, foo, componentView } = useModule(UsersModule).extend(() => ({
 
     state: injectState({
       loadedValues: '',
@@ -134,11 +184,15 @@ export function NestedLoadingState() {
       this.state.setLoadedValues('Loaded Values');
     },
 
+    foo() {
+      return 1;
+    }
+
   }));
 
   return (
     <div>
-      NestedLoadingStatus <br/>
+      NestedLoadingStatus <br />
       LoadingStatus: {loadingStatus},
       LoadedValues: {loadedValues}
     </div>

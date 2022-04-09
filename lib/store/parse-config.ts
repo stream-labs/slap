@@ -1,13 +1,21 @@
 import { isPlainObject } from 'is-plain-object';
-import { Dict } from '../scope';
+import { Dict, isClass } from '../scope';
 import { traverse } from '../utils';
 import { TStateConfig } from './Store';
 
 /**
  * Generate a unified state config from a configCreator object
  */
-export function parseStateConfig<TConfigDraft>(configCreator: TConfigDraft | (new (...args: any) => TConfigDraft)): TStateConfig {
-  const configDraft = isPlainObject(configCreator) ? configCreator : new (configCreator as any)();
+export function parseStateConfig<TConfigDraft>(configCreator: TConfigDraft | (new (...args: any) => TConfigDraft) | ((...args: any) => TConfigDraft)): TStateConfig {
+  let configDraft: any;
+
+  if (isClass(configCreator)) {
+    configDraft = new (configCreator as any)();
+  } else if (typeof configCreator === 'function') {
+    configDraft = (configCreator as Function)();
+  } else {
+    configDraft = configCreator;
+  }
 
   const config: TStateConfig = {
     state: {},

@@ -1,38 +1,43 @@
 import { useForceUpdate, useOnCreate, useOnDestroy } from './hooks';
-import { useSelector } from './useSelector';
 import { useModuleInstance } from './useModuleInstance';
-import { generateId, TModuleInstanceFor, TModuleLocatorType } from '../scope';
+import { generateId, getInstanceMetadata, TModuleInstanceFor, TModuleLocatorType } from '../scope';
 import {
   ComponentView,
   createStateViewForModule,
   GetProps,
-  MergeViews, StateView,
-  TStateViewFor,
+  StateView,
+  GetModuleStateView, ExtendView,
 } from '../store/StateView';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useAppContext, useScope } from './ReactModules';
+import { Store } from '../store';
+import { ReactStoreAdapter } from './react-store-adapter';
+import { isSimilar } from '../utils';
 
-export function useComponentView<TStateView extends StateView<any>>(moduleView: TStateView, id?: string): TStateView['props'] & {componentView: ComponentView<TStateView>, extend: <TNewProps>(
+export function useComponentView<TStateView extends StateView<any>>(moduleView: TStateView, moduleId: string, id?: string): TStateView['props'] & {componentView: ComponentView<TStateView>, extend: <TNewProps>(
     newPropsFactory: (props: GetProps<TStateView>) => TNewProps,
-  ) => (MergeViews<StateView<GetProps<TStateView> & TNewProps>, TStateViewFor<TNewProps>>)['props'] & {componentView: ComponentView<TStateView> }} {
+  ) => ExtendView<TStateView['props'], TNewProps>['props'] & {componentView: ComponentView<TStateView> }} {
   const forceUpdate = useForceUpdate();
+  const store = useScope().resolve(Store);
 
-  const { selector, componentId, componentView } = useOnCreate(() => {
+  const { componentId, componentView } = useOnCreate(() => {
 
-    const componentId = id || `component__${generateId()}`;
-    const componentView = moduleView.registerComponent(componentId, forceUpdate);
+    const componentId = id || `${moduleId}__component__${generateId()}`;
+    const componentView = moduleView.registerComponent(store, componentId, forceUpdate);
     const stateView = componentView.stateView;
 
-    // check affected components
-    function selector() {
-      if (!stateView.hasSelectedProps) return;
-      const reactiveValues = stateView.getSnapshot();
-      return reactiveValues;
-    }
+    // // check affected components
+    // function selector() {
+    //   if (!stateView.hasSelectedProps) return;
+    //   const reactiveValues = stateView.getSnapshot();
+    //   return reactiveValues;
+    // }
 
     function extend<TNewProps>(
       newPropsFactory: (props: GetProps<TStateView>) => TNewProps,
-    ): (MergeViews<StateView<GetProps<TStateView> & TNewProps>, TStateViewFor<TNewProps>>)['props'] {
+    ): (ExtendView<GetProps<TStateView>, TNewProps>)['props'] {
       const extendedView = moduleView.extend(newPropsFactory, componentId);
-      return useComponentView(extendedView, componentId) as any;
+      return useComponentView(extendedView, moduleId, componentId) as any;
     }
 
     stateView.defineProp({
@@ -48,7 +53,7 @@ export function useComponentView<TStateView extends StateView<any>>(moduleView: 
     });
 
     return {
-      selector, componentId, componentView,
+      componentId, componentView,
     };
   });
 
@@ -58,7 +63,7 @@ export function useComponentView<TStateView extends StateView<any>>(moduleView: 
 
   // useDetectChanges
   // call selector to make selected props reactive
-  useSelector(selector as any);
+  useConnectStore(componentView);
 
   return componentView.stateView.proxy;
 }
@@ -66,5 +71,46 @@ export function useComponentView<TStateView extends StateView<any>>(moduleView: 
 export function useModule<T extends TModuleLocatorType, TInitState extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps: TInitState|null = null, moduleName = '') {
   const module = useModuleInstance(locator, initProps, moduleName);
   const moduleView = useOnCreate(() => createStateViewForModule(module));
-  return useComponentView(moduleView);
+  return useComponentView(moduleView, getInstanceMetadata(module).id);
+}
+
+
+export function useConnectStore(component: ComponentView<StateView<any>>) {
+  const scope = useAppContext().modulesScope;
+  const store = scope.resolve(Store);
+  const reactStore = scope.resolve(ReactStoreAdapter);
+
+  reactStore.createComponent(component);
+
+  useLayoutEffect(() => {
+
+    const stateView = component.stateView;
+    if (!stateView.hasSelectedProps) return;
+
+    component.makeSnapshot();
+
+    // TODO do not run watchers for non-observable component views
+
+    const watcherId = reactStore.createWatcher(component.id, () => {
+      const prevSnapshot = component.lastSnapshot;
+      const newSnapshot = component.makeSnapshot();
+
+      if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
+        // no modules changed, do not call compare props
+        return;
+      }
+
+      if (!isSimilar(prevSnapshot.props, newSnapshot.props)) {
+        // reactStore.updateUI();
+        component.setInvalidated(true);
+      }
+    });
+    return () => {
+      reactStore.removeWatcher(watcherId);
+    };
+  }, []);
+
+  useEffect(() => {
+    reactStore.mountComponent(component);
+  },[])
 }

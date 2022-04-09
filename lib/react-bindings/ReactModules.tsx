@@ -18,6 +18,10 @@ export function useAppContext() {
   return useContext(SlapContext)!;
 }
 
+export function useScope() {
+  return useAppContext().rootScope;
+}
+
 
 export function createApp(Services: TModuleConstructorMap = {}): TAppContext {
   const rootScope = new Scope({ ...Services, Store, ReactStoreAdapter });

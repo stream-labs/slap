@@ -1,7 +1,7 @@
 import { createNanoEvents } from 'nanoevents';
 import { isPlainObject } from 'is-plain-object';
 import { Scope } from './scope';
-import { defineGetter, Dict, generateId } from './utils';
+import { defineGetter, Dict, generateId, isClass } from './utils';
 import { Injector } from './injector';
 import { TLoadingStatus } from './interfaces';
 
@@ -9,7 +9,8 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   id: string;
   instance: TInstance | null = null;
   metadata: Dict<any> = {};
-  injectors: Dict<Injector<unknown, unknown>> = {};
+  injectors: Dict<Injector<unknown, unknown>> = {}; // dict of injectors by id
+  injectorsByProp: Dict<Injector<unknown, unknown>> = {}; // dict of injectors by propName
   factory: (args: TInitParams) => TInstance;
 
   isInited = false; // instance is added to Scope
@@ -22,7 +23,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   isLoaded = false;
   private resolveLoad!: Function;
-  waitForLoad = new Promise(resolve => { this.resolveLoad = resolve });
+  waitForLoad = new Promise(resolve => { this.resolveLoad = resolve; });
 
   initParams?: TInitParams; // TODO
 
@@ -30,16 +31,18 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     public scope: Scope,
     creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance,
     public name = '',
+    public options: Partial<ProviderOptions> = {},
   ) {
     if (!this.name) this.name = `AnonymousProvider__${generateId()}`;
     this.id = `${this.name}__${this.scope.id}__${generateId()}`;
 
+    // setup default provider options
+    this.options = { shouldCallHooks: true, ...this.options };
+
     if (typeof creator === 'function') {
 
-      // TODO find a better way to distinguish Class and Function
-      const isClass = creator.name && creator.name.charAt(0) === creator.name.charAt(0).toUpperCase();
 
-      if (isClass) {
+      if (isClass(creator)) {
         this.factory = (args: TInitParams) => new (creator as any)(...args);
         return;
       }
@@ -63,7 +66,11 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     this.instance = instance;
     this.initParams = args;
     createInstanceMetadata(instance, this);
-    instance.init && instance.init();
+
+    if (this.options.shouldCallHooks) {
+      instance.init && instance.init();
+    }
+
     this.resolveInjectors();
     return instance;
   }
@@ -95,6 +102,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
       if (!(propValue instanceof Injector)) return;
       const injector = propValue as Injector<unknown, unknown>;
       provider.injectors[injector.id] = injector;
+      provider.injectorsByProp[propName] = injector;
       injector.setPropertyName(propName);
     });
 
@@ -163,26 +171,34 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   protected handleInjectionsCompleted() {
     this.injectionCompleted = true;
-    const instance = this.instance as any;
-    const loadResult = instance.load && instance.load();
-    if (loadResult?.then) {
-      this.isAsync = true;
-      loadResult.then(() => {
-        this.loadMethodCompleted = true;
-        this.checkModuleIsLoaded();
-      });
-    } else {
-      this.loadMethodCompleted = true;
-      this.checkModuleIsLoaded();
+
+    if (this.options.shouldCallHooks) {
+      const instance = this.instance as any;
+      const loadResult = instance.load && instance.load();
+      if (loadResult?.then) {
+        this.isAsync = true;
+        loadResult.then(() => {
+          this.loadMethodCompleted = true;
+          this.checkModuleIsLoaded();
+        });
+        return;
+      }
     }
+
+    this.loadMethodCompleted = true;
+    this.checkModuleIsLoaded();
   }
 
   protected checkModuleIsLoaded() {
     if (!this.isInited) return;
     if (!this.injectionCompleted) return;
     if (!this.loadMethodCompleted) return;
-    const instance = this.instance as any;
-    instance.onLoad && instance.onLoad();
+
+    if (this.options.shouldCallHooks) {
+      const instance = this.instance as any;
+      instance.onLoad && instance.onLoad();
+    }
+
     this.isLoaded = true;
     this.resolveLoad();
     this.events.emit('onModuleLoaded');
@@ -194,8 +210,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   events = createNanoEvents<ProviderEvents>();
 }
-
-
 
 function createInstanceMetadata(instance: any, provider: Provider<any, any>) {
   const id = `${provider.id}__${generateId()}`;
@@ -226,4 +240,8 @@ export interface ProviderEvents {
   ) => unknown;
   onModuleInit: () => unknown,
   onModuleLoaded: () => unknown,
+}
+
+export type ProviderOptions = {
+  shouldCallHooks: boolean;
 }

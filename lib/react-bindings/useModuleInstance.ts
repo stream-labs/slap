@@ -34,7 +34,7 @@ export function useModuleInstance<T extends TModuleLocatorType, TInitProps exten
     const instance = scope.resolve(locator);
 
     if (initProps && typeof initProps === 'object') {
-      instance.state['bulkUpdateState'](initProps);
+      instance.state['nonReactiveUpdate'](initProps);
     }
 
     return {

@@ -1,6 +1,7 @@
 import { injectState } from '../../../lib/store/injectState';
 import { inject, injectScope } from '../../../lib/scope/injector';
-import { createFormBinding } from '../../../lib/store/form-binding';
+import { injectForm } from '../../../lib/store/form-binding';
+import { injectLoading } from '../../../lib/store/plugins/pickLoadingState';
 
 export class EditorState {
   readonly persistent = true;
@@ -31,6 +32,7 @@ export class EditorState {
 export class EditorService {
 
   state = injectState(EditorState);
+  loading = injectLoading();
 
   // scenesCollection = injectCollection(sceneSchema);
   //
@@ -54,7 +56,7 @@ export class EditorService {
     return this.state.activeItemId + 1;
   }
 
-  bindActiveItem = createFormBinding(() => this.state.activeItem!, patch => this.state.updateItem(this.state.activeItemId, patch));
+  bindActiveItem = injectForm(() => this.state.activeItem!, patch => this.state.updateItem(this.state.activeItemId, patch));
 
   getSceneController(id: string) {
     return this.scope.create(SceneController, id);

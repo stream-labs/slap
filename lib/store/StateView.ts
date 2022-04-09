@@ -6,11 +6,12 @@ import {
 } from '../scope';
 import { getInstanceMetadata } from '../scope/provider';
 import { pickProps } from './plugins/pickProps';
-import { GetStateViewProps, pickStateViews } from './plugins/pickStateViews';
-import { GetLoadingState, pickLoadingState } from './plugins/pickLoadingState';
-import { GetModuleState, pickState } from './plugins/pickState';
-import { GetControllerProps, pickControllers } from './plugins/pickControllers';
-
+import { Store } from './Store';
+import {
+  GetAllInjectedProps,
+  GetInjectedProps,
+  pickInjectors
+} from './plugins/pickInjectors';
 export class StateView<TProps = {}> {
 
   props: TProps = {} as TProps;
@@ -69,23 +70,35 @@ export class StateView<TProps = {}> {
       descriptor = this.descriptors[propName];
     }
 
-    const value = descriptor.getValue();
     if (descriptor.reactive) {
       this.selectedDescriptors[propName] = descriptor;
       if (!this.hasSelectedProps) this.hasSelectedProps = true;
+      if (descriptor.stateView) return descriptor.stateView.proxy;
     }
-    return value;
+    return descriptor.getValue();
   }
 
   getSnapshot() {
-
-    // TODO get affected modules?
     const selectedDescriptors = this.selectedDescriptors;
-    const result = {} as TProps;
+    const props = {} as TProps;
+
+
     forEach(selectedDescriptors, (descr, propName) => {
-      (result as any)[propName] = descr.stateView ? descr.stateView.getSnapshot() : descr.getRev();
+      let value: unknown;
+      if (descr.stateView) {
+        const getRev = (this.descriptors as any).getRev;
+        if (getRev) {
+          value = getRev.getValue();
+        } else {
+          value = descr.stateView.getSnapshot();
+        }
+      } else {
+        value = descr.getRev();
+      }
+
+      (props as any)[propName] = value;
     });
-    return result;
+    return props;
   }
 
   // use for debugging
@@ -95,7 +108,7 @@ export class StateView<TProps = {}> {
     forEach(selectedDescriptors, (descr, propName) => {
       if (!descr.reactive) return;
       // @ts-ignore
-      result[propName] = descr.getHash();
+      result[propName] = descr.getRev();
     });
     return result;
   }
@@ -120,7 +133,7 @@ export class StateView<TProps = {}> {
   }
 
   // eslint-disable-next-line no-dupe-class-members
-  extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): MergeViews<StateView<TProps>, TStateViewFor<TNewProps>> {
+  extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): ExtendView<TProps, TNewProps> {
     if (!this.scope) {
       throw new Error('You should define a Scope to use .extend()');
     }
@@ -129,7 +142,7 @@ export class StateView<TProps = {}> {
       const factory = () => newPropsFactory(this.props, this);
       const provider = this.scope.register(factory, name);
       const extendedModule = this.scope.resolve(name);
-      const extendedModuleView = createStateViewForModule(extendedModule); // TODO do not use the same pickers
+      const extendedModuleView = createStateViewForModule(extendedModule);
       const mergedView = this.mergeView(extendedModuleView);
       provider.setMetadata('StateView', mergedView);
       // TODO destroy module after component destroy, create a component scope
@@ -149,7 +162,7 @@ export class StateView<TProps = {}> {
 
   mergeView<
     TExtension extends StateView<any>,
-    TResult = MergeViews<StateView<TProps>, TExtension>
+    TResult = ExtendView<TProps, TExtension>
     >(extension: TExtension): TResult {
     // merge one view into another
     const mergeResult = this.clone();
@@ -161,8 +174,8 @@ export class StateView<TProps = {}> {
 
   components = {} as Dict<ComponentView<any>>;
 
-  registerComponent<TView extends StateView<TProps>>(componentId: string, forceUpdate: Function): ComponentView<TView> {
-    const componentView = new ComponentView<TView>(this as any, componentId, forceUpdate);
+  registerComponent<TView extends StateView<TProps>>(store: Store, componentId: string, forceUpdate: Function): ComponentView<TView> {
+    const componentView = new ComponentView<TView>(store, this as any, componentId, forceUpdate);
     this.components[componentId] = componentView;
     return componentView;
   }
@@ -173,6 +186,7 @@ export class StateView<TProps = {}> {
     }
     const componentView = this.components[componentId];
     if (!componentView) return;
+    componentView.destroy();
 
     delete this.components[componentId];
   }
@@ -184,22 +198,90 @@ export function createStateViewForModule<T>(module: T) {
   const stateView = new StateView(scope);
   return stateView
     .select(pickProps(module)) // expose the module props
-    .select(pickStateViews(module)) // expose children stateViews
-    .select(pickLoadingState(module)) // expose the module loading state
-    .select(pickState(module)) // expose the reactive state
-    .select(pickControllers(module)); // expose controllers
+    .select(pickInjectors(module)) as StateView<GetModuleView<T>>; // expose injectors
 }
 
-export type TStateViewFor<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> =
-  StateView< TModule & GetStateViewProps<TModule> & GetLoadingState & GetModuleState<TModule> & GetControllerProps<TModule>>
+export type GetModuleView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
+export type GetModuleStateView<TModuleConfig> = StateView<GetModuleView<TModuleConfig>>;
 
-export type MergeViews<
-  TView1 extends StateView<any>,
-  TView2 extends StateView<any>
-  > = StateView<GetProps<TView1> & GetProps<TView2>>
+// const userExtention = {
+//
+//
+//   extendedFoo: 1,
+//
+//   state: injectState({
+//     selectedUserId: 'user2',
+//   }),
+// }
+//
+// const users = new UsersModule();
+// const usersView = createStateViewForModule(users);
+// usersView.props.state.users
+// usersView.props.users;
+// const extendedUser = usersView.extend(() => userExtention, 'userext');
+// extendedUser.props.users;
+// extendedUser.props.state;
+// extendedUser.props.selectedUserId;
+// extendedUser.props.loading;
+
+
+
+export type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetModuleView<TExtendedModule>>;
+
+
+
+// export type MergeViews<
+//   TView1 extends StateView<any>,
+//   TView2 extends StateView<any>
+//   > = StateView<GetProps<TView1> & GetProps<TView2>>
+//
+// export type MergeModuleWithView<
+//   TView1 extends StateView<any>,
+//   TModule
+//   > = StateView<GetProps<TView1> & GetModuleStateView<TModule> >
 
 export class ComponentView<TStateView extends StateView<any>> {
-  constructor(public stateView: TStateView, public id: string, public forceUpdate: Function) {
+  public isDestroyed = false;
+  public isMounted = false;
+  public isInvalidated = false;
+
+  lastSnapshot = {
+    affectedModules: {} as Dict<number>,
+    props: null as unknown,
+  }
+
+  constructor(public store: Store, public stateView: TStateView, public id: string, public forceUpdate: Function) {
+  }
+
+  makeSnapshot() {
+    const snapshot = {
+      affectedModules: {},
+      props: null,
+    };
+
+    snapshot.affectedModules = this.store.listenAffectedModules(() => {
+      snapshot.props = this.stateView.getSnapshot();
+    });
+
+    this.lastSnapshot = snapshot;
+    return snapshot;
+  }
+
+  needUpdate() {
+    return this.isInvalidated && this.isMounted && !this.isDestroyed;
+  }
+
+  mount() {
+    this.isMounted = true;
+  }
+
+  setInvalidated(invalidated: boolean) {
+    this.isInvalidated = invalidated;
+  }
+
+  destroy() {
+    this.isDestroyed = true;
+    this.isMounted = false;
   }
 }
 

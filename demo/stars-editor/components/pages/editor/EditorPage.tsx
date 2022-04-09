@@ -7,7 +7,7 @@ import { useModule } from '../../../../../lib';
 import { ItemProps } from './ItemProps';
 
 export function EditorPage() {
-  const { isLoading } = useModule(EditorService);
+  const { isLoading, loading } = useModule(EditorService);
   return (
     <>
       {isLoading && 'loading...'}

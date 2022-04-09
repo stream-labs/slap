@@ -1,4 +1,5 @@
 import { injectState } from '../../../lib/store/injectState';
+import { injectLoading } from '../../../lib/store/plugins/pickLoadingState';
 
 export class WindowState {
   activePage = 'users';
@@ -17,4 +18,5 @@ export class WindowState {
 
 export class WindowService {
   state = injectState(WindowState);
+  loading = injectLoading();
 }

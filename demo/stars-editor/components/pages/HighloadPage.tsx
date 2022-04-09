@@ -9,7 +9,7 @@ type TCard = {
   descr: string,
 }
 
-class CardsModule {
+export class CardsModule {
 
   state = injectState({
 
@@ -45,7 +45,7 @@ export function HighloadPage () {
 
   const { cardsIds, size, componentView } = useModule(CardsModule);
 
-  console.log(componentView);
+  console.log('render page', componentView);
 
   return (
     <>
