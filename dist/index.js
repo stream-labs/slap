@@ -188,6 +188,69 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 /***/ }),
 
+/***/ 531:
+/***/ ((module, exports, __webpack_require__) => {
+
+/* module decorator */ module = __webpack_require__.nmd(module);
+/** @license React v17.0.2
+ * react-dom-test-utils.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var h=__webpack_require__(418),l=__webpack_require__(156),m=__webpack_require__(386),n=__webpack_require__(840);function p(a){for(var b="https://reactjs.org/docs/error-decoder.html?invariant="+a,c=1;c<arguments.length;c++)b+="&args[]="+encodeURIComponent(arguments[c]);return"Minified React error #"+a+"; visit "+b+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings."}var q=l.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+function r(a){var b=a,c=a;if(a.alternate)for(;b.return;)b=b.return;else{a=b;do b=a,0!==(b.flags&1026)&&(c=b.return),a=b.return;while(a)}return 3===b.tag?c:null}function t(a){if(r(a)!==a)throw Error(p(188));}
+function aa(a){var b=a.alternate;if(!b){b=r(a);if(null===b)throw Error(p(188));return b!==a?null:a}for(var c=a,d=b;;){var e=c.return;if(null===e)break;var g=e.alternate;if(null===g){d=e.return;if(null!==d){c=d;continue}break}if(e.child===g.child){for(g=e.child;g;){if(g===c)return t(e),a;if(g===d)return t(e),b;g=g.sibling}throw Error(p(188));}if(c.return!==d.return)c=e,d=g;else{for(var f=!1,k=e.child;k;){if(k===c){f=!0;c=e;d=g;break}if(k===d){f=!0;d=e;c=g;break}k=k.sibling}if(!f){for(k=g.child;k;){if(k===
+c){f=!0;c=g;d=e;break}if(k===d){f=!0;d=g;c=e;break}k=k.sibling}if(!f)throw Error(p(189));}}if(c.alternate!==d)throw Error(p(190));}if(3!==c.tag)throw Error(p(188));return c.stateNode.current===c?a:b}function u(a){var b=a.keyCode;"charCode"in a?(a=a.charCode,0===a&&13===b&&(a=13)):a=b;10===a&&(a=13);return 32<=a||13===a?a:0}function v(){return!0}function w(){return!1}
+function x(a){function b(c,b,e,g,f){this._reactName=c;this._targetInst=e;this.type=b;this.nativeEvent=g;this.target=f;this.currentTarget=null;for(var d in a)a.hasOwnProperty(d)&&(c=a[d],this[d]=c?c(g):g[d]);this.isDefaultPrevented=(null!=g.defaultPrevented?g.defaultPrevented:!1===g.returnValue)?v:w;this.isPropagationStopped=w;return this}h(b.prototype,{preventDefault:function(){this.defaultPrevented=!0;var a=this.nativeEvent;a&&(a.preventDefault?a.preventDefault():"unknown"!==typeof a.returnValue&&
+(a.returnValue=!1),this.isDefaultPrevented=v)},stopPropagation:function(){var a=this.nativeEvent;a&&(a.stopPropagation?a.stopPropagation():"unknown"!==typeof a.cancelBubble&&(a.cancelBubble=!0),this.isPropagationStopped=v)},persist:function(){},isPersistent:v});return b}var y={eventPhase:0,bubbles:0,cancelable:0,timeStamp:function(a){return a.timeStamp||Date.now()},defaultPrevented:0,isTrusted:0},ba=x(y),z=h({},y,{view:0,detail:0});x(z);
+var A,B,C,E=h({},z,{screenX:0,screenY:0,clientX:0,clientY:0,pageX:0,pageY:0,ctrlKey:0,shiftKey:0,altKey:0,metaKey:0,getModifierState:D,button:0,buttons:0,relatedTarget:function(a){return void 0===a.relatedTarget?a.fromElement===a.srcElement?a.toElement:a.fromElement:a.relatedTarget},movementX:function(a){if("movementX"in a)return a.movementX;a!==C&&(C&&"mousemove"===a.type?(A=a.screenX-C.screenX,B=a.screenY-C.screenY):B=A=0,C=a);return A},movementY:function(a){return"movementY"in a?a.movementY:B}});
+x(E);var da=h({},E,{dataTransfer:0});x(da);var ea=h({},z,{relatedTarget:0});x(ea);var fa=h({},y,{animationName:0,elapsedTime:0,pseudoElement:0});x(fa);var ha=h({},y,{clipboardData:function(a){return"clipboardData"in a?a.clipboardData:window.clipboardData}});x(ha);var ia=h({},y,{data:0});x(ia);
+var ja={Esc:"Escape",Spacebar:" ",Left:"ArrowLeft",Up:"ArrowUp",Right:"ArrowRight",Down:"ArrowDown",Del:"Delete",Win:"OS",Menu:"ContextMenu",Apps:"ContextMenu",Scroll:"ScrollLock",MozPrintableKey:"Unidentified"},ka={8:"Backspace",9:"Tab",12:"Clear",13:"Enter",16:"Shift",17:"Control",18:"Alt",19:"Pause",20:"CapsLock",27:"Escape",32:" ",33:"PageUp",34:"PageDown",35:"End",36:"Home",37:"ArrowLeft",38:"ArrowUp",39:"ArrowRight",40:"ArrowDown",45:"Insert",46:"Delete",112:"F1",113:"F2",114:"F3",115:"F4",
+116:"F5",117:"F6",118:"F7",119:"F8",120:"F9",121:"F10",122:"F11",123:"F12",144:"NumLock",145:"ScrollLock",224:"Meta"},la={Alt:"altKey",Control:"ctrlKey",Meta:"metaKey",Shift:"shiftKey"};function ma(a){var b=this.nativeEvent;return b.getModifierState?b.getModifierState(a):(a=la[a])?!!b[a]:!1}function D(){return ma}
+var na=h({},z,{key:function(a){if(a.key){var b=ja[a.key]||a.key;if("Unidentified"!==b)return b}return"keypress"===a.type?(a=u(a),13===a?"Enter":String.fromCharCode(a)):"keydown"===a.type||"keyup"===a.type?ka[a.keyCode]||"Unidentified":""},code:0,location:0,ctrlKey:0,shiftKey:0,altKey:0,metaKey:0,repeat:0,locale:0,getModifierState:D,charCode:function(a){return"keypress"===a.type?u(a):0},keyCode:function(a){return"keydown"===a.type||"keyup"===a.type?a.keyCode:0},which:function(a){return"keypress"===
+a.type?u(a):"keydown"===a.type||"keyup"===a.type?a.keyCode:0}});x(na);var oa=h({},E,{pointerId:0,width:0,height:0,pressure:0,tangentialPressure:0,tiltX:0,tiltY:0,twist:0,pointerType:0,isPrimary:0});x(oa);var pa=h({},z,{touches:0,targetTouches:0,changedTouches:0,altKey:0,metaKey:0,ctrlKey:0,shiftKey:0,getModifierState:D});x(pa);var qa=h({},y,{propertyName:0,elapsedTime:0,pseudoElement:0});x(qa);
+var ra=h({},E,{deltaX:function(a){return"deltaX"in a?a.deltaX:"wheelDeltaX"in a?-a.wheelDeltaX:0},deltaY:function(a){return"deltaY"in a?a.deltaY:"wheelDeltaY"in a?-a.wheelDeltaY:"wheelDelta"in a?-a.wheelDelta:0},deltaZ:0,deltaMode:0});x(ra);var F=null;function G(a){if(null===F)try{var b=("require"+Math.random()).slice(0,7);F=(module&&module[b]).call(module,"timers").setImmediate}catch(c){F=function(a){var b=new MessageChannel;b.port1.onmessage=a;b.port2.postMessage(void 0)}}return F(a)}
+var H=m.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.Events,sa=H[5],I=H[6],ta=m.unstable_batchedUpdates,J=q.IsSomeRendererActing,K="function"===typeof n.unstable_flushAllWithoutAsserting,L=n.unstable_flushAllWithoutAsserting||function(){for(var a=!1;sa();)a=!0;return a};function M(a){try{L(),G(function(){L()?M(a):a()})}catch(b){a(b)}}var N=0,ua=!1,O=m.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.Events[6],va=m.unstable_batchedUpdates,Q=q.IsSomeRendererActing;
+function wa(a,b){jest.runOnlyPendingTimers();G(function(){try{n.unstable_flushAllWithoutAsserting()?wa(a,b):a()}catch(c){b(c)}})}function xa(a,b,c,d,e,g,f,k,ca){var P=Array.prototype.slice.call(arguments,3);try{b.apply(c,P)}catch(Ga){this.onError(Ga)}}var R=!1,S=null,T=!1,U=null,ya={onError:function(a){R=!0;S=a}};function za(a,b,c,d,e,g,f,k,ca){R=!1;S=null;xa.apply(ya,arguments)}
+function Aa(a,b,c,d,e,g,f,k,ca){za.apply(this,arguments);if(R){if(R){var P=S;R=!1;S=null}else throw Error(p(198));T||(T=!0,U=P)}}var V=m.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.Events,Ba=V[0],Ca=V[1],Da=V[2],Ea=V[3],Fa=V[4];function Ha(){}
+function Ia(a,b){if(!a)return[];a=aa(a);if(!a)return[];for(var c=a,d=[];;){if(5===c.tag||6===c.tag||1===c.tag||0===c.tag){var e=c.stateNode;b(e)&&d.push(e)}if(c.child)c.child.return=c,c=c.child;else{if(c===a)return d;for(;!c.sibling;){if(!c.return||c.return===a)return d;c=c.return}c.sibling.return=c.return;c=c.sibling}}}
+function W(a,b){if(a&&!a._reactInternals){var c=""+a;a=Array.isArray(a)?"an array":a&&1===a.nodeType&&a.tagName?"a DOM node":"[object Object]"===c?"object with keys {"+Object.keys(a).join(", ")+"}":c;throw Error(p(286,b,a));}}function X(a){return!(!a||1!==a.nodeType||!a.tagName)}function Y(a){return X(a)?!1:null!=a&&"function"===typeof a.render&&"function"===typeof a.setState}function Ja(a,b){return Y(a)?a._reactInternals.type===b:!1}
+function Z(a,b){W(a,"findAllInRenderedTree");return a?Ia(a._reactInternals,b):[]}function Ka(a,b){W(a,"scryRenderedDOMComponentsWithClass");return Z(a,function(a){if(X(a)){var c=a.className;"string"!==typeof c&&(c=a.getAttribute("class")||"");var e=c.split(/\s+/);if(!Array.isArray(b)){if(void 0===b)throw Error(p(11));b=b.split(/\s+/)}return b.every(function(a){return-1!==e.indexOf(a)})}return!1})}
+function La(a,b){W(a,"scryRenderedDOMComponentsWithTag");return Z(a,function(a){return X(a)&&a.tagName.toUpperCase()===b.toUpperCase()})}function Ma(a,b){W(a,"scryRenderedComponentsWithType");return Z(a,function(a){return Ja(a,b)})}function Na(a,b,c){var d=a.type||"unknown-event";a.currentTarget=Ca(c);Aa(d,b,void 0,a);a.currentTarget=null}
+function Oa(a,b,c){for(var d=[];a;){d.push(a);do a=a.return;while(a&&5!==a.tag);a=a?a:null}for(a=d.length;0<a--;)b(d[a],"captured",c);for(a=0;a<d.length;a++)b(d[a],"bubbled",c)}
+function Pa(a,b){var c=a.stateNode;if(!c)return null;var d=Da(c);if(!d)return null;c=d[b];a:switch(b){case "onClick":case "onClickCapture":case "onDoubleClick":case "onDoubleClickCapture":case "onMouseDown":case "onMouseDownCapture":case "onMouseMove":case "onMouseMoveCapture":case "onMouseUp":case "onMouseUpCapture":case "onMouseEnter":(d=!d.disabled)||(a=a.type,d=!("button"===a||"input"===a||"select"===a||"textarea"===a));a=!d;break a;default:a=!1}if(a)return null;if(c&&"function"!==typeof c)throw Error(p(231,
+b,typeof c));return c}function Qa(a,b,c){a&&c&&c._reactName&&(b=Pa(a,c._reactName))&&(null==c._dispatchListeners&&(c._dispatchListeners=[]),null==c._dispatchInstances&&(c._dispatchInstances=[]),c._dispatchListeners.push(b),c._dispatchInstances.push(a))}
+function Ra(a,b,c){var d=c._reactName;"captured"===b&&(d+="Capture");if(b=Pa(a,d))null==c._dispatchListeners&&(c._dispatchListeners=[]),null==c._dispatchInstances&&(c._dispatchInstances=[]),c._dispatchListeners.push(b),c._dispatchInstances.push(a)}var Sa={},Ta=new Set(["mouseEnter","mouseLeave","pointerEnter","pointerLeave"]);
+function Ua(a){return function(b,c){if(l.isValidElement(b))throw Error(p(228));if(Y(b))throw Error(p(229));var d="on"+a[0].toUpperCase()+a.slice(1),e=new Ha;e.target=b;e.type=a.toLowerCase();var g=Ba(b),f=new ba(d,e.type,g,e,b);f.persist();h(f,c);Ta.has(a)?f&&f._reactName&&Qa(f._targetInst,null,f):f&&f._reactName&&Oa(f._targetInst,Ra,f);m.unstable_batchedUpdates(function(){Ea(b);if(f){var a=f._dispatchListeners,c=f._dispatchInstances;if(Array.isArray(a))for(var d=0;d<a.length&&!f.isPropagationStopped();d++)Na(f,
+a[d],c[d]);else a&&Na(f,a,c);f._dispatchListeners=null;f._dispatchInstances=null;f.isPersistent()||f.constructor.release(f)}if(T)throw a=U,T=!1,U=null,a;});Fa()}}
+"blur cancel click close contextMenu copy cut auxClick doubleClick dragEnd dragStart drop focus input invalid keyDown keyPress keyUp mouseDown mouseUp paste pause play pointerCancel pointerDown pointerUp rateChange reset seeked submit touchCancel touchEnd touchStart volumeChange drag dragEnter dragExit dragLeave dragOver mouseMove mouseOut mouseOver pointerMove pointerOut pointerOver scroll toggle touchMove wheel abort animationEnd animationIteration animationStart canPlay canPlayThrough durationChange emptied encrypted ended error gotPointerCapture load loadedData loadedMetadata loadStart lostPointerCapture playing progress seeking stalled suspend timeUpdate transitionEnd waiting mouseEnter mouseLeave pointerEnter pointerLeave change select beforeInput compositionEnd compositionStart compositionUpdate".split(" ").forEach(function(a){Sa[a]=Ua(a)});
+exports.Simulate=Sa;
+exports.act=function(a){function b(){N--;J.current=c;I.current=d}!1===ua&&(ua=!0,console.error("act(...) is not supported in production builds of React, and might not behave as expected."));N++;var c=J.current,d=I.current;J.current=!0;I.current=!0;try{var e=ta(a)}catch(g){throw b(),g;}if(null!==e&&"object"===typeof e&&"function"===typeof e.then)return{then:function(a,d){e.then(function(){1<N||!0===K&&!0===c?(b(),a()):M(function(c){b();c?d(c):a()})},function(a){b();d(a)})}};try{1!==N||!1!==K&&!1!==
+c||L(),b()}catch(g){throw b(),g;}return{then:function(a){a()}}};exports.findAllInRenderedTree=Z;exports.findRenderedComponentWithType=function(a,b){W(a,"findRenderedComponentWithType");a=Ma(a,b);if(1!==a.length)throw Error("Did not find exactly one match (found: "+a.length+") for componentType:"+b);return a[0]};
+exports.findRenderedDOMComponentWithClass=function(a,b){W(a,"findRenderedDOMComponentWithClass");a=Ka(a,b);if(1!==a.length)throw Error("Did not find exactly one match (found: "+a.length+") for class:"+b);return a[0]};exports.findRenderedDOMComponentWithTag=function(a,b){W(a,"findRenderedDOMComponentWithTag");a=La(a,b);if(1!==a.length)throw Error("Did not find exactly one match (found: "+a.length+") for tag:"+b);return a[0]};exports.isCompositeComponent=Y;exports.isCompositeComponentWithType=Ja;
+exports.isDOMComponent=X;exports.isDOMComponentElement=function(a){return!!(a&&l.isValidElement(a)&&a.tagName)};exports.isElement=function(a){return l.isValidElement(a)};exports.isElementOfType=function(a,b){return l.isValidElement(a)&&a.type===b};exports.mockComponent=function(a,b){b=b||a.mockTagName||"div";a.prototype.render.mockImplementation(function(){return l.createElement(b,null,this.props.children)});return this};exports.nativeTouchData=function(a,b){return{touches:[{pageX:a,pageY:b}]}};
+exports.renderIntoDocument=function(a){var b=document.createElement("div");return m.render(a,b)};exports.scryRenderedComponentsWithType=Ma;exports.scryRenderedDOMComponentsWithClass=Ka;exports.scryRenderedDOMComponentsWithTag=La;exports.traverseTwoPhase=Oa;
+exports.unstable_concurrentAct=function(a){function b(){Q.current=c;O.current=d}if(void 0===n.unstable_flushAllWithoutAsserting)throw Error("This version of `act` requires a special mock build of Scheduler.");if(!0!==setTimeout._isMockFunction)throw Error("This version of `act` requires Jest's timer mocks (i.e. jest.useFakeTimers).");var c=Q.current,d=O.current;Q.current=!0;O.current=!0;try{var e=va(a);if("object"===typeof e&&null!==e&&"function"===typeof e.then)return{then:function(a,c){e.then(function(){wa(function(){b();
+a()},function(a){b();c(a)})},function(a){b();c(a)})}};try{do var g=n.unstable_flushAllWithoutAsserting();while(g)}finally{b()}}catch(f){throw b(),f;}};
+
+
+/***/ }),
+
+/***/ 267:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+
+
+if (true) {
+  module.exports = __webpack_require__(531);
+} else {}
+
+
+/***/ }),
+
 /***/ 251:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
@@ -212,6 +275,45 @@ function q(c,a,k){var b,d={},e=null,l=null;void 0!==k&&(e=""+k);void 0!==a.key&&
 
 if (true) {
   module.exports = __webpack_require__(251);
+} else {}
+
+
+/***/ }),
+
+/***/ 53:
+/***/ ((__unused_webpack_module, exports) => {
+
+/** @license React v0.20.2
+ * scheduler.production.min.js
+ *
+ * Copyright (c) Facebook, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+var f,g,h,k;if("object"===typeof performance&&"function"===typeof performance.now){var l=performance;exports.unstable_now=function(){return l.now()}}else{var p=Date,q=p.now();exports.unstable_now=function(){return p.now()-q}}
+if("undefined"===typeof window||"function"!==typeof MessageChannel){var t=null,u=null,w=function(){if(null!==t)try{var a=exports.unstable_now();t(!0,a);t=null}catch(b){throw setTimeout(w,0),b;}};f=function(a){null!==t?setTimeout(f,0,a):(t=a,setTimeout(w,0))};g=function(a,b){u=setTimeout(a,b)};h=function(){clearTimeout(u)};exports.unstable_shouldYield=function(){return!1};k=exports.unstable_forceFrameRate=function(){}}else{var x=window.setTimeout,y=window.clearTimeout;if("undefined"!==typeof console){var z=
+window.cancelAnimationFrame;"function"!==typeof window.requestAnimationFrame&&console.error("This browser doesn't support requestAnimationFrame. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills");"function"!==typeof z&&console.error("This browser doesn't support cancelAnimationFrame. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills")}var A=!1,B=null,C=-1,D=5,E=0;exports.unstable_shouldYield=function(){return exports.unstable_now()>=
+E};k=function(){};exports.unstable_forceFrameRate=function(a){0>a||125<a?console.error("forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported"):D=0<a?Math.floor(1E3/a):5};var F=new MessageChannel,G=F.port2;F.port1.onmessage=function(){if(null!==B){var a=exports.unstable_now();E=a+D;try{B(!0,a)?G.postMessage(null):(A=!1,B=null)}catch(b){throw G.postMessage(null),b;}}else A=!1};f=function(a){B=a;A||(A=!0,G.postMessage(null))};g=function(a,b){C=
+x(function(){a(exports.unstable_now())},b)};h=function(){y(C);C=-1}}function H(a,b){var c=a.length;a.push(b);a:for(;;){var d=c-1>>>1,e=a[d];if(void 0!==e&&0<I(e,b))a[d]=b,a[c]=e,c=d;else break a}}function J(a){a=a[0];return void 0===a?null:a}
+function K(a){var b=a[0];if(void 0!==b){var c=a.pop();if(c!==b){a[0]=c;a:for(var d=0,e=a.length;d<e;){var m=2*(d+1)-1,n=a[m],v=m+1,r=a[v];if(void 0!==n&&0>I(n,c))void 0!==r&&0>I(r,n)?(a[d]=r,a[v]=c,d=v):(a[d]=n,a[m]=c,d=m);else if(void 0!==r&&0>I(r,c))a[d]=r,a[v]=c,d=v;else break a}}return b}return null}function I(a,b){var c=a.sortIndex-b.sortIndex;return 0!==c?c:a.id-b.id}var L=[],M=[],N=1,O=null,P=3,Q=!1,R=!1,S=!1;
+function T(a){for(var b=J(M);null!==b;){if(null===b.callback)K(M);else if(b.startTime<=a)K(M),b.sortIndex=b.expirationTime,H(L,b);else break;b=J(M)}}function U(a){S=!1;T(a);if(!R)if(null!==J(L))R=!0,f(V);else{var b=J(M);null!==b&&g(U,b.startTime-a)}}
+function V(a,b){R=!1;S&&(S=!1,h());Q=!0;var c=P;try{T(b);for(O=J(L);null!==O&&(!(O.expirationTime>b)||a&&!exports.unstable_shouldYield());){var d=O.callback;if("function"===typeof d){O.callback=null;P=O.priorityLevel;var e=d(O.expirationTime<=b);b=exports.unstable_now();"function"===typeof e?O.callback=e:O===J(L)&&K(L);T(b)}else K(L);O=J(L)}if(null!==O)var m=!0;else{var n=J(M);null!==n&&g(U,n.startTime-b);m=!1}return m}finally{O=null,P=c,Q=!1}}var W=k;exports.unstable_IdlePriority=5;
+exports.unstable_ImmediatePriority=1;exports.unstable_LowPriority=4;exports.unstable_NormalPriority=3;exports.unstable_Profiling=null;exports.unstable_UserBlockingPriority=2;exports.unstable_cancelCallback=function(a){a.callback=null};exports.unstable_continueExecution=function(){R||Q||(R=!0,f(V))};exports.unstable_getCurrentPriorityLevel=function(){return P};exports.unstable_getFirstCallbackNode=function(){return J(L)};
+exports.unstable_next=function(a){switch(P){case 1:case 2:case 3:var b=3;break;default:b=P}var c=P;P=b;try{return a()}finally{P=c}};exports.unstable_pauseExecution=function(){};exports.unstable_requestPaint=W;exports.unstable_runWithPriority=function(a,b){switch(a){case 1:case 2:case 3:case 4:case 5:break;default:a=3}var c=P;P=a;try{return b()}finally{P=c}};
+exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"object"===typeof c&&null!==c?(c=c.delay,c="number"===typeof c&&0<c?d+c:d):c=d;switch(a){case 1:var e=-1;break;case 2:e=250;break;case 5:e=1073741823;break;case 4:e=1E4;break;default:e=5E3}e=c+e;a={id:N++,callback:b,priorityLevel:a,startTime:c,expirationTime:e,sortIndex:-1};c>d?(a.sortIndex=c,H(M,a),null===J(L)&&a===J(M)&&(S?h():S=!0,g(U,c-d))):(a.sortIndex=e,H(L,a),R||Q||(R=!0,f(V)));return a};
+exports.unstable_wrapCallback=function(a){var b=P;return function(){var c=P;P=b;try{return a.apply(this,arguments)}finally{P=c}}};
+
+
+/***/ }),
+
+/***/ 840:
+/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
+
+
+
+if (true) {
+  module.exports = __webpack_require__(53);
 } else {}
 
 
@@ -264,7 +366,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ReactModules = exports.createApp = exports.useAppContext = exports.SlapContext = void 0;
+exports.ReactModules = exports.createApp = exports.useScope = exports.useAppContext = exports.SlapContext = void 0;
 const jsx_runtime_1 = __webpack_require__(893);
 const react_1 = __importStar(__webpack_require__(156));
 const hooks_1 = __webpack_require__(985);
@@ -276,6 +378,10 @@ function useAppContext() {
     return (0, react_1.useContext)(exports.SlapContext);
 }
 exports.useAppContext = useAppContext;
+function useScope() {
+    return useAppContext().rootScope;
+}
+exports.useScope = useScope;
 function createApp(Services = {}) {
     const rootScope = new scope_1.Scope(Object.assign(Object.assign({}, Services), { Store: Store_1.Store, ReactStoreAdapter: react_store_adapter_1.ReactStoreAdapter }));
     const modulesScope = rootScope.createChildScope({}, { autoregister: true });
@@ -404,8 +510,6 @@ __exportStar(__webpack_require__(31), exports);
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ReactStoreAdapter = void 0;
-// TODO move to react folder
-const scope_1 = __webpack_require__(527);
 const Store_1 = __webpack_require__(607);
 const injector_1 = __webpack_require__(869);
 const react_dom_1 = __webpack_require__(386);
@@ -414,13 +518,32 @@ class ReactStoreAdapter {
         this.store = (0, injector_1.inject)(Store_1.Store);
         this.watchers = {};
         this.watchersOrder = [];
+        // invalidatedComponents: ComponentView<any>[] = [];
+        this.components = {};
+        this.stateIsInvalidated = false;
+        this.updateIsInProgress = false;
     }
     load() {
-        this.store.events.on('onMutation', () => this.updateUI());
+        this.store.events.on('onMutation', () => this.onMutation());
     }
-    // TODO: rename to register-component ?
-    createWatcher(cb) {
-        const watcherId = (0, scope_1.generateId)();
+    createComponent(component) {
+        this.components[component.id] = component;
+    }
+    mountComponent(component) {
+        component.mount();
+        // if (this.stateIsInvalidated && !this.hasUnmountedComponents()) {
+        //   this.updateUI();
+        // }
+    }
+    hasUnmountedComponents() {
+        const hasUnmountedComponents = Object.keys(this.components).find(id => {
+            const comp = this.components[id];
+            return !comp.isMounted && !comp.isDestroyed;
+        });
+        return hasUnmountedComponents;
+    }
+    // TODO: rename to mount-component ?
+    createWatcher(watcherId, cb) {
         this.watchersOrder.push(watcherId);
         this.watchers[watcherId] = cb;
         return watcherId;
@@ -430,12 +553,44 @@ class ReactStoreAdapter {
         this.watchersOrder.splice(ind, 1);
         delete this.watchers[watcherId];
     }
+    onMutation() {
+        this.updateUI();
+        // if (this.stateIsInvalidated) return;
+        // this.stateIsInvalidated = true;
+        //
+        // if (!this.hasUnmountedComponents()) {
+        //   this.updateUI();
+        // }
+    }
     updateUI() {
-        // TODO: add batching here?
+        if (this.updateIsInProgress) {
+            throw new Error('Can not update ');
+        }
+        this.updateIsInProgress = true;
         const watchersIds = [...this.watchersOrder];
+        // force update components
         (0, react_dom_1.unstable_batchedUpdates)(() => {
-            watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
+            watchersIds.forEach(id => {
+                this.watchers[id] && this.watchers[id]();
+                const component = this.components[id];
+                if (component.needUpdate()) {
+                    component.forceUpdate();
+                    component.setInvalidated(false);
+                }
+            });
         });
+        // // collect invalidated components
+        // watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
+        //
+        // // force update components
+        // unstable_batchedUpdates(() => {
+        //
+        //   watchersIds.forEach(id => {
+        //     this.components[id].needUpdate() && this.components[id].forceUpdate()
+        //   });
+        // });
+        this.stateIsInvalidated = false;
+        this.updateIsInProgress = false;
     }
 }
 exports.ReactStoreAdapter = ReactStoreAdapter;
@@ -448,28 +603,32 @@ exports.ReactStoreAdapter = ReactStoreAdapter;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useModule = exports.useComponentView = void 0;
+exports.useConnectStore = exports.useModule = exports.useComponentView = void 0;
 const hooks_1 = __webpack_require__(985);
-const useSelector_1 = __webpack_require__(31);
 const useModuleInstance_1 = __webpack_require__(878);
 const scope_1 = __webpack_require__(527);
 const StateView_1 = __webpack_require__(32);
-function useComponentView(moduleView, id) {
+const react_1 = __webpack_require__(156);
+const ReactModules_1 = __webpack_require__(668);
+const store_1 = __webpack_require__(338);
+const react_store_adapter_1 = __webpack_require__(160);
+const utils_1 = __webpack_require__(225);
+function useComponentView(moduleView, moduleId, id) {
     const forceUpdate = (0, hooks_1.useForceUpdate)();
-    const { selector, componentId, componentView } = (0, hooks_1.useOnCreate)(() => {
-        const componentId = id || `component__${(0, scope_1.generateId)()}`;
-        const componentView = moduleView.registerComponent(componentId, forceUpdate);
+    const store = (0, ReactModules_1.useScope)().resolve(store_1.Store);
+    const { componentId, componentView } = (0, hooks_1.useOnCreate)(() => {
+        const componentId = id || `${moduleId}__component__${(0, scope_1.generateId)()}`;
+        const componentView = moduleView.registerComponent(store, componentId, forceUpdate);
         const stateView = componentView.stateView;
-        // check affected components
-        function selector() {
-            if (!stateView.hasSelectedProps)
-                return;
-            const reactiveValues = stateView.getSnapshot();
-            return reactiveValues;
-        }
+        // // check affected components
+        // function selector() {
+        //   if (!stateView.hasSelectedProps) return;
+        //   const reactiveValues = stateView.getSnapshot();
+        //   return reactiveValues;
+        // }
         function extend(newPropsFactory) {
             const extendedView = moduleView.extend(newPropsFactory, componentId);
-            return useComponentView(extendedView, componentId);
+            return useComponentView(extendedView, moduleId, componentId);
         }
         stateView.defineProp({
             type: 'extend',
@@ -482,7 +641,7 @@ function useComponentView(moduleView, id) {
             getValue: () => componentView,
         });
         return {
-            selector, componentId, componentView,
+            componentId, componentView,
         };
     });
     (0, hooks_1.useOnDestroy)(() => {
@@ -490,16 +649,48 @@ function useComponentView(moduleView, id) {
     });
     // useDetectChanges
     // call selector to make selected props reactive
-    (0, useSelector_1.useSelector)(selector);
+    useConnectStore(componentView);
     return componentView.stateView.proxy;
 }
 exports.useComponentView = useComponentView;
 function useModule(locator, initProps = null, moduleName = '') {
     const module = (0, useModuleInstance_1.useModuleInstance)(locator, initProps, moduleName);
     const moduleView = (0, hooks_1.useOnCreate)(() => (0, StateView_1.createStateViewForModule)(module));
-    return useComponentView(moduleView);
+    return useComponentView(moduleView, (0, scope_1.getInstanceMetadata)(module).id);
 }
 exports.useModule = useModule;
+function useConnectStore(component) {
+    const scope = (0, ReactModules_1.useAppContext)().modulesScope;
+    const store = scope.resolve(store_1.Store);
+    const reactStore = scope.resolve(react_store_adapter_1.ReactStoreAdapter);
+    reactStore.createComponent(component);
+    (0, react_1.useLayoutEffect)(() => {
+        const stateView = component.stateView;
+        if (!stateView.hasSelectedProps)
+            return;
+        component.makeSnapshot();
+        // TODO do not run watchers for non-observable component views
+        const watcherId = reactStore.createWatcher(component.id, () => {
+            const prevSnapshot = component.lastSnapshot;
+            const newSnapshot = component.makeSnapshot();
+            if ((0, utils_1.isSimilar)(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
+                // no modules changed, do not call compare props
+                return;
+            }
+            if (!(0, utils_1.isSimilar)(prevSnapshot.props, newSnapshot.props)) {
+                // reactStore.updateUI();
+                component.setInvalidated(true);
+            }
+        });
+        return () => {
+            reactStore.removeWatcher(watcherId);
+        };
+    }, []);
+    (0, react_1.useEffect)(() => {
+        reactStore.mountComponent(component);
+    }, []);
+}
+exports.useConnectStore = useConnectStore;
 
 
 /***/ }),
@@ -533,7 +724,7 @@ function useModuleInstance(locator, initProps = null, name = '') {
             scope = rootScope.registerScope({}, { autoregister: true });
         const instance = scope.resolve(locator);
         if (initProps && typeof initProps === 'object') {
-            instance.state['bulkUpdateState'](initProps);
+            instance.state['nonReactiveUpdate'](initProps);
         }
         return {
             instance,
@@ -560,59 +751,60 @@ exports.useModuleInstance = useModuleInstance;
 /***/ }),
 
 /***/ 31:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useSelector = void 0;
-const react_1 = __webpack_require__(156);
-const hooks_1 = __webpack_require__(985);
-const ReactModules_1 = __webpack_require__(668);
-const Store_1 = __webpack_require__(607);
-const react_store_adapter_1 = __webpack_require__(160);
-const isDeepEqual_1 = __webpack_require__(233);
-function useSelector(cb) {
-    const affectedModulesRef = (0, react_1.useRef)({});
-    const currentSelectorStateRef = (0, react_1.useRef)({});
-    const forceUpdate = (0, hooks_1.useForceUpdate)();
-    const scope = (0, ReactModules_1.useAppContext)().modulesScope;
-    const store = scope.resolve(Store_1.Store);
-    const reactStore = scope.resolve(react_store_adapter_1.ReactStoreAdapter);
-    (0, react_1.useEffect)(() => {
-        affectedModulesRef.current = store.listenAffectedModules(() => {
-            currentSelectorStateRef.current = cb();
-        });
-        // TODO do not run watchers for non-observable component views
-        const watcherId = reactStore.createWatcher(() => {
-            const prevRevisions = affectedModulesRef.current;
-            const currentRevisions = store.moduleRevisions;
-            let modulesHasChanged = false;
-            for (const moduleName in prevRevisions) {
-                if (prevRevisions[moduleName] !== currentRevisions[moduleName]) {
-                    modulesHasChanged = true;
-                    break;
-                }
-                if (!modulesHasChanged) {
-                    // dependent modules don't have changes in the state
-                    // do not re-render
-                    return;
-                }
-            }
-            const prevSelectorState = currentSelectorStateRef.current;
-            affectedModulesRef.current = store.listenAffectedModules(() => {
-                currentSelectorStateRef.current = cb();
-            });
-            if (!(0, isDeepEqual_1.isSimilar)(prevSelectorState, currentSelectorStateRef.current)) {
-                // TODO try batched updates
-                forceUpdate();
-            }
-        });
-        return () => {
-            reactStore.removeWatcher(watcherId);
-        };
-    }, []);
-}
-exports.useSelector = useSelector;
+//
+// export function useSelector(cb: Function) {
+//   const affectedModulesRef = useRef<Record<string, number>>({});
+//   const currentSelectorStateRef = useRef<Record<string, any>>({});
+//   const forceUpdate = useForceUpdate();
+//   const scope = useAppContext().modulesScope;
+//   const store = scope.resolve(Store);
+//   const reactStore = scope.resolve(ReactStoreAdapter);
+//
+//   useEffect(() => {
+//     affectedModulesRef.current = store.listenAffectedModules(() => {
+//       currentSelectorStateRef.current = cb();
+//     });
+//
+//     // TODO do not run watchers for non-observable component views
+//
+//     const watcherId = reactStore.createWatcher(() => {
+//       const prevRevisions = affectedModulesRef.current;
+//       const currentRevisions = store.moduleRevisions;
+//
+//       let modulesHasChanged = false;
+//       for (const moduleName in prevRevisions) {
+//         if (prevRevisions[moduleName] !== currentRevisions[moduleName]) {
+//           modulesHasChanged = true;
+//           break;
+//         }
+//
+//         if (!modulesHasChanged) {
+//           // dependent modules don't have changes in the state
+//           // do not re-render
+//           return;
+//         }
+//       }
+//
+//       const prevSelectorState = currentSelectorStateRef.current;
+//
+//       affectedModulesRef.current = store.listenAffectedModules(() => {
+//         currentSelectorStateRef.current = cb();
+//       });
+//
+//       if (!isSimilar(prevSelectorState, currentSelectorStateRef.current)) {
+//         // TODO try batched updates
+//         forceUpdate();
+//       }
+//     });
+//     return () => {
+//       reactStore.removeWatcher(watcherId);
+//     };
+//   }, []);
+// }
 
 
 /***/ }),
@@ -656,6 +848,7 @@ class Injector {
         this.id = (0, utils_1.generateId)();
         this.loadingStatus = 'not-started';
         this.propertyName = '';
+        this.isDestroyed = false;
     }
     init() {
         this.params.init && this.params.init(this);
@@ -679,15 +872,26 @@ class Injector {
         this.propertyName = propertyName;
     }
     setLoadingStatus(loadingStatus) {
+        if (this.isDestroyed)
+            return;
         const prevStatus = this.loadingStatus;
         this.loadingStatus = loadingStatus;
         this.provider.handleInjectorStatusChange(this, this.loadingStatus, prevStatus);
     }
     destroy() {
         this.params.destroy && this.params.destroy(this);
+        this.isDestroyed = true;
     }
     resolveValue() {
         return this.provider.instance[this.propertyName];
+    }
+    hasViewValue() {
+        return !!this.params.getViewValue;
+    }
+    resolveViewValue() {
+        return this.params.getViewValue
+            ? this.params.getViewValue()
+            : this.resolveValue();
     }
     get type() {
         return this.params.type;
@@ -745,12 +949,14 @@ const is_plain_object_1 = __webpack_require__(57);
 const utils_1 = __webpack_require__(986);
 const injector_1 = __webpack_require__(869);
 class Provider {
-    constructor(scope, creator, name = '') {
+    constructor(scope, creator, name = '', options = {}) {
         this.scope = scope;
         this.name = name;
+        this.options = options;
         this.instance = null;
         this.metadata = {};
-        this.injectors = {};
+        this.injectors = {}; // dict of injectors by id
+        this.injectorsByProp = {}; // dict of injectors by propName
         this.isInited = false; // instance is added to Scope
         // private resolveInit!: Function;
         // waitForInit = new Promise(resolve => { this.resolveInit = resolve });
@@ -763,10 +969,10 @@ class Provider {
         if (!this.name)
             this.name = `AnonymousProvider__${(0, utils_1.generateId)()}`;
         this.id = `${this.name}__${this.scope.id}__${(0, utils_1.generateId)()}`;
+        // setup default provider options
+        this.options = Object.assign({ shouldCallHooks: true }, this.options);
         if (typeof creator === 'function') {
-            // TODO find a better way to distinguish Class and Function
-            const isClass = creator.name && creator.name.charAt(0) === creator.name.charAt(0).toUpperCase();
-            if (isClass) {
+            if ((0, utils_1.isClass)(creator)) {
                 this.factory = (args) => new creator(...args);
                 return;
             }
@@ -786,7 +992,9 @@ class Provider {
         this.instance = instance;
         this.initParams = args;
         createInstanceMetadata(instance, this);
-        instance.init && instance.init();
+        if (this.options.shouldCallHooks) {
+            instance.init && instance.init();
+        }
         this.resolveInjectors();
         return instance;
     }
@@ -817,6 +1025,7 @@ class Provider {
                 return;
             const injector = propValue;
             provider.injectors[injector.id] = injector;
+            provider.injectorsByProp[propName] = injector;
             injector.setPropertyName(propName);
         });
         // call init() for injectors
@@ -873,19 +1082,20 @@ class Provider {
     }
     handleInjectionsCompleted() {
         this.injectionCompleted = true;
-        const instance = this.instance;
-        const loadResult = instance.load && instance.load();
-        if (loadResult === null || loadResult === void 0 ? void 0 : loadResult.then) {
-            this.isAsync = true;
-            loadResult.then(() => {
-                this.loadMethodCompleted = true;
-                this.checkModuleIsLoaded();
-            });
+        if (this.options.shouldCallHooks) {
+            const instance = this.instance;
+            const loadResult = instance.load && instance.load();
+            if (loadResult === null || loadResult === void 0 ? void 0 : loadResult.then) {
+                this.isAsync = true;
+                loadResult.then(() => {
+                    this.loadMethodCompleted = true;
+                    this.checkModuleIsLoaded();
+                });
+                return;
+            }
         }
-        else {
-            this.loadMethodCompleted = true;
-            this.checkModuleIsLoaded();
-        }
+        this.loadMethodCompleted = true;
+        this.checkModuleIsLoaded();
     }
     checkModuleIsLoaded() {
         if (!this.isInited)
@@ -894,8 +1104,10 @@ class Provider {
             return;
         if (!this.loadMethodCompleted)
             return;
-        const instance = this.instance;
-        instance.onLoad && instance.onLoad();
+        if (this.options.shouldCallHooks) {
+            const instance = this.instance;
+            instance.onLoad && instance.onLoad();
+        }
         this.isLoaded = true;
         this.resolveLoad();
         this.events.emit('onModuleLoaded');
@@ -1160,7 +1372,7 @@ exports.Subscription = Subscription;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.capitalize = exports.defineSetter = exports.defineGetter = exports.forEach = exports.hasGetter = exports.getDefined = exports.assertIsDefined = exports.generateId = void 0;
+exports.isClass = exports.capitalize = exports.defineSetter = exports.defineGetter = exports.forEach = exports.hasGetter = exports.getDefined = exports.assertIsDefined = exports.generateId = void 0;
 let idCounter = 1;
 function generateId() {
     return (idCounter++).toString();
@@ -1210,6 +1422,136 @@ function capitalize(srt) {
     return srt.charAt(0).toUpperCase() + srt.slice(1);
 }
 exports.capitalize = capitalize;
+function isClass(object) {
+    // TODO find a better way to distinguish Class and Function
+    return typeof object === 'function' && object.name && object.name.charAt(0) === object.name.charAt(0).toUpperCase();
+}
+exports.isClass = isClass;
+
+
+/***/ }),
+
+/***/ 989:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectQuery = exports.QueryInjectorType = exports.Query = void 0;
+const test_utils_1 = __webpack_require__(267);
+const scope_1 = __webpack_require__(527);
+const Store_1 = __webpack_require__(607);
+var error = test_utils_1.Simulate.error;
+class QueryStateConfig {
+    constructor() {
+        this.state = {
+            status: 'idle',
+            data: null,
+            error: null,
+        };
+    }
+    setData(data) {
+        this.state.status = 'success';
+        this.state.data = data;
+        console.log('query fetched', data);
+    }
+    setError(error) {
+        this.state.status = 'error';
+        this.state.error = error;
+    }
+}
+/**
+ * Alternative for https://react-query.tanstack.com/reference/useQuery
+ */
+class Query {
+    constructor(store, moduleName, propName, constructorOptions) {
+        this.store = store;
+        this.moduleName = moduleName;
+        this.fetchingPromise = null;
+        this.enabled = true;
+        const options = Object.assign({ enabled: true, params: null, initialData: null, getParams: null }, constructorOptions);
+        this.options = options;
+        this.enabled = !!options.enabled;
+        this.params = options.getParams ? options.getParams() : {};
+        const stateConfig = new QueryStateConfig();
+        stateConfig.state.data = options.initialData;
+        this.state = this.store.createState(moduleName, propName, stateConfig);
+        this.stateView = this.state.createView();
+    }
+    exec() {
+        if (this.fetchingPromise)
+            return this.fetchingPromise;
+        return this.fetch();
+    }
+    fetch() {
+        const fetchResult = this.options.fetch(this);
+        if (fetchResult === null || fetchResult === void 0 ? void 0 : fetchResult.then) {
+            this.fetchingPromise = fetchResult;
+            return fetchResult.then((data) => {
+                if (!this.enabled)
+                    return;
+                this.fetchingPromise = null;
+                this.state.setData(data);
+            })
+                .catch((e) => {
+                if (!this.enabled)
+                    return;
+                this.fetchingPromise = null;
+                this.state.setError(error);
+            });
+        }
+        return Promise.resolve(fetchResult);
+    }
+    setEnabled(enabled) {
+        this.enabled = enabled;
+    }
+    destroy() {
+        // prevent unfinished fetching
+        this.setEnabled(false);
+    }
+}
+exports.Query = Query;
+exports.QueryInjectorType = Symbol('queryInjector');
+function fetchOnlineUsers() {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise(r => {
+            setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
+        });
+    });
+}
+function injectQuery(options) {
+    return (0, scope_1.createInjector)(injector => {
+        let query;
+        return {
+            type: exports.QueryInjectorType,
+            load: () => {
+                const propName = injector.propertyName;
+                const moduleName = injector.provider.id;
+                const store = injector.provider.scope.resolve(Store_1.Store);
+                query = new Query(store, moduleName, propName, options);
+                query.exec();
+            },
+            getValue() {
+                return query;
+            },
+            getViewValue() {
+                return query.stateView;
+            },
+            destroy() {
+                query.destroy();
+            },
+        };
+    });
+}
+exports.injectQuery = injectQuery;
 
 
 /***/ }),
@@ -1226,10 +1568,7 @@ exports.ComponentView = exports.createStateViewForModule = exports.StateView = v
 const scope_1 = __webpack_require__(527);
 const provider_1 = __webpack_require__(370);
 const pickProps_1 = __webpack_require__(49);
-const pickStateViews_1 = __webpack_require__(223);
-const pickLoadingState_1 = __webpack_require__(209);
-const pickState_1 = __webpack_require__(948);
-const pickControllers_1 = __webpack_require__(351);
+const pickInjectors_1 = __webpack_require__(187);
 class StateView {
     constructor(scope) {
         this.scope = scope;
@@ -1275,22 +1614,35 @@ class StateView {
             this.wildcardPropCreator(propName);
             descriptor = this.descriptors[propName];
         }
-        const value = descriptor.getValue();
         if (descriptor.reactive) {
             this.selectedDescriptors[propName] = descriptor;
             if (!this.hasSelectedProps)
                 this.hasSelectedProps = true;
+            if (descriptor.stateView)
+                return descriptor.stateView.proxy;
         }
-        return value;
+        return descriptor.getValue();
     }
     getSnapshot() {
-        // TODO get affected modules?
         const selectedDescriptors = this.selectedDescriptors;
-        const result = {};
+        const props = {};
         (0, scope_1.forEach)(selectedDescriptors, (descr, propName) => {
-            result[propName] = descr.stateView ? descr.stateView.getSnapshot() : descr.getRev();
+            let value;
+            if (descr.stateView) {
+                const getRev = this.descriptors.getRev;
+                if (getRev) {
+                    value = getRev.getValue();
+                }
+                else {
+                    value = descr.stateView.getSnapshot();
+                }
+            }
+            else {
+                value = descr.getRev();
+            }
+            props[propName] = value;
         });
-        return result;
+        return props;
     }
     // use for debugging
     get selectedProps() {
@@ -1300,7 +1652,7 @@ class StateView {
             if (!descr.reactive)
                 return;
             // @ts-ignore
-            result[propName] = descr.getHash();
+            result[propName] = descr.getRev();
         });
         return result;
     }
@@ -1329,7 +1681,7 @@ class StateView {
             const factory = () => newPropsFactory(this.props, this);
             const provider = this.scope.register(factory, name);
             const extendedModule = this.scope.resolve(name);
-            const extendedModuleView = createStateViewForModule(extendedModule); // TODO do not use the same pickers
+            const extendedModuleView = createStateViewForModule(extendedModule);
             const mergedView = this.mergeView(extendedModuleView);
             provider.setMetadata('StateView', mergedView);
             // TODO destroy module after component destroy, create a component scope
@@ -1350,8 +1702,8 @@ class StateView {
         (0, scope_1.forEach)(extension.descriptors, descriptor => mergeResult.defineProp(descriptor));
         return mergeResult;
     }
-    registerComponent(componentId, forceUpdate) {
-        const componentView = new ComponentView(this, componentId, forceUpdate);
+    registerComponent(store, componentId, forceUpdate) {
+        const componentView = new ComponentView(store, this, componentId, forceUpdate);
         this.components[componentId] = componentView;
         return componentView;
     }
@@ -1363,6 +1715,7 @@ class StateView {
         const componentView = this.components[componentId];
         if (!componentView)
             return;
+        componentView.destroy();
         delete this.components[componentId];
     }
 }
@@ -1372,17 +1725,55 @@ function createStateViewForModule(module) {
     const stateView = new StateView(scope);
     return stateView
         .select((0, pickProps_1.pickProps)(module)) // expose the module props
-        .select((0, pickStateViews_1.pickStateViews)(module)) // expose children stateViews
-        .select((0, pickLoadingState_1.pickLoadingState)(module)) // expose the module loading state
-        .select((0, pickState_1.pickState)(module)) // expose the reactive state
-        .select((0, pickControllers_1.pickControllers)(module)); // expose controllers
+        .select((0, pickInjectors_1.pickInjectors)(module)); // expose injectors
 }
 exports.createStateViewForModule = createStateViewForModule;
+// export type MergeViews<
+//   TView1 extends StateView<any>,
+//   TView2 extends StateView<any>
+//   > = StateView<GetProps<TView1> & GetProps<TView2>>
+//
+// export type MergeModuleWithView<
+//   TView1 extends StateView<any>,
+//   TModule
+//   > = StateView<GetProps<TView1> & GetModuleStateView<TModule> >
 class ComponentView {
-    constructor(stateView, id, forceUpdate) {
+    constructor(store, stateView, id, forceUpdate) {
+        this.store = store;
         this.stateView = stateView;
         this.id = id;
         this.forceUpdate = forceUpdate;
+        this.isDestroyed = false;
+        this.isMounted = false;
+        this.isInvalidated = false;
+        this.lastSnapshot = {
+            affectedModules: {},
+            props: null,
+        };
+    }
+    makeSnapshot() {
+        const snapshot = {
+            affectedModules: {},
+            props: null,
+        };
+        snapshot.affectedModules = this.store.listenAffectedModules(() => {
+            snapshot.props = this.stateView.getSnapshot();
+        });
+        this.lastSnapshot = snapshot;
+        return snapshot;
+    }
+    needUpdate() {
+        return this.isInvalidated && this.isMounted && !this.isDestroyed;
+    }
+    mount() {
+        this.isMounted = true;
+    }
+    setInvalidated(invalidated) {
+        this.isInvalidated = invalidated;
+    }
+    destroy() {
+        this.isDestroyed = true;
+        this.isMounted = false;
     }
 }
 exports.ComponentView = ComponentView;
@@ -1402,7 +1793,9 @@ exports.defaultStateConfig = exports.ModuleStateController = exports.Store = voi
 const immer_1 = __importDefault(__webpack_require__(172));
 const nanoevents_1 = __webpack_require__(111);
 const scope_1 = __webpack_require__(527);
+const traverse_1 = __webpack_require__(222);
 const parse_config_1 = __webpack_require__(890);
+const StateView_1 = __webpack_require__(32);
 /**
  * All React related code should be handled in ReactAdapter
  * Framework agnostic store
@@ -1417,24 +1810,28 @@ class Store {
         this.moduleRevisions = {};
         // TODO : move to hooks?
         this.currentScope = {};
-        this.isRecordingAccessors = false;
+        this.recordingAccessors = 0;
         this.affectedModules = {};
         this.currentContext = {};
         this.events = (0, nanoevents_1.createNanoEvents)();
     }
-    createState(stateName, configCreator) {
-        if (this.modulesMetadata[stateName]) {
-            throw new Error(`State with a name "${stateName}" is already created`);
+    createState(moduleName, sectionName, configCreator) {
+        if (this.modulesMetadata[moduleName] && this.modulesMetadata[sectionName]) {
+            throw new Error(`State with a name "${moduleName}" is already created`);
         }
         const config = (0, parse_config_1.parseStateConfig)(configCreator);
-        console.log('REGISTER STORE', stateName);
-        const controller = new ModuleStateController(this, stateName, config);
+        console.log('REGISTER STORE', moduleName, sectionName);
+        const controller = new ModuleStateController(this, moduleName, sectionName, config);
         return controller;
     }
     dispatchMutation(mutation) {
         console.log('RUN MUTATION', mutation);
-        const stateName = mutation.stateName;
-        const stateController = this.modulesMetadata[stateName].controller;
+        const moduleName = mutation.moduleName;
+        const sectionName = mutation.sectionName;
+        const metadata = this.modulesMetadata[moduleName];
+        if (!metadata)
+            return; // state is destroyed
+        const stateController = this.modulesMetadata[moduleName][sectionName].controller;
         if (this.currentMutation) {
             throw new Error('Can not run mutation while previous mutation is not completed');
         }
@@ -1442,10 +1839,8 @@ class Store {
         stateController.applyMutation(mutation);
         this.currentMutation = null;
         // trigger subscribed components to re-render
-        this.events.emit('onMutation', mutation, this);
-    }
-    getMetadata(stateName) {
-        return this.modulesMetadata[stateName];
+        if (!mutation.silent)
+            this.events.emit('onMutation', mutation, this);
     }
     toJSON() {
         // TODO use for debugging
@@ -1456,15 +1851,18 @@ class Store {
     resetModuleScope(moduleName) {
         delete this.currentScope[moduleName];
     }
-    destroyState(stateName) {
-        delete this.rootState[stateName];
+    destroyModule(moduleName) {
+        delete this.rootState[moduleName];
+        delete this.modulesMetadata[moduleName];
     }
     listenAffectedModules(cb) {
-        this.isRecordingAccessors = true;
+        this.recordingAccessors++;
         cb();
         const result = this.affectedModules;
-        this.isRecordingAccessors = false;
-        this.affectedModules = {};
+        this.recordingAccessors--;
+        if (!this.recordingAccessors) {
+            this.affectedModules = {};
+        }
         return result;
     }
     setModuleContext(moduleName, scope) {
@@ -1473,16 +1871,26 @@ class Store {
     resetModuleContext(moduleName) {
         delete this.currentContext[moduleName];
     }
+    getMetadata(moduleName, sectionName) {
+        return this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName][sectionName];
+    }
+    getController(moduleName, sectionName) {
+        var _a;
+        return (_a = this.getMetadata(moduleName, sectionName)) === null || _a === void 0 ? void 0 : _a.controller;
+    }
 }
 exports.Store = Store;
 class ModuleStateController {
-    constructor(store, stateName, config) {
+    constructor(store, moduleName, sectionName, config) {
         this.store = store;
-        this.stateName = stateName;
+        this.moduleName = moduleName;
+        this.sectionName = sectionName;
         this.draftState = null;
         const defaultState = config.state;
         // use immer to create an immutable state
-        store.rootState[stateName] = (0, immer_1.default)(defaultState, () => { });
+        if (!store.rootState[moduleName])
+            store.rootState[moduleName] = {};
+        store.rootState[moduleName][sectionName] = (0, immer_1.default)(defaultState, () => { });
         // create metadata
         const controller = this;
         const metadata = {
@@ -1490,7 +1898,9 @@ class ModuleStateController {
             controller,
             rev: 0,
         };
-        store.modulesMetadata[stateName] = metadata;
+        if (!store.modulesMetadata[moduleName])
+            store.modulesMetadata[moduleName] = {};
+        store.modulesMetadata[moduleName][sectionName] = metadata;
         // generate getters
         Object.keys(defaultState).forEach(propName => {
             (0, scope_1.defineGetter)(controller, propName, () => controller.state[propName]);
@@ -1518,43 +1928,46 @@ class ModuleStateController {
         Object.keys(config.mutations).forEach(propName => {
             this.registerMutation(propName, config.mutations[propName]);
         });
-        // define bulk state mutation
-        const bulkMutationName = 'bulkUpdateState';
-        config.mutations[bulkMutationName] = (statePatch) => Object.assign(controller, statePatch);
-        controller.registerMutation('bulkUpdateState', config.mutations[bulkMutationName]);
+        // define bulk non-reactive state mutation
+        const nonReactiveUpdate = 'nonReactiveUpdate';
+        config.mutations[nonReactiveUpdate] = (statePatch) => Object.assign(controller, statePatch);
+        controller.registerMutation('nonReactiveUpdate', config.mutations[nonReactiveUpdate], true);
     }
-    registerMutation(mutationName, mutationMethod) {
+    registerMutation(mutationName, mutationMethod, silent = false) {
         const controller = this;
-        const { store, stateName } = controller;
+        const { store, moduleName, sectionName } = controller;
         // override the original Module method to dispatch mutations
         controller[mutationName] = function (...args) {
             // if this method was called from another mutation
             // we don't need to dispatch a new mutation again
             // just call the original method
             if (store.currentMutation) {
-                if (store.currentMutation.stateName !== stateName) {
+                if (store.currentMutation.moduleName !== moduleName) {
                     const parentMutation = store.currentMutation;
-                    const parentMutationName = `${parentMutation.stateName}_${parentMutation.mutationName}`;
-                    const childMutationName = `${stateName}_${mutationName}`;
+                    const parentMutationName = `${parentMutation.moduleName}_${parentMutation.mutationName}`;
+                    const childMutationName = `${moduleName}_${mutationName}`;
                     // TODO should we really prevent that?
-                    throw new Error(`Can not run a mutation of another module. Call ${parentMutationName} from ${childMutationName}`);
+                    console.warn(`Can not run a mutation of another module. Call ${parentMutationName} from ${childMutationName}`);
                 }
                 return mutationMethod.apply(controller, args);
             }
             const mutation = {
                 id: Number((0, scope_1.generateId)()),
                 payload: args,
-                stateName,
+                moduleName,
+                sectionName,
                 mutationName,
+                silent,
             };
             store.dispatchMutation(mutation);
         };
     }
     applyMutation(mutation) {
-        const stateName = mutation.stateName;
+        const moduleName = mutation.moduleName;
+        const sectionName = mutation.sectionName;
         const mutationName = mutation.mutationName;
-        const state = this.store.rootState[stateName];
-        this.store.rootState[stateName] = (0, immer_1.default)(state, (draft) => {
+        const state = this.store.rootState[moduleName][sectionName];
+        this.store.rootState[moduleName][sectionName] = (0, immer_1.default)(state, (draft) => {
             this.draftState = draft;
             const controller = this;
             controller.metadata.config.mutations[mutationName].apply(controller, mutation.payload);
@@ -1566,11 +1979,12 @@ class ModuleStateController {
         if (this.draftState)
             return this.draftState;
         const store = this.store;
-        const stateName = this.stateName;
-        if (store.isRecordingAccessors) {
-            store.affectedModules[stateName] = this.metadata.rev;
+        const moduleName = this.moduleName;
+        const sectionName = this.sectionName;
+        if (store.recordingAccessors) {
+            store.affectedModules[moduleName + '__' + sectionName] = this.metadata.rev;
         }
-        return store.rootState[stateName];
+        return store.rootState[moduleName][sectionName];
     }
     // TODO remove
     set state(val) {
@@ -1578,7 +1992,56 @@ class ModuleStateController {
         throw new Error('Trying to set state');
     }
     get metadata() {
-        return this.store.modulesMetadata[this.stateName];
+        return this.store.modulesMetadata[this.moduleName][this.sectionName];
+    }
+    createView() {
+        const metadata = this.metadata;
+        const config = metadata.config;
+        const view = new StateView_1.StateView();
+        const controller = this;
+        view.defineProp({
+            type: 'StateRev',
+            name: 'getRev',
+            reactive: false,
+            getValue: () => {
+                // eslint-disable-next-line no-unused-expressions
+                controller.state; // read as reactive
+                return metadata.rev;
+            },
+        });
+        (0, traverse_1.traverse)(config.state, stateKey => {
+            view.defineProp({
+                type: 'StateProp',
+                name: stateKey,
+                reactive: true,
+                getValue: () => controller[stateKey],
+            });
+        });
+        (0, traverse_1.traverse)(config.mutations, stateKey => {
+            view.defineProp({
+                type: 'StateMutation',
+                name: stateKey,
+                reactive: false,
+                getValue: () => controller[stateKey],
+            });
+        });
+        (0, traverse_1.traverse)(config.getters, (propName) => {
+            view.defineProp({
+                type: 'StateGetter',
+                name: propName,
+                reactive: true,
+                getValue: () => controller[propName],
+            });
+        });
+        (0, traverse_1.traverse)(config.getterMethods, (propName) => {
+            view.defineProp({
+                type: 'StateGetterMethod',
+                name: propName,
+                reactive: false,
+                getValue: () => controller[propName],
+            });
+        });
+        return view;
     }
 }
 exports.ModuleStateController = ModuleStateController;
@@ -1602,21 +2065,44 @@ exports.defaultStateConfig = {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createFormBinding = void 0;
+exports.injectForm = exports.FormInjectorType = void 0;
 const StateView_1 = __webpack_require__(32);
+const scope_1 = __webpack_require__(527);
 function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     const stateView = new StateView_1.StateView();
+    stateView.defineProp({
+        type: 'FormStateRev',
+        name: 'getRev',
+        getValue: () => (stateGetter()),
+    });
     stateView.defineWildcardProp(propName => {
         stateView.defineProp({
-            type: 'InputBinding',
+            type: 'FormInputBinding',
             name: propName,
             reactive: true,
-            getValue: () => (Object.assign({ name: propName, value: stateGetter()[propName], onChange: (newVal) => stateSetter({ [propName]: newVal }) }, (extraPropsGenerator ? extraPropsGenerator(propName) : {}))),
+            getValue: () => (Object.assign({ name: propName, value: stateGetter()[propName], onChange: (newVal) => {
+                    stateSetter({ [propName]: newVal });
+                } }, (extraPropsGenerator ? extraPropsGenerator(propName) : {})))
         });
     });
     return stateView;
 }
-exports.createFormBinding = createFormBinding;
+exports.FormInjectorType = Symbol('formInjector');
+function injectForm(stateGetter, stateSetter, extraPropsGenerator) {
+    return (0, scope_1.createInjector)(injector => {
+        const binding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
+        return {
+            type: exports.FormInjectorType,
+            getValue() {
+                return binding;
+            },
+            getViewValue() {
+                return binding;
+            }
+        };
+    });
+}
+exports.injectForm = injectForm;
 
 
 /***/ }),
@@ -1640,6 +2126,7 @@ __exportStar(__webpack_require__(607), exports);
 __exportStar(__webpack_require__(32), exports);
 __exportStar(__webpack_require__(307), exports);
 __exportStar(__webpack_require__(938), exports);
+__exportStar(__webpack_require__(989), exports);
 
 
 /***/ }),
@@ -1651,34 +2138,52 @@ __exportStar(__webpack_require__(938), exports);
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.injectState = exports.StateInjectorType = void 0;
 const injector_1 = __webpack_require__(869);
-const pickLoadingState_1 = __webpack_require__(209);
 const Store_1 = __webpack_require__(607);
 exports.StateInjectorType = Symbol('stateInjector');
-function injectState(configCreator) {
+function injectState(configCreator, onCreate) {
     return (0, injector_1.createInjector)(injector => {
-        function createState() {
-            return createStateForModule(injector.provider, configCreator);
-        }
+        const store = injector.provider.scope.resolve(Store_1.Store);
         let state = null;
+        let stateView = null;
+        function createState(propName) {
+            const moduleName = injector.provider.instanceId;
+            const moduleState = store.createState(moduleName, propName, configCreator);
+            return moduleState;
+        }
         return {
             type: exports.StateInjectorType,
             load: () => {
-                state = createState();
+                state = createState(injector.propertyName);
+                stateView = state.createView();
+                onCreate && onCreate(state, injector);
             },
             getValue() {
                 return state;
+            },
+            getViewValue() {
+                return stateView;
+            },
+            destroy(injector) {
+                const moduleName = injector.provider.instanceId;
+                store.destroyModule(moduleName);
             },
         };
     });
 }
 exports.injectState = injectState;
-function createStateForModule(provider, stateConfig) {
-    const stateName = provider.instanceId;
-    const store = provider.scope.resolve(Store_1.Store);
-    const moduleState = store.createState(stateName, stateConfig);
-    (0, pickLoadingState_1.createLoadingState)(store, provider);
-    return moduleState;
-}
+// function createStateForModule<TConfigCreator extends TStateConfigCreator>(provider: Provider<any>, propName: string, stateConfig: TConfigCreator): TStateControllerFor<TConfigCreator> {
+//   const moduleName = provider.instanceId;
+//   const store = provider.scope.resolve(Store);
+//   const moduleState = store.createState(moduleName, propName, stateConfig);
+//   createLoadingState(store, provider);
+//   return moduleState;
+// }
+//
+// function destroyStateForModule(provider: Provider<any>) {
+//   const moduleName = provider.instanceId;
+//   const store = provider.scope.resolve(Store);
+//   store.destroyModule(moduleName);
+// }
 
 
 /***/ }),
@@ -1689,13 +2194,22 @@ function createStateForModule(provider, stateConfig) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseStateConfig = void 0;
-const is_plain_object_1 = __webpack_require__(57);
+const scope_1 = __webpack_require__(527);
 const utils_1 = __webpack_require__(225);
 /**
  * Generate a unified state config from a configCreator object
  */
 function parseStateConfig(configCreator) {
-    const configDraft = (0, is_plain_object_1.isPlainObject)(configCreator) ? configCreator : new configCreator();
+    let configDraft;
+    if ((0, scope_1.isClass)(configCreator)) {
+        configDraft = new configCreator();
+    }
+    else if (typeof configCreator === 'function') {
+        configDraft = configCreator();
+    }
+    else {
+        configDraft = configCreator;
+    }
     const config = {
         state: {},
         getters: {},
@@ -1773,95 +2287,78 @@ function parseDefaultState(target) {
 
 /***/ }),
 
-/***/ 351:
+/***/ 187:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickControllers = void 0;
-const traverse_1 = __webpack_require__(222);
-function pickControllers(module) {
+exports.pickInjectors = void 0;
+const scope_1 = __webpack_require__(527);
+function pickInjectors(module) {
     return function (props, view) {
-        (0, traverse_1.traverse)(module, (propName, descr) => {
-            if (!propName.endsWith('Controller'))
+        const provider = (0, scope_1.getInstanceMetadata)(module).provider;
+        let newView = view;
+        (0, scope_1.forEach)(provider.injectors, injector => {
+            if (!injector.hasViewValue())
                 return;
-            const shortName = propName.split('Controller')[0];
-            view.defineProp({
-                type: 'Controller',
-                name: shortName,
-                getValue: () => module[propName],
-            });
-        });
-        return view;
-    };
-}
-exports.pickControllers = pickControllers;
-
-
-/***/ }),
-
-/***/ 209:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getLoadingStateName = exports.createLoadingState = exports.LoadingState = exports.pickLoadingState = void 0;
-const provider_1 = __webpack_require__(370);
-const traverse_1 = __webpack_require__(222);
-const Store_1 = __webpack_require__(607);
-function pickLoadingState(module) {
-    return function (props, view) {
-        var _a;
-        const provider = (0, provider_1.getInstanceMetadata)(module).provider;
-        const stateName = getLoadingStateName(provider.instanceId);
-        const store = provider.scope.resolve(Store_1.Store);
-        const stateController = (_a = store.getMetadata(stateName)) === null || _a === void 0 ? void 0 : _a.controller;
-        if (!stateController)
-            return view; // module is not stateful
-        (0, traverse_1.getKeys)(stateController)
-            .forEach(propName => {
-            view.defineProp({
-                type: 'LoadingState',
-                name: propName,
+            const injectorView = injector.resolveViewValue();
+            newView = newView.mergeView(injectorView);
+            newView.defineProp({
+                type: 'InjectorView',
+                name: injector.propertyName,
                 reactive: true,
-                getValue: () => stateController[propName],
+                stateView: injectorView,
+                getValue() {
+                    return injectorView;
+                },
             });
         });
-        return view;
+        return newView;
     };
 }
-exports.pickLoadingState = pickLoadingState;
-class LoadingState {
-    constructor() {
-        this.loadingStatus = 'not-started';
-    }
-    get isLoading() {
-        return this.loadingStatus === 'loading';
-    }
-    get isLoaded() {
-        return this.loadingStatus === 'done';
-    }
-}
-exports.LoadingState = LoadingState;
-function createLoadingState(store, moduleProvider) {
-    const stateName = getLoadingStateName(moduleProvider.instanceId);
-    const loadingState = store.createState(stateName, LoadingState);
-    moduleProvider.events.on('onModuleInit', () => {
-        if (!moduleProvider.isAsync) {
-            loadingState.setLoadingStatus('done');
-            return;
-        }
-        loadingState.setLoadingStatus('loading');
-        moduleProvider.waitForLoad.then(() => {
-            loadingState.setLoadingStatus('done');
-        });
-    });
-}
-exports.createLoadingState = createLoadingState;
-function getLoadingStateName(moduleStateName) {
-    return moduleStateName + '__loading_state';
-}
-exports.getLoadingStateName = getLoadingStateName;
+exports.pickInjectors = pickInjectors;
+// type TSuperUser = {
+//   id: string,
+//   name: string,
+// }
+//
+// const usersModule = new UsersModule();
+//
+//
+// const userBase = {
+//
+//   loading: injectLoading(),
+//
+//   state: injectState({
+//     users: [] as TSuperUser[],
+//   }),
+// }
+//
+// const userExtention = {
+//
+//   extendedFoo: 1,
+//
+//   state: injectState({
+//     selectedUserId: 'user2',
+//   }),
+// }
+// type BaseUser = GetAllInjectedProps<typeof userBase> & typeof userBase;
+// type ExtendedUser = GetAllInjectedProps<typeof userExtention> & typeof userExtention
+// const baseUser: BaseUser;
+// baseUser.users;
+// baseUser.state;
+// baseUser.loading
+//
+// const extendedUser: ExtendedUser;
+// extendedUser.selectedUserId;
+// extendedUser.state;
+//
+//
+// const mergedUser: Omit<BaseUser, keyof ExtendedUser> & ExtendedUser;
+//
+// mergedUser.users
+// mergedUser.selectedUserId
+// mergedUser.state
 
 
 /***/ }),
@@ -1890,94 +2387,6 @@ function pickProps(module) {
     };
 }
 exports.pickProps = pickProps;
-
-
-/***/ }),
-
-/***/ 948:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickState = void 0;
-const traverse_1 = __webpack_require__(222);
-const Store_1 = __webpack_require__(607);
-function pickState(module) {
-    return function (props, view) {
-        const stateController = module.state; // TODO allow picking multiple states?
-        if (!(stateController instanceof Store_1.ModuleStateController))
-            return view;
-        const config = stateController.metadata.config;
-        const controller = stateController;
-        (0, traverse_1.traverse)(config.state, stateKey => {
-            view.defineProp({
-                type: 'StateProp',
-                name: stateKey,
-                reactive: true,
-                getValue: () => controller[stateKey],
-            });
-        });
-        (0, traverse_1.traverse)(config.mutations, stateKey => {
-            view.defineProp({
-                type: 'StateMutation',
-                name: stateKey,
-                reactive: false,
-                getValue: () => controller[stateKey],
-            });
-        });
-        (0, traverse_1.traverse)(config.getters, (propName) => {
-            view.defineProp({
-                type: 'StateGetter',
-                name: propName,
-                reactive: true,
-                getValue: () => controller[propName],
-            });
-        });
-        (0, traverse_1.traverse)(config.getterMethods, (propName) => {
-            view.defineProp({
-                type: 'StateGetterMethod',
-                name: propName,
-                reactive: true,
-                getValue: () => controller[propName],
-            });
-        });
-        return view;
-    };
-}
-exports.pickState = pickState;
-
-
-/***/ }),
-
-/***/ 223:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickStateViews = void 0;
-const StateView_1 = __webpack_require__(32);
-const traverse_1 = __webpack_require__(222);
-function pickStateViews(module) {
-    return function (props, view) {
-        const anyModule = module;
-        (0, traverse_1.traverse)(module, (propName, descriptor) => {
-            if (descriptor.get)
-                return;
-            const stateView = anyModule[propName];
-            if (!(anyModule[propName] instanceof StateView_1.StateView))
-                return;
-            view.defineProp({
-                type: 'StateView',
-                name: propName,
-                reactive: true,
-                stateView,
-                getValue: () => stateView.proxy,
-            });
-        });
-        return view;
-    };
-}
-exports.pickStateViews = pickStateViews;
 
 
 /***/ }),
@@ -2179,13 +2588,16 @@ let createNanoEvents = () => ({
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
+/******/ 			id: moduleId,
+/******/ 			loaded: false,
 /******/ 			exports: {}
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
 /******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Flag the module as loaded
+/******/ 		module.loaded = true;
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -2217,6 +2629,15 @@ let createNanoEvents = () => ({
 /******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 /******/ 			}
 /******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/node module decorator */
+/******/ 	(() => {
+/******/ 		__webpack_require__.nmd = (module) => {
+/******/ 			module.paths = [];
+/******/ 			if (!module.children) module.children = [];
+/******/ 			return module;
 /******/ 		};
 /******/ 	})();
 /******/ 	

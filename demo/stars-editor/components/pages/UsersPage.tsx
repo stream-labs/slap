@@ -1,8 +1,9 @@
 import React from 'react';
-import { useModule, injectState, TModuleInstanceFor } from '../../../../lib';
+import { useModule, injectState, TModuleInstanceFor, inject } from '../../../../lib';
 import { generateId } from '../../../../lib/scope';
 import { injectQuery } from '../../../../lib/store/Query';
 import { injectLoading } from '../../../../lib/store/plugins/pickLoadingState';
+import { EditorService } from '../../services/editor.service';
 
 export type TUser = {
   id: string;
@@ -47,6 +48,7 @@ async function fetchOnlineUsers() {
 
 export class UsersModule {
 
+  editor = inject(EditorService);
   state = injectState(UsersState);
   loading = injectLoading();
 
