@@ -1,0 +1,9 @@
+export declare type TFormBindings<TState, TExtraProps = {}> = {
+    [K in keyof TState]: {
+        name: K;
+        value: TState[K];
+        onChange: (newVal: TState[K]) => unknown;
+    };
+} & TExtraProps;
+export declare const FormInjectorType: unique symbol;
+export declare function injectForm<TState, TExtraProps = {}>(stateGetter: () => TState, stateSetter: (statePatch: Partial<TState>) => unknown, extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps): TFormBindings<TState, TExtraProps>;
