@@ -72,11 +72,11 @@ function Card(props: {id: string}) {
   } = useModule(CardsModule).extend(cards => ({
 
     get card() {
-      return cards.cards[props.id];
+      return cards.state.cards[props.id];
     },
 
     get isSelected() {
-      return cards.selectedCardId === props.id;
+      return cards.state.selectedCardId === props.id;
     },
 
   }));

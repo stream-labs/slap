@@ -57,10 +57,13 @@ export class Store {
 
     this.currentMutation = mutation;
     stateController.applyMutation(mutation);
+    this.events.emit('onMutation', mutation);
     this.currentMutation = null;
 
-    // trigger subscribed components to re-render
-    if (!mutation.silent) this.events.emit('onMutation', mutation, this);
+    if (!mutation.silent) {
+      // trigger subscribed components to re-render
+      if (!mutation.silent) this.events.emit('onAfterMutations');
+    }
   }
 
   toJSON() {
@@ -120,8 +123,8 @@ export class Store {
 }
 
 export interface StoreEvents {
-  onMutation: (mutation: Mutation, store: Store) => void
-  onAfterMutations: (store: Store) => void
+  onMutation: (mutation: Mutation) => void
+  onAfterMutations: () => void
 }
 
 export class ModuleStateController {
@@ -233,6 +236,7 @@ export class ModuleStateController {
     });
 
     this.metadata.rev++;
+    console.log('New revision', this.metadata.rev);
     this.draftState = null;
   }
 
@@ -269,7 +273,7 @@ export class ModuleStateController {
     view.defineProp({
       type: 'StateRev',
       name: 'getRev',
-      reactive: false,
+      reactive: true,
       getValue: () => {
         // eslint-disable-next-line no-unused-expressions
         controller.state; // read as reactive

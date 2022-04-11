@@ -3,17 +3,21 @@ import { isPlainObject } from 'is-plain-object';
 import { Scope } from './scope';
 import { defineGetter, Dict, generateId, isClass } from './utils';
 import { Injector } from './injector';
-import { TLoadingStatus } from './interfaces';
+import {
+  TLoadingStatus,
+  TModuleCreator,
+  TModuleInstanceFor,
+  TModuleLocatorType, TProviderFor
+} from './interfaces';
 
 export class Provider<TInstance, TInitParams extends [] = []> {
   id: string;
   instance: TInstance | null = null;
   metadata: Dict<any> = {};
   injectors: Dict<Injector<unknown, unknown>> = {}; // dict of injectors by id
-  injectorsByProp: Dict<Injector<unknown, unknown>> = {}; // dict of injectors by propName
   factory: (args: TInitParams) => TInstance;
 
-  isInited = false; // instance is added to Scope
+  isInited = false; // true if instance is added to the Scope
   // private resolveInit!: Function;
   // waitForInit = new Promise(resolve => { this.resolveInit = resolve });
 
@@ -26,6 +30,8 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   waitForLoad = new Promise(resolve => { this.resolveLoad = resolve; });
 
   initParams?: TInitParams; // TODO
+
+  childScope: Scope | null = null;
 
   constructor(
     public scope: Scope,
@@ -102,7 +108,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
       if (!(propValue instanceof Injector)) return;
       const injector = propValue as Injector<unknown, unknown>;
       provider.injectors[injector.id] = injector;
-      provider.injectorsByProp[propName] = injector;
       injector.setPropertyName(propName);
     });
 
@@ -125,10 +130,16 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   setMetadata(pluginName: string, data: any) {
     this.metadata[pluginName] = data;
+    return data;
   }
 
+  // destroy provider
   destroy() {
-    // destroy provider
+
+    if (this.childScope) {
+      this.childScope.dispose();
+    }
+    this.destroyInstance();
     // unsubscribe events
     this.events.events = {};
   }
@@ -208,6 +219,19 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     return getInstanceMetadata(this.instance).id;
   }
 
+  resolveChildScope() {
+    if (!this.childScope) this.childScope = this.scope.createChildScope();
+    return this.childScope;
+  }
+
+  resolveChildProvider<T extends TModuleCreator>(ModuleCreator: T, name: string): TProviderFor<T> {
+    const childScope = this.resolveChildScope();
+    if (!childScope.isRegistered(name)) {
+      childScope.register(ModuleCreator, name);
+    }
+    return childScope.resolveProvider(name) as TProviderFor<T>;
+  }
+
   events = createNanoEvents<ProviderEvents>();
 }
 
@@ -244,4 +268,5 @@ export interface ProviderEvents {
 
 export type ProviderOptions = {
   shouldCallHooks: boolean;
+  parentProvider: Provider<any>;
 }

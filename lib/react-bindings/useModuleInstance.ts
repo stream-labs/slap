@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { useOnCreate, useOnDestroy } from './hooks';
 import { useAppContext } from './ReactModules';
 import { Store } from '../store/Store';
-import { Scope, TModuleInstanceFor, TModuleLocatorType } from '../scope';
+import { getInstanceMetadata, Scope, TModuleInstanceFor, TModuleLocatorType } from '../scope';
+import { createStateViewForModule } from '../store';
 
 export function useModuleInstance<T extends TModuleLocatorType, TInitProps extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps: TInitProps|null = null, name = ''): TModuleInstanceFor<T> {
   const rootScope = useAppContext().modulesScope;
@@ -53,6 +54,7 @@ export function useModuleInstance<T extends TModuleLocatorType, TInitProps exten
 
   // unregister the component from the module onDestroy
   useOnDestroy(() => {
+    isRoot && store.resetModuleContext(moduleName);
     if (isRoot) scope.dispose();
   });
 

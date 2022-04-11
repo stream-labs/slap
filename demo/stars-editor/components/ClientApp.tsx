@@ -7,6 +7,8 @@ import { WindowService } from '../services/window.service';
 import { useModule } from '../../../lib';
 import { HighloadPage } from './pages/HighloadPage';
 import { UsersPage } from './pages/UsersPage';
+import { WatchersPage } from './pages/WatchersPage';
+import { QueriesPage } from './pages/QueriesPage';
 
 export function ClientApp() {
   const { isLoading, activePage } = useModule(WindowService);
@@ -22,6 +24,8 @@ export function ClientApp() {
       {activePage === 'about' && <AboutPage /> }
       {activePage === 'highload' && <HighloadPage /> }
       {activePage === 'users' && <UsersPage /> }
+      {activePage === 'watchers' && <WatchersPage /> }
+      {activePage === 'queries' && <QueriesPage /> }
     </Layout>
   );
 }

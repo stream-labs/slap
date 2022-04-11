@@ -34,15 +34,15 @@ export class UsersState {
   }
 }
 
-async function fetchBannedUsers() {
+export async function fetchBannedUsers() {
   return new Promise<TUser[]>(r => {
-    setTimeout(() => r([{ id: 'banned1', name: 'Banned User 1' }, { id: 'banned2', name: 'Banned User 2' }]), 2000);
+    setTimeout(() => r([{ id: 'banned1', name: 'Banned User 1' }, { id: 'banned2', name: 'Banned User 2' }]), 3000);
   });
 }
 
-async function fetchOnlineUsers() {
+export async function fetchOnlineUsers() {
   return new Promise<TUser[]>(r => {
-    setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
+    setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 8000);
   });
 }
 

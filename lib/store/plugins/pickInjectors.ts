@@ -16,6 +16,8 @@ export function pickInjectors<
       if (!injector.hasViewValue()) return;
 
       const injectorView = injector.resolveViewValue() as StateView<any>;
+      if (!(injectorView instanceof StateView)) return;
+
       newView = newView.mergeView(injectorView);
       newView.defineProp({
         type: 'InjectorView',

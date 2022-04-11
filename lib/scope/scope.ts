@@ -54,13 +54,13 @@ export class Scope {
     Object.keys(dependencies).forEach(depName => this.register(dependencies[depName], depName));
   }
 
-  register<T extends TModuleCreator>(ModuleCreator: T, name?: string): TProviderFor<T> {
+  register<T extends TModuleCreator>(ModuleCreator: T, name?: string, options?: Partial<ProviderOptions>): TProviderFor<T> {
     const moduleName = name || ModuleCreator.name || `AnonymousModule_${generateId()}`;
     if (this.providers[moduleName]) {
       throw new Error(`${moduleName} already registered in the given Scope`);
     }
 
-    const provider = new Provider(this, ModuleCreator, moduleName);
+    const provider = new Provider(this, ModuleCreator, moduleName, options);
     this.providers[moduleName] = provider;
 
     this.events.emit('onModuleRegister', provider);
@@ -100,7 +100,8 @@ export class Scope {
   }
 
   unregister<T extends TModuleLocatorType>(locator: T) {
-    const provider = this.resolveProvider(locator);
+    const provider = this.getProvider(locator);
+    if (!provider) return;
     provider.destroyInstance();
     delete this.providers[provider.id];
   }
@@ -213,6 +214,7 @@ export class Scope {
     // destroy providers
     Object.keys(this.providers).forEach(providerName => {
       this.providers[providerName].destroy();
+      delete this.providers[providerName];
     });
 
     // unsubscribe events

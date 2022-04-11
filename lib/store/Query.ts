@@ -1,16 +1,22 @@
 import { Simulate } from 'react-dom/test-utils';
-import { createInjector, InjectedProp } from '../scope';
+import { createInjector, generateId, InjectedProp } from '../scope';
 import { Store, TStateControllerFor, TStateViewForStateConfig } from './Store';
 import error = Simulate.error;
 import { StateView } from './StateView';
 import { TUser } from '../../demo/stars-editor/components/pages/UsersPage';
+import { injectState } from './injectState';
+import { injectWatch } from './inject-watch';
+import { injectChild } from './inject-child';
 
-export class QueryStateConfig<TData, TError> {
+export class QueryStateConfig<TData, TParams, TError> {
 
-  state: QueryState<TData, TError> = {
+  // constructor(public state: QueryState<TData, TParams, TError>) {}
+
+  state: QueryState<TData, TParams, TError> = {
     status: 'idle' as QueryStatus,
     data: null as unknown as TData,
     error: null as unknown as TError,
+    params: null as unknown as TParams,
   };
 
   setData(data: TData) {
@@ -28,16 +34,18 @@ export class QueryStateConfig<TData, TError> {
 /**
  * Alternative for https://react-query.tanstack.com/reference/useQuery
  */
-export class Query<TData, TParams, TError> {
+export class QueryModule<TData, TParams, TError> {
 
-  state: TStateControllerFor<QueryStateConfig<TData, TError>>;
+  state = injectState(QueryStateConfig);
+  watcher = injectWatch(this.getParams, this.refetch);
+
   fetchingPromise: Promise<TData> | null = null;
-  params: TParams;
+  promiseId = '';
   enabled = true;
   options: QueryOptions;
-  stateView: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TError>>>;
+  stateView!: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>>>;
 
-  constructor(public store: Store, public moduleName: string, propName: string, constructorOptions: QueryConstructorOptions) {
+  constructor(constructorOptions: QueryConstructorOptions) {
     const options = {
       enabled: true,
       params: null,
@@ -48,11 +56,17 @@ export class Query<TData, TParams, TError> {
 
     this.options = options;
     this.enabled = !!options.enabled;
-    this.params = options.getParams ? options.getParams() : {};
-    const stateConfig = new QueryStateConfig<TData, TError>();
-    stateConfig.state.data = options.initialData;
-    this.state = this.store.createState(moduleName, propName, stateConfig);
-    this.stateView = this.state.createView() as any as StateView<TStateViewForStateConfig<QueryStateConfig<TData, TError>>>;
+  }
+
+
+  load() {
+    this.stateView = this.state.createView() as any;
+    const data = this.options.initialData;
+    this.state.nonReactiveUpdate({
+      params: this.getParams(),
+      data,
+    });
+    this.exec();
   }
 
   exec(): Promise<TData> {
@@ -63,28 +77,51 @@ export class Query<TData, TParams, TError> {
   fetch(): Promise<TData> {
     const fetchResult = this.options.fetch(this);
     if (fetchResult?.then) {
+      const promiseId = generateId();
+      this.promiseId = promiseId;
       this.fetchingPromise = fetchResult;
       return fetchResult.then((data: TData) => {
-        if (!this.enabled) return;
+        if (!this.enabled || this.promiseId !== promiseId) return;
         this.fetchingPromise = null;
+        this.promiseId = '';
         this.state.setData(data);
       })
         .catch((e: unknown) => {
-          if (!this.enabled) return;
+          if (!this.enabled || this.promiseId !== promiseId) return;
           this.fetchingPromise = null;
+          this.promiseId = '';
           this.state.setError(error as any);
         });
     }
     return Promise.resolve(fetchResult);
   }
 
+  refetch() {
+    if (!this.enabled) return;
+    this.stopFetching();
+    return this.fetch();
+  }
+
+  stopFetching() {
+    this.fetchingPromise = null;
+    this.promiseId = '';
+  }
+
   setEnabled(enabled: boolean) {
     this.enabled = enabled;
+  }
+
+  getParams() {
+    return this.options.getParams ? this.options.getParams() : null;
   }
 
   destroy() {
     // prevent unfinished fetching
     this.setEnabled(false);
+  }
+
+  getView() {
+    return this.stateView;
   }
 }
 
@@ -96,35 +133,8 @@ export const QueryInjectorType = Symbol('queryInjector');
 //   });
 // }
 
-export function injectQuery<
-  TOptions extends QueryConstructorOptions,
-  TQuery = Query<GetQueryDataType<TOptions>, unknown, unknown>,
-  TQueryView = StateView<TStateViewForStateConfig<QueryStateConfig<GetQueryDataType<TOptions>, unknown>>>,
-  >(options: TOptions): InjectedProp<TQuery, TQueryView> {
-  return createInjector(injector => {
-
-    let query!: Query<unknown, unknown, unknown>;
-
-    return {
-      type: QueryInjectorType,
-      load: () => {
-        const propName = injector.propertyName;
-        const moduleName = injector.provider.id;
-        const store = injector.provider.scope.resolve(Store);
-        query = new Query(store, moduleName, propName, options);
-        query.exec();
-      },
-      getValue() {
-        return query as any as TQuery;
-      },
-      getViewValue() {
-        return query.stateView as any as TQueryView;
-      },
-      destroy() {
-        query.destroy();
-      },
-    };
-  });
+export function injectQuery<TOptions extends QueryConstructorOptions>(options: TOptions) {
+  return injectChild(QueryModule as any as QueryModule<GetQueryDataType<TOptions>, any, any>, options);
 }
 
 export type QueryRequiredOptions = {
@@ -140,9 +150,10 @@ export type QueryOptionalOptions = {
 export type QueryOptions = QueryOptionalOptions & QueryRequiredOptions;
 export type QueryConstructorOptions = QueryRequiredOptions & Partial<QueryOptionalOptions>
 
-export type QueryState<TData, TError> = {
+export type QueryState<TData, TParams, TError> = {
   status: QueryStatus,
   data: TData,
+  params: TParams,
   error: TError,
 }
 

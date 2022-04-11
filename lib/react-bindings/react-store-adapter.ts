@@ -1,71 +1,38 @@
-// TODO move to react folder
-import { Dict, generateId } from '../scope';
+import { unstable_batchedUpdates } from 'react-dom';
+import { Dict } from '../scope';
 import { Store } from '../store/Store';
 import { inject } from '../scope/injector';
-import { unstable_batchedUpdates } from 'react-dom';
-import { ComponentView, StateView } from '../store';
-import { createNanoEvents } from 'nanoevents';
+import { StateView } from '../store';
 
 export class ReactStoreAdapter {
 
   store = inject(Store);
+  components = {} as Dict<ComponentView>;
 
-
-  // TODO remove components
-
-  components = {} as Dict<ComponentView<any>>;
-
-  registerComponent<TView extends StateView<TProps>>(store: Store, componentId: string, forceUpdate: Function): ComponentView<TView> {
-    const componentView = new ComponentView<TView>(store, this as any, componentId, forceUpdate);
+  registerComponent(moduleView: StateView, componentId: string, forceUpdate: Function): ComponentView {
+    const componentView = new ComponentView(this.store, moduleView, componentId, forceUpdate);
     this.components[componentId] = componentView;
     return componentView;
   }
 
   destroyComponent(componentId: string) {
-    if (this.scope?.isRegistered(componentId)) {
-      this.scope.unregister(componentId);
-    }
     const componentView = this.components[componentId];
     if (!componentView) return;
     componentView.setDestroyed();
-
     delete this.components[componentId];
   }
 
-
   load() {
-    this.store.events.on('onMutation', () => this.onMutation());
+    this.store.events.on('onAfterMutations', () => this.onMutation());
   }
 
   watchers = {} as Record<string, Function>;
 
   watchersOrder = [] as string[];
 
-  // invalidatedComponents: ComponentView<any>[] = [];
-
-  emitter = createNanoEvents();
-
-  components: Dict<ComponentView<any>> = {};
-  stateIsInvalidated = false;
-
-  // createComponent(component: ComponentView<any>) {
-  //   this.components[component.id] = component;
-  //
-  // }
-
-  //
-  // hasUnmountedComponents() {
-  //   const hasUnmountedComponents = Object.keys(this.components).find(id => {
-  //     const comp = this.components[id];
-  //     return !comp.isMounted && !comp.isDestroyed;
-  //   });
-  //   return hasUnmountedComponents;
-  // }
 
   // TODO: rename to mount-component ?
   createWatcher(watcherId: string, cb: Function) {
-
-    this.emitter.on('needRender', )
     this.watchersOrder.push(watcherId);
     this.watchers[watcherId] = cb;
     return watcherId;
@@ -79,15 +46,8 @@ export class ReactStoreAdapter {
 
   updateIsInProgress = false;
 
-
   onMutation() {
     this.updateUI();
-    // if (this.stateIsInvalidated) return;
-    // this.stateIsInvalidated = true;
-    //
-    // if (!this.hasUnmountedComponents()) {
-    //   this.updateUI();
-    // }
   }
 
   updateUI() {
@@ -109,18 +69,51 @@ export class ReactStoreAdapter {
       });
     });
 
-    // // collect invalidated components
-    // watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
-    //
-    // // force update components
-    // unstable_batchedUpdates(() => {
-    //
-    //   watchersIds.forEach(id => {
-    //     this.components[id].needUpdate() && this.components[id].forceUpdate()
-    //   });
-    // });
-
-    this.stateIsInvalidated = false;
     this.updateIsInProgress = false;
+  }
+}
+
+export class ComponentView {
+  public isDestroyed = false;
+  public isMounted = false;
+  public isInvalidated = false;
+
+  lastSnapshot = {
+    affectedModules: {} as Dict<number>,
+    props: null as unknown,
+  };
+
+  constructor(public store: Store, public stateView: StateView, public id: string, public forceUpdate: Function) {
+  }
+
+  makeSnapshot() {
+    const snapshot = {
+      affectedModules: {},
+      props: {},
+    };
+
+    snapshot.affectedModules = this.store.listenAffectedModules(() => {
+      snapshot.props = this.stateView.getSnapshot();
+    });
+
+    this.lastSnapshot = snapshot;
+    return snapshot;
+  }
+
+  needUpdate() {
+    return this.isInvalidated && this.isMounted && !this.isDestroyed;
+  }
+
+  setMounted() {
+    this.isMounted = true;
+  }
+
+  setInvalidated(invalidated: boolean) {
+    this.isInvalidated = invalidated;
+  }
+
+  setDestroyed() {
+    this.isDestroyed = true;
+    this.isMounted = false;
   }
 }

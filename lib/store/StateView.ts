@@ -156,7 +156,6 @@ export class StateView<TProps = {}> {
   clone() {
     const clone = new StateView<TProps>(this.scope);
     forEach(this.descriptors, descriptor => clone.defineProp(descriptor));
-    clone.components = this.components;
     return clone;
   }
 
@@ -180,7 +179,7 @@ export function createStateViewForModule<T>(module: T) {
     .select(pickInjectors(module)) as StateView<GetModuleView<T>>; // expose injectors
 }
 
-export type GetModuleView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
+export type GetModuleView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = TModule extends { getView: () => StateView<infer TView>} ? TView : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
 export type GetModuleStateView<TModuleConfig> = StateView<GetModuleView<TModuleConfig>>;
 
 // const userExtention = {
@@ -207,50 +206,6 @@ export type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & Get
 
 
 
-export class ComponentView<TStateView extends StateView<any>> {
-  public isDestroyed = false;
-  public isMounted = false;
-  public isInvalidated = false;
-
-  lastSnapshot = {
-    affectedModules: {} as Dict<number>,
-    props: null as unknown,
-  };
-
-  constructor(public store: Store, public stateView: TStateView, public id: string, public forceUpdate: Function) {
-  }
-
-  makeSnapshot() {
-    const snapshot = {
-      affectedModules: {},
-      props: null,
-    };
-
-    snapshot.affectedModules = this.store.listenAffectedModules(() => {
-      snapshot.props = this.stateView.getSnapshot();
-    });
-
-    this.lastSnapshot = snapshot;
-    return snapshot;
-  }
-
-  needUpdate() {
-    return this.isInvalidated && this.isMounted && !this.isDestroyed;
-  }
-
-  setMounted() {
-    this.isMounted = true;
-  }
-
-  setInvalidated(invalidated: boolean) {
-    this.isInvalidated = invalidated;
-  }
-
-  setDestroyed() {
-    this.isDestroyed = true;
-    this.isMounted = false;
-  }
-}
 
 export type TModulePropDescriptor<TValue> = {
   type: string,
