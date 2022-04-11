@@ -1,6 +1,5 @@
 import produce from 'immer';
 import { createNanoEvents } from 'nanoevents';
-import { isPlainObject } from 'is-plain-object';
 import {
   Scope,
   generateId,
@@ -8,8 +7,7 @@ import {
   defineGetter,
   capitalize,
   defineSetter,
-  PickFunctionPropertyNames,
-  PickFunctionProperties, TLoadingStatus,
+  PickFunctionProperties,
 } from '../scope';
 import { traverse } from '../utils/traverse';
 import { parseStateConfig } from './parse-config';
@@ -123,6 +121,7 @@ export class Store {
 
 export interface StoreEvents {
   onMutation: (mutation: Mutation, store: Store) => void
+  onAfterMutations: (store: Store) => void
 }
 
 export class ModuleStateController {
@@ -396,7 +395,7 @@ export type PickMethods<
 // draftConf
 // contr.state
 
-type GetHeuristicGetterName<TPropName> = TPropName extends string ? `${'get'|'is'|'should'|'will'}${Capitalize<TPropName>}` : never;
+export type GetHeuristicGetterName<TPropName> = TPropName extends string ? `${'get'|'is'|'should'|'will'}${Capitalize<TPropName>}` : never;
 
 export type PickHeuristicGetters<TDraftConfig> = {
   [K in keyof TDraftConfig as GetHeuristicGetterName<K>]: (value: TDraftConfig[K]) => unknown
@@ -416,7 +415,7 @@ export type TStateControllerFor<
 
 export type TStateViewForStateConfig<TConfigCreator> = Omit<TStateControllerFor<TConfigCreator>, 'state'>;
 
-type GetSetterName<TPropName> = TPropName extends string ? `set${Capitalize<TPropName>}` : never;
+export type GetSetterName<TPropName> = TPropName extends string ? `set${Capitalize<TPropName>}` : never;
 
 export type PickDefaultState<TDraftConfig> = TDraftConfig extends { state: infer TState } ? TState : WritablePart<TDraftConfig>;
 

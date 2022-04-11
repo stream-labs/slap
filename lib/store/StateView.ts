@@ -10,8 +10,9 @@ import { Store } from './Store';
 import {
   GetAllInjectedProps,
   GetInjectedProps,
-  pickInjectors
-} from './plugins/pickInjectors';
+  pickInjectors,
+} from './plugins';
+
 export class StateView<TProps = {}> {
 
   props: TProps = {} as TProps;
@@ -81,7 +82,6 @@ export class StateView<TProps = {}> {
   getSnapshot() {
     const selectedDescriptors = this.selectedDescriptors;
     const props = {} as TProps;
-
 
     forEach(selectedDescriptors, (descr, propName) => {
       let value: unknown;
@@ -170,27 +170,6 @@ export class StateView<TProps = {}> {
     return mergeResult as any as TResult;
   }
 
-  // TODO remove components
-
-  components = {} as Dict<ComponentView<any>>;
-
-  registerComponent<TView extends StateView<TProps>>(store: Store, componentId: string, forceUpdate: Function): ComponentView<TView> {
-    const componentView = new ComponentView<TView>(store, this as any, componentId, forceUpdate);
-    this.components[componentId] = componentView;
-    return componentView;
-  }
-
-  destroyComponent(componentId: string) {
-    if (this.scope?.isRegistered(componentId)) {
-      this.scope.unregister(componentId);
-    }
-    const componentView = this.components[componentId];
-    if (!componentView) return;
-    componentView.destroy();
-
-    delete this.components[componentId];
-  }
-
 }
 
 export function createStateViewForModule<T>(module: T) {
@@ -224,21 +203,9 @@ export type GetModuleStateView<TModuleConfig> = StateView<GetModuleView<TModuleC
 // extendedUser.props.selectedUserId;
 // extendedUser.props.loading;
 
-
-
 export type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetModuleView<TExtendedModule>>;
 
 
-
-// export type MergeViews<
-//   TView1 extends StateView<any>,
-//   TView2 extends StateView<any>
-//   > = StateView<GetProps<TView1> & GetProps<TView2>>
-//
-// export type MergeModuleWithView<
-//   TView1 extends StateView<any>,
-//   TModule
-//   > = StateView<GetProps<TView1> & GetModuleStateView<TModule> >
 
 export class ComponentView<TStateView extends StateView<any>> {
   public isDestroyed = false;
@@ -248,7 +215,7 @@ export class ComponentView<TStateView extends StateView<any>> {
   lastSnapshot = {
     affectedModules: {} as Dict<number>,
     props: null as unknown,
-  }
+  };
 
   constructor(public store: Store, public stateView: TStateView, public id: string, public forceUpdate: Function) {
   }
@@ -271,7 +238,7 @@ export class ComponentView<TStateView extends StateView<any>> {
     return this.isInvalidated && this.isMounted && !this.isDestroyed;
   }
 
-  mount() {
+  setMounted() {
     this.isMounted = true;
   }
 
@@ -279,75 +246,11 @@ export class ComponentView<TStateView extends StateView<any>> {
     this.isInvalidated = invalidated;
   }
 
-  destroy() {
+  setDestroyed() {
     this.isDestroyed = true;
     this.isMounted = false;
   }
 }
-
-// const editor = new EditorService();
-// const ev = createStateViewForModule(editor);
-// ev.props.getScene(1);
-// ev.props.setActiveSceneId()
-// ev.props.getScene(1);
-// ev.props.getSceneController(1);
-// ev.props.myRandomVal;
-// ev.props.bindActiveItem
-// //
-// const evprop: GetStateViewProps<EditorService>
-// evprop.bindActiveItem.props
-
-// //
-// const sv = new StateView();
-// const ed2 = sv.extend(pickState(editor));
-// const pickedStateFn = pickState(ed2);
-// const pickedState = pickedStateFn(sv.props, sv);
-// const edState: GetModuleState<EditorService>
-// edState.setActiveSceneId()
-//
-// const ev2 = useComponentView(ev);
-// ev2.isLoading
-// ev2.getScene('1')
-
-// const contProps: GetControllerProps<typeof ev.props>;
-// contProps.getScene(1);
-// const mergedProps: GetControllerProps<typeof ev.props> & GetProps<typeof ev>
-// mergedProps.getScene(1);
-// const module: GetModule<typeof ev>
-// const mergedView:  ModuleView<GetModule<typeof ev>, GetProps<typeof ev> & GetControllerProps<GetModule<typeof ev>>>;
-// mergedView.props.
-
-// const evCont = ev.extend(pickControllers);
-//
-// evCont.props.getScene()
-// evCont.props.setActiveSceneId
-// e
-// const ev2: PickState<ModuleView<TModuleInstanceFor<EditorService>, TModuleInstanceFor<EditorService>>> = null as any;
-//
-// const st: GetState<ModuleView<EditorService, EditorService>>;
-// const stProps: GetState<ModuleView<EditorService, EditorService>> & GetProps<ModuleView<EditorService, EditorService>>;
-// st.props
-// stProps.setActiveSceneId(1)
-// ev2.props.setActiveSceneId(1);
-// // /**
-//  * // Extend with a factory returning an object
-//  *
-//  * module.extend(module => {
-//  *   const foo = module.foo;
-//  *   const bar = 2;
-//  *   const foobar = foo + bar;
-//  *   return { foo, foobar };
-//  * })
-//  */
-// // extend<TNewProps>(newPropsFactory: (props: TProps) => TNewProps): MergeViews<ModuleView<TModule, TProps>, TDefaultViewFor<TNewProps>>;
-// /**
-//  * // extend with an object
-//  *
-//  * module.extend({
-//  *   foo: 1,
-//  *   bar: 2,
-//  * })
-//  */
 
 export type TModulePropDescriptor<TValue> = {
   type: string,

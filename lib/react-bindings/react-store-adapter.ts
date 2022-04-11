@@ -3,11 +3,35 @@ import { Dict, generateId } from '../scope';
 import { Store } from '../store/Store';
 import { inject } from '../scope/injector';
 import { unstable_batchedUpdates } from 'react-dom';
-import { ComponentView } from '../store';
+import { ComponentView, StateView } from '../store';
+import { createNanoEvents } from 'nanoevents';
 
 export class ReactStoreAdapter {
 
   store = inject(Store);
+
+
+  // TODO remove components
+
+  components = {} as Dict<ComponentView<any>>;
+
+  registerComponent<TView extends StateView<TProps>>(store: Store, componentId: string, forceUpdate: Function): ComponentView<TView> {
+    const componentView = new ComponentView<TView>(store, this as any, componentId, forceUpdate);
+    this.components[componentId] = componentView;
+    return componentView;
+  }
+
+  destroyComponent(componentId: string) {
+    if (this.scope?.isRegistered(componentId)) {
+      this.scope.unregister(componentId);
+    }
+    const componentView = this.components[componentId];
+    if (!componentView) return;
+    componentView.setDestroyed();
+
+    delete this.components[componentId];
+  }
+
 
   load() {
     this.store.events.on('onMutation', () => this.onMutation());
@@ -19,30 +43,29 @@ export class ReactStoreAdapter {
 
   // invalidatedComponents: ComponentView<any>[] = [];
 
+  emitter = createNanoEvents();
+
   components: Dict<ComponentView<any>> = {};
   stateIsInvalidated = false;
 
-  createComponent(component: ComponentView<any>) {
-    this.components[component.id] = component;
-  }
+  // createComponent(component: ComponentView<any>) {
+  //   this.components[component.id] = component;
+  //
+  // }
 
-  mountComponent(component: ComponentView<any>) {
-    component.mount();
-    // if (this.stateIsInvalidated && !this.hasUnmountedComponents()) {
-    //   this.updateUI();
-    // }
-  }
-
-  hasUnmountedComponents() {
-    const hasUnmountedComponents = Object.keys(this.components).find(id => {
-      const comp = this.components[id];
-      return !comp.isMounted && !comp.isDestroyed;
-    });
-    return hasUnmountedComponents;
-  }
+  //
+  // hasUnmountedComponents() {
+  //   const hasUnmountedComponents = Object.keys(this.components).find(id => {
+  //     const comp = this.components[id];
+  //     return !comp.isMounted && !comp.isDestroyed;
+  //   });
+  //   return hasUnmountedComponents;
+  // }
 
   // TODO: rename to mount-component ?
   createWatcher(watcherId: string, cb: Function) {
+
+    this.emitter.on('needRender', )
     this.watchersOrder.push(watcherId);
     this.watchers[watcherId] = cb;
     return watcherId;

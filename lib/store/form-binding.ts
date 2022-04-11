@@ -10,7 +10,7 @@ export type TFormBindings<TState, TExtraProps = {}> = {
   };
 } & TExtraProps
 
-function createFormBinding<TState, TExtraProps = {}>(
+export function createFormBinding<TState, TExtraProps = {}>(
   stateGetter: () => TState,
   stateSetter: (statePatch: Partial<TState>) => unknown,
   extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps,

@@ -22,16 +22,11 @@ export function useComponentView<TStateView extends StateView<any>>(moduleView: 
 
   const { componentId, componentView } = useOnCreate(() => {
 
+
+    const reactStore = scope.resolve(ReactStoreAdapter);
     const componentId = id || `${moduleId}__component__${generateId()}`;
     const componentView = moduleView.registerComponent(store, componentId, forceUpdate);
     const stateView = componentView.stateView;
-
-    // // check affected components
-    // function selector() {
-    //   if (!stateView.hasSelectedProps) return;
-    //   const reactiveValues = stateView.getSnapshot();
-    //   return reactiveValues;
-    // }
 
     function extend<TNewProps>(
       newPropsFactory: (props: GetProps<TStateView>) => TNewProps,
@@ -111,6 +106,6 @@ export function useConnectStore(component: ComponentView<StateView<any>>) {
   }, []);
 
   useEffect(() => {
-    reactStore.mountComponent(component);
+    component.setMounted();
   },[])
 }

@@ -10,7 +10,6 @@ export declare class ReactStoreAdapter {
     stateIsInvalidated: boolean;
     createComponent(component: ComponentView<any>): void;
     mountComponent(component: ComponentView<any>): void;
-    hasUnmountedComponents(): string | undefined;
     createWatcher(watcherId: string, cb: Function): string;
     removeWatcher(watcherId: string): void;
     updateIsInProgress: boolean;

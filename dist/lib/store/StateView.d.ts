@@ -1,6 +1,6 @@
 import { Dict, Scope, TModuleInstanceFor } from '../scope';
 import { Store } from './Store';
-import { GetAllInjectedProps, GetInjectedProps } from './plugins/pickInjectors';
+import { GetAllInjectedProps, GetInjectedProps } from './plugins';
 export declare class StateView<TProps = {}> {
     scope?: Scope | undefined;
     props: TProps;

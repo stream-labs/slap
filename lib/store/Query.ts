@@ -5,7 +5,7 @@ import error = Simulate.error;
 import { StateView } from './StateView';
 import { TUser } from '../../demo/stars-editor/components/pages/UsersPage';
 
-class QueryStateConfig<TData, TError> {
+export class QueryStateConfig<TData, TError> {
 
   state: QueryState<TData, TError> = {
     status: 'idle' as QueryStatus,
@@ -90,11 +90,11 @@ export class Query<TData, TParams, TError> {
 
 export const QueryInjectorType = Symbol('queryInjector');
 
-async function fetchOnlineUsers() {
-  return new Promise<TUser[]>(r => {
-    setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
-  });
-}
+// async function fetchOnlineUsers() {
+//   return new Promise<TUser[]>(r => {
+//     setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
+//   });
+// }
 
 export function injectQuery<
   TOptions extends QueryConstructorOptions,
@@ -127,20 +127,20 @@ export function injectQuery<
   });
 }
 
-type QueryRequiredOptions = {
+export type QueryRequiredOptions = {
   fetch: (...args: any) => any,
 }
 
-type QueryOptionalOptions = {
+export type QueryOptionalOptions = {
   enabled: boolean,
   initialData: any,
   getParams: (() => any) | null,
 }
 
-type QueryOptions = QueryOptionalOptions & QueryRequiredOptions;
-type QueryConstructorOptions = QueryRequiredOptions & Partial<QueryOptionalOptions>
+export type QueryOptions = QueryOptionalOptions & QueryRequiredOptions;
+export type QueryConstructorOptions = QueryRequiredOptions & Partial<QueryOptionalOptions>
 
-type QueryState<TData, TError> = {
+export type QueryState<TData, TError> = {
   status: QueryStatus,
   data: TData,
   error: TError,

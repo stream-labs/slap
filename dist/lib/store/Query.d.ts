@@ -1,7 +1,7 @@
 import { InjectedProp } from '../scope';
 import { Store, TStateControllerFor, TStateViewForStateConfig } from './Store';
 import { StateView } from './StateView';
-declare class QueryStateConfig<TData, TError> {
+export declare class QueryStateConfig<TData, TError> {
     state: QueryState<TData, TError>;
     setData(data: TData): void;
     setError(error: TError): void;
@@ -26,17 +26,17 @@ export declare class Query<TData, TParams, TError> {
 }
 export declare const QueryInjectorType: unique symbol;
 export declare function injectQuery<TOptions extends QueryConstructorOptions, TQuery = Query<GetQueryDataType<TOptions>, unknown, unknown>, TQueryView = StateView<TStateViewForStateConfig<QueryStateConfig<GetQueryDataType<TOptions>, unknown>>>>(options: TOptions): InjectedProp<TQuery, TQueryView>;
-declare type QueryRequiredOptions = {
+export declare type QueryRequiredOptions = {
     fetch: (...args: any) => any;
 };
-declare type QueryOptionalOptions = {
+export declare type QueryOptionalOptions = {
     enabled: boolean;
     initialData: any;
     getParams: (() => any) | null;
 };
-declare type QueryOptions = QueryOptionalOptions & QueryRequiredOptions;
-declare type QueryConstructorOptions = QueryRequiredOptions & Partial<QueryOptionalOptions>;
-declare type QueryState<TData, TError> = {
+export declare type QueryOptions = QueryOptionalOptions & QueryRequiredOptions;
+export declare type QueryConstructorOptions = QueryRequiredOptions & Partial<QueryOptionalOptions>;
+export declare type QueryState<TData, TError> = {
     status: QueryStatus;
     data: TData;
     error: TError;

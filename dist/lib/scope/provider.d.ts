@@ -42,6 +42,7 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     get instanceId(): string;
     events: import("nanoevents").Emitter<ProviderEvents>;
 }
+export declare function createInstanceMetadata(instance: any, provider: Provider<any, any>): void;
 export declare function getInstanceMetadata(instance: any): {
     provider: Provider<any, []>;
     id: string;

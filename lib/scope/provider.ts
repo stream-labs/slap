@@ -211,7 +211,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   events = createNanoEvents<ProviderEvents>();
 }
 
-function createInstanceMetadata(instance: any, provider: Provider<any, any>) {
+export function createInstanceMetadata(instance: any, provider: Provider<any, any>) {
   const id = `${provider.id}__${generateId()}`;
   const descriptor = { enumerable: false, configurable: false };
 

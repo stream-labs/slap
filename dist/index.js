@@ -535,13 +535,14 @@ class ReactStoreAdapter {
         //   this.updateUI();
         // }
     }
-    hasUnmountedComponents() {
-        const hasUnmountedComponents = Object.keys(this.components).find(id => {
-            const comp = this.components[id];
-            return !comp.isMounted && !comp.isDestroyed;
-        });
-        return hasUnmountedComponents;
-    }
+    //
+    // hasUnmountedComponents() {
+    //   const hasUnmountedComponents = Object.keys(this.components).find(id => {
+    //     const comp = this.components[id];
+    //     return !comp.isMounted && !comp.isDestroyed;
+    //   });
+    //   return hasUnmountedComponents;
+    // }
     // TODO: rename to mount-component ?
     createWatcher(watcherId, cb) {
         this.watchersOrder.push(watcherId);
@@ -573,6 +574,9 @@ class ReactStoreAdapter {
             watchersIds.forEach(id => {
                 this.watchers[id] && this.watchers[id]();
                 const component = this.components[id];
+                if (!component.needUpdate()) {
+                    console.error('Failed to update', component);
+                }
                 if (component.needUpdate()) {
                     component.forceUpdate();
                     component.setInvalidated(false);
@@ -955,7 +959,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getInstanceMetadata = exports.Provider = void 0;
+exports.getInstanceMetadata = exports.createInstanceMetadata = exports.Provider = void 0;
 const nanoevents_1 = __webpack_require__(111);
 const is_plain_object_1 = __webpack_require__(57);
 const utils_1 = __webpack_require__(986);
@@ -1135,6 +1139,7 @@ function createInstanceMetadata(instance, provider) {
     (0, utils_1.defineGetter)(instance, '__instanceId', () => id, descriptor);
     (0, utils_1.defineGetter)(instance, '__provider', () => provider, descriptor);
 }
+exports.createInstanceMetadata = createInstanceMetadata;
 function getInstanceMetadata(instance) {
     const provider = instance.__provider;
     if (!provider) {
@@ -1444,20 +1449,11 @@ exports.isClass = isClass;
 /***/ }),
 
 /***/ 989:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectQuery = exports.QueryInjectorType = exports.Query = void 0;
+exports.injectQuery = exports.QueryInjectorType = exports.Query = exports.QueryStateConfig = void 0;
 const test_utils_1 = __webpack_require__(267);
 const scope_1 = __webpack_require__(527);
 const Store_1 = __webpack_require__(607);
@@ -1480,6 +1476,7 @@ class QueryStateConfig {
         this.state.error = error;
     }
 }
+exports.QueryStateConfig = QueryStateConfig;
 /**
  * Alternative for https://react-query.tanstack.com/reference/useQuery
  */
@@ -1532,13 +1529,11 @@ class Query {
 }
 exports.Query = Query;
 exports.QueryInjectorType = Symbol('queryInjector');
-function fetchOnlineUsers() {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise(r => {
-            setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
-        });
-    });
-}
+// async function fetchOnlineUsers() {
+//   return new Promise<TUser[]>(r => {
+//     setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
+//   });
+// }
 function injectQuery(options) {
     return (0, scope_1.createInjector)(injector => {
         let query;
@@ -1580,7 +1575,7 @@ exports.ComponentView = exports.createStateViewForModule = exports.StateView = v
 const scope_1 = __webpack_require__(527);
 const provider_1 = __webpack_require__(370);
 const pickProps_1 = __webpack_require__(49);
-const pickInjectors_1 = __webpack_require__(187);
+const plugins_1 = __webpack_require__(837);
 class StateView {
     constructor(scope) {
         this.scope = scope;
@@ -1737,18 +1732,9 @@ function createStateViewForModule(module) {
     const stateView = new StateView(scope);
     return stateView
         .select((0, pickProps_1.pickProps)(module)) // expose the module props
-        .select((0, pickInjectors_1.pickInjectors)(module)); // expose injectors
+        .select((0, plugins_1.pickInjectors)(module)); // expose injectors
 }
 exports.createStateViewForModule = createStateViewForModule;
-// export type MergeViews<
-//   TView1 extends StateView<any>,
-//   TView2 extends StateView<any>
-//   > = StateView<GetProps<TView1> & GetProps<TView2>>
-//
-// export type MergeModuleWithView<
-//   TView1 extends StateView<any>,
-//   TModule
-//   > = StateView<GetProps<TView1> & GetModuleStateView<TModule> >
 class ComponentView {
     constructor(store, stateView, id, forceUpdate) {
         this.store = store;
@@ -2077,7 +2063,7 @@ exports.defaultStateConfig = {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectForm = exports.FormInjectorType = void 0;
+exports.injectForm = exports.FormInjectorType = exports.createFormBinding = void 0;
 const StateView_1 = __webpack_require__(32);
 const scope_1 = __webpack_require__(527);
 function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
@@ -2099,6 +2085,7 @@ function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     });
     return stateView;
 }
+exports.createFormBinding = createFormBinding;
 exports.FormInjectorType = Symbol('formInjector');
 function injectForm(stateGetter, stateSetter, extraPropsGenerator) {
     return (0, scope_1.createInjector)(injector => {
@@ -2139,6 +2126,8 @@ __exportStar(__webpack_require__(32), exports);
 __exportStar(__webpack_require__(307), exports);
 __exportStar(__webpack_require__(938), exports);
 __exportStar(__webpack_require__(989), exports);
+__exportStar(__webpack_require__(837), exports);
+__exportStar(__webpack_require__(890), exports);
 
 
 /***/ }),
@@ -2299,6 +2288,28 @@ function parseDefaultState(target) {
 
 /***/ }),
 
+/***/ 837:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__webpack_require__(187), exports);
+__exportStar(__webpack_require__(209), exports);
+__exportStar(__webpack_require__(49), exports);
+
+
+/***/ }),
+
 /***/ 187:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
@@ -2371,6 +2382,45 @@ exports.pickInjectors = pickInjectors;
 // mergedUser.users
 // mergedUser.selectedUserId
 // mergedUser.state
+
+
+/***/ }),
+
+/***/ 209:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectLoading = exports.LoadingState = void 0;
+const injectState_1 = __webpack_require__(307);
+class LoadingState {
+    constructor() {
+        this.loadingStatus = 'not-started';
+    }
+    get isLoading() {
+        return this.loadingStatus === 'loading';
+    }
+    get isLoaded() {
+        return this.loadingStatus === 'done';
+    }
+}
+exports.LoadingState = LoadingState;
+function injectLoading() {
+    return (0, injectState_1.injectState)(LoadingState, (stateController, injector) => {
+        const provider = injector.provider;
+        provider.events.on('onModuleInit', () => {
+            if (!provider.isAsync) {
+                stateController.nonReactiveUpdate({ loadingStatus: 'done' });
+                return;
+            }
+            stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
+            provider.waitForLoad.then(() => {
+                stateController.setLoadingStatus('done');
+            });
+        });
+    });
+}
+exports.injectLoading = injectLoading;
 
 
 /***/ }),
