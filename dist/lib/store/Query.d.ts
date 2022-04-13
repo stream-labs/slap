@@ -1,31 +1,44 @@
 import { InjectedProp } from '../scope';
-import { Store, TStateControllerFor, TStateViewForStateConfig } from './Store';
-import { StateView } from './StateView';
-export declare class QueryStateConfig<TData, TError> {
-    state: QueryState<TData, TError>;
+import { TStateControllerFor, TStateViewForStateConfig } from './Store';
+import { GetModuleStateView, StateView } from './StateView';
+export declare class QueryStateConfig<TData, TParams, TError> {
+    state: QueryState<TData, TParams, TError>;
     setData(data: TData): void;
     setError(error: TError): void;
+    get isLoading(): boolean;
 }
 /**
  * Alternative for https://react-query.tanstack.com/reference/useQuery
  */
-export declare class Query<TData, TParams, TError> {
-    store: Store;
-    moduleName: string;
-    state: TStateControllerFor<QueryStateConfig<TData, TError>>;
+export declare class QueryModule<TConstructorArgs extends Array<any>, TData = GetQueryData<TConstructorArgs>, TParams = GetQueryParams<TConstructorArgs>, TError = unknown> {
+    state: InjectedProp<TStateControllerFor<typeof QueryStateConfig, QueryStateConfig<unknown, unknown, unknown>, QueryState<unknown, unknown, unknown>>, StateView<TStateViewForStateConfig<typeof QueryStateConfig>>, StateView<TStateViewForStateConfig<typeof QueryStateConfig>>>;
+    watcher: InjectedProp<typeof import("./inject-watch").WatchModule, GetModuleStateView<typeof import("./inject-watch").WatchModule>, {}>;
     fetchingPromise: Promise<TData> | null;
-    params: TParams;
+    promiseId: string;
     enabled: boolean;
     options: QueryOptions;
-    stateView: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TError>>>;
-    constructor(store: Store, moduleName: string, propName: string, constructorOptions: QueryConstructorOptions);
+    stateView: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>>>;
+    isInitialFetch: boolean;
+    queryView: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & {
+        refetch: () => Promise<TData>;
+    }>;
+    constructor(...args: TConstructorArgs);
+    load(): void;
     exec(): Promise<TData>;
     fetch(): Promise<TData>;
+    refetch(): Promise<TData> | undefined;
+    stopFetching(): void;
     setEnabled(enabled: boolean): void;
+    getParams(): any;
     destroy(): void;
+    exportComponentData(): {
+        self: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & {
+            refetch: () => Promise<TData>;
+        }>;
+        extra: null;
+    };
 }
-export declare const QueryInjectorType: unique symbol;
-export declare function injectQuery<TOptions extends QueryConstructorOptions, TQuery = Query<GetQueryDataType<TOptions>, unknown, unknown>, TQueryView = StateView<TStateViewForStateConfig<QueryStateConfig<GetQueryDataType<TOptions>, unknown>>>>(options: TOptions): InjectedProp<TQuery, TQueryView>;
+export declare function injectQuery<TQueryArgs extends QueryArgs>(...args: TQueryArgs): InjectedProp<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>, GetModuleStateView<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>>, {}>;
 export declare type QueryRequiredOptions = {
     fetch: (...args: any) => any;
 };
@@ -36,16 +49,41 @@ export declare type QueryOptionalOptions = {
 };
 export declare type QueryOptions = QueryOptionalOptions & QueryRequiredOptions;
 export declare type QueryConstructorOptions = QueryRequiredOptions & Partial<QueryOptionalOptions>;
-export declare type QueryState<TData, TError> = {
+export declare type QueryState<TData, TParams, TError> = {
     status: QueryStatus;
     data: TData;
+    params: TParams;
     error: TError;
 };
 declare type QueryStatus = 'idle' | 'loading' | 'error' | 'success';
-export declare type GetQueryDataType<TQueryOptions> = TQueryOptions extends {
+export declare type QueryArgs = [QueryConstructorOptions] | [(...any: any) => any] | [any, (...any: any) => any] | [any, (...any: any) => any, (...any: any) => any];
+/**
+ * convers Query constructor agrs to QueryOptions
+ * @param args
+ */
+export declare function getQueryOptionsFromArgs<TQueryArgs extends Array<any>, TResult = GetQueryOptions<TQueryArgs>>(args: TQueryArgs): TResult;
+export declare type GetQueryData<TQueryArgs> = GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>;
+export declare type GetQueryParams<TQueryArgs> = GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>;
+export declare type GetQueryDataTypeFromOptions<TQueryOptions> = TQueryOptions extends {
     initialData: infer TInitialData;
 } ? TInitialData extends never[] ? GetDataTypeFromFetchType<TQueryOptions> : TInitialData : GetDataTypeFromFetchType<TQueryOptions>;
-declare type GetDataTypeFromFetchType<TQueryOptions> = TQueryOptions extends {
+export declare type GetQueryParamsTypeFromOptions<TQueryOptions> = TQueryOptions extends {
+    getParams: (...args: any) => infer TParams;
+} ? TParams : never;
+export declare type GetDataTypeFromFetchType<TQueryOptions> = TQueryOptions extends {
     fetch: (...args: any) => infer TFunctionResult;
 } ? TFunctionResult extends Promise<infer TPromiseData> ? TPromiseData : TFunctionResult : never;
+export declare type GetQueryOptions<TQueryArgs> = TQueryArgs extends [infer arg1, infer arg2, infer arg3] ? GetQueryOptionsFor3Args<arg1, arg2, arg3> : TQueryArgs extends [infer arg1, infer arg2] ? GetQueryOptionsFor2Args<arg1, arg2> : TQueryArgs extends [infer arg1] ? GetQueryOptionsFor1Arg<arg1> : GetQueryOptionsFor1Arg<TQueryArgs>;
+export declare type GetQueryOptionsFor3Args<TInitialData, TFetch, TGetProps> = {
+    fetch: TFetch;
+    initialData: TInitialData;
+    getProps: TGetProps;
+};
+export declare type GetQueryOptionsFor2Args<TInitialData, TFetch> = {
+    fetch: TFetch;
+    initialData: TInitialData;
+};
+export declare type GetQueryOptionsFor1Arg<Arg> = Arg extends (...args: any) => any ? {
+    fetch: Arg;
+} : Arg;
 export {};

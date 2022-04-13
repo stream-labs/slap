@@ -236,7 +236,7 @@ export class ModuleStateController {
     });
 
     this.metadata.rev++;
-    console.log('New revision', this.metadata.rev);
+    console.log(`New revision for module ${moduleName}.${sectionName}`, this.metadata.rev);
     this.draftState = null;
   }
 
@@ -265,8 +265,7 @@ export class ModuleStateController {
   }
 
   createView() {
-    const metadata = this.metadata;
-    const config = metadata.config;
+    const config = this.metadata.config;
     const view = new StateView();
     const controller = this as any;
 
@@ -277,7 +276,8 @@ export class ModuleStateController {
       getValue: () => {
         // eslint-disable-next-line no-unused-expressions
         controller.state; // read as reactive
-        return metadata.rev;
+        console.log(`read REV for ${controller.moduleName}.${controller.sectionName}`, controller.metadata.rev);
+        return controller.metadata.rev;
       },
     });
 

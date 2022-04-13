@@ -1,5 +1,11 @@
 import React from 'react';
-import { useModule, injectState, TModuleInstanceFor, inject } from '../../../../lib';
+import {
+  useModule,
+  injectState,
+  TModuleInstanceFor,
+  inject,
+  useModuleInstance
+} from '../../../../lib';
 import { generateId } from '../../../../lib/scope';
 import { injectQuery } from '../../../../lib/store/Query';
 import { injectLoading } from '../../../../lib/store/plugins/pickLoadingState';
@@ -8,6 +14,12 @@ import { EditorService } from '../../services/editor.service';
 export type TUser = {
   id: string;
   name: string;
+}
+
+export type TAccount = {
+  id: string;
+  name: string;
+  balance: number;
 }
 
 export class UsersState {
@@ -34,15 +46,15 @@ export class UsersState {
   }
 }
 
-export async function fetchBannedUsers() {
+export async function fetchOnlineUsers() {
   return new Promise<TUser[]>(r => {
-    setTimeout(() => r([{ id: 'banned1', name: 'Banned User 1' }, { id: 'banned2', name: 'Banned User 2' }]), 3000);
+    setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
   });
 }
 
-export async function fetchOnlineUsers() {
+export async function fetchBannedUsers() {
   return new Promise<TUser[]>(r => {
-    setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 8000);
+    setTimeout(() => r([{ id: 'banned1', name: 'Banned User 1' }, { id: 'banned2', name: 'Banned User 2' }]), 8000);
   });
 }
 
@@ -212,3 +224,7 @@ export function NestedLoadingState() {
 // const mi: TModuleInstanceFor<typeof buttonModule>;
 // const { onButtonClick } = mi;
 // onButtonClick();
+
+
+const myBaseModule = useModuleInstance(UsersModule);
+myBaseModule.state

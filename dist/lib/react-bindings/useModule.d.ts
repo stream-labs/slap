@@ -1,15 +1,11 @@
 import { TModuleInstanceFor, TModuleLocatorType } from '../scope';
-import { ComponentView, GetProps, StateView, ExtendView } from '../store/StateView';
-export declare function useComponentView<TStateView extends StateView<any>>(moduleView: TStateView, moduleId: string, id?: string): TStateView['props'] & {
-    componentView: ComponentView<TStateView>;
-    extend: <TNewProps>(newPropsFactory: (props: GetProps<TStateView>) => TNewProps) => ExtendView<TStateView['props'], TNewProps>['props'] & {
-        componentView: ComponentView<TStateView>;
+import { GetModuleStateView, ExtendView } from '../store/StateView';
+import { ComponentView } from './react-store-adapter';
+export declare function useComponentView<TModule, TResult = GetUseComponentViewResult<TModule>>(module: TModule): TResult;
+export declare function useModule<T extends TModuleLocatorType, TInitState extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps?: TInitState | null, moduleName?: string): GetUseComponentViewResult<TModuleInstanceFor<T>>;
+export declare type GetUseComponentViewResult<TModuleInstance> = GetModuleStateView<TModuleInstance>['props'] & {
+    componentView: ComponentView;
+    extend: <TNewProps>(newPropsFactory: (props: GetModuleStateView<TModuleInstance>['props']) => TNewProps) => ExtendView<GetModuleStateView<TModuleInstance>['props'], TNewProps>['props'] & {
+        componentView: ComponentView;
     };
 };
-export declare function useModule<T extends TModuleLocatorType, TInitState extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps?: TInitState | null, moduleName?: string): Pick<import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>>, import("../scope").NonObjectKeysOf<import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>>>> & import("../scope").UnionToIntersection<Exclude<Exclude<Extract<import("../scope").ValuesOf<import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>>>, object>, never>, any[]>> & import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>> & Omit<TModuleInstanceFor<TModuleInstanceFor<T>>, keyof import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>>> & {
-    componentView: ComponentView<StateView<import("../store").GetModuleView<TModuleInstanceFor<T>, TModuleInstanceFor<TModuleInstanceFor<T>>>>>;
-    extend: <TNewProps>(newPropsFactory: (props: import("../store").GetModuleView<TModuleInstanceFor<T>, TModuleInstanceFor<TModuleInstanceFor<T>>>) => TNewProps) => Pick<import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>>, import("../scope").NonObjectKeysOf<import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>>>> & import("../scope").UnionToIntersection<Exclude<Exclude<Extract<import("../scope").ValuesOf<import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>>>, object>, never>, any[]>> & import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>> & Omit<TModuleInstanceFor<TModuleInstanceFor<T>>, keyof import("../store").GetInjectedProps<TModuleInstanceFor<TModuleInstanceFor<T>>>> & Pick<import("../store").GetInjectedProps<TModuleInstanceFor<TNewProps>>, import("../scope").NonObjectKeysOf<import("../store").GetInjectedProps<TModuleInstanceFor<TNewProps>>>> & import("../scope").UnionToIntersection<Exclude<Exclude<Extract<import("../scope").ValuesOf<import("../store").GetInjectedProps<TModuleInstanceFor<TNewProps>>>, object>, never>, any[]>> & import("../store").GetInjectedProps<TModuleInstanceFor<TNewProps>> & Omit<TModuleInstanceFor<TNewProps>, keyof import("../store").GetInjectedProps<TModuleInstanceFor<TNewProps>>> & {
-        componentView: ComponentView<StateView<import("../store").GetModuleView<TModuleInstanceFor<T>, TModuleInstanceFor<TModuleInstanceFor<T>>>>>;
-    };
-};
-export declare function useConnectStore(component: ComponentView<StateView<any>>): void;

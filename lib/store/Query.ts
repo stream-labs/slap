@@ -2,7 +2,7 @@ import { Simulate } from 'react-dom/test-utils';
 import { createInjector, generateId, InjectedProp } from '../scope';
 import { Store, TStateControllerFor, TStateViewForStateConfig } from './Store';
 import error = Simulate.error;
-import { StateView } from './StateView';
+import { createStateViewForModule, GetModuleStateView, StateView } from './StateView';
 import { TUser } from '../../demo/stars-editor/components/pages/UsersPage';
 import { injectState } from './injectState';
 import { injectWatch } from './inject-watch';
@@ -29,12 +29,21 @@ export class QueryStateConfig<TData, TParams, TError> {
     this.state.status = 'error';
     this.state.error = error;
   }
+
+  get isLoading() {
+    return this.state.status === 'loading';
+  }
 }
 
 /**
  * Alternative for https://react-query.tanstack.com/reference/useQuery
  */
-export class QueryModule<TData, TParams, TError> {
+export class QueryModule<
+  TConstructorArgs extends Array<any>,
+  TData = GetQueryData<TConstructorArgs>,
+  TParams = GetQueryParams<TConstructorArgs>,
+  TError = unknown,
+  > {
 
   state = injectState(QueryStateConfig);
   watcher = injectWatch(this.getParams, this.refetch);
@@ -44,23 +53,37 @@ export class QueryModule<TData, TParams, TError> {
   enabled = true;
   options: QueryOptions;
   stateView!: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>>>;
+  isInitialFetch = true;
+  queryView!: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & { refetch: () => Promise<TData>}>;
 
-  constructor(constructorOptions: QueryConstructorOptions) {
+  constructor(...args: TConstructorArgs) {
+
+    const computedOptions = getQueryOptionsFromArgs(args);
     const options = {
       enabled: true,
       params: null,
       initialData: null,
       getParams: null,
-      ...constructorOptions,
+      fetch: () => {},
+      ...computedOptions,
     };
 
     this.options = options;
     this.enabled = !!options.enabled;
   }
 
-
   load() {
     this.stateView = this.state.createView() as any;
+    const queryMethods = new StateView();
+    queryMethods.defineProp({
+      type: 'QueryMethod',
+      name: 'refetch',
+      reactive: false,
+      getValue: () => {
+        return () => this.refetch();
+      },
+    });
+    this.queryView = this.stateView.mergeView(queryMethods);
     const data = this.options.initialData;
     this.state.nonReactiveUpdate({
       params: this.getParams(),
@@ -75,8 +98,16 @@ export class QueryModule<TData, TParams, TError> {
   }
 
   fetch(): Promise<TData> {
-    const fetchResult = this.options.fetch(this);
+    const fetchResult = this.options.fetch();
     if (fetchResult?.then) {
+      if (this.isInitialFetch) {
+        this.state.nonReactiveUpdate({
+          status: 'loading',
+        });
+        this.isInitialFetch = false;
+      } else {
+        this.state.setStatus('loading');
+      }
       const promiseId = generateId();
       this.promiseId = promiseId;
       this.fetchingPromise = fetchResult;
@@ -93,6 +124,9 @@ export class QueryModule<TData, TParams, TError> {
           this.state.setError(error as any);
         });
     }
+    // result is not a promise, set the data
+    this.state.setData(fetchResult);
+
     return Promise.resolve(fetchResult);
   }
 
@@ -120,21 +154,16 @@ export class QueryModule<TData, TParams, TError> {
     this.setEnabled(false);
   }
 
-  getView() {
-    return this.stateView;
+  exportComponentData() {
+    return {
+      self: this.queryView,
+      extra: null,
+    };
   }
 }
 
-export const QueryInjectorType = Symbol('queryInjector');
-
-// async function fetchOnlineUsers() {
-//   return new Promise<TUser[]>(r => {
-//     setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
-//   });
-// }
-
-export function injectQuery<TOptions extends QueryConstructorOptions>(options: TOptions) {
-  return injectChild(QueryModule as any as QueryModule<GetQueryDataType<TOptions>, any, any>, options);
+export function injectQuery<TQueryArgs extends QueryArgs>(...args: TQueryArgs) {
+  return injectChild(QueryModule as any as QueryModule<TQueryArgs>, ...args);
 }
 
 export type QueryRequiredOptions = {
@@ -159,15 +188,75 @@ export type QueryState<TData, TParams, TError> = {
 
 type QueryStatus = 'idle' | 'loading' | 'error' | 'success'
 
-export type GetQueryDataType<TQueryOptions> =
+export type QueryArgs = [QueryConstructorOptions] | [(...any: any) => any] | [any, (...any: any) => any] | [any, (...any: any) => any, (...any: any) => any];
+
+/**
+ * convers Query constructor agrs to QueryOptions
+ * @param args
+ */
+export function getQueryOptionsFromArgs<TQueryArgs extends Array<any>, TResult = GetQueryOptions<TQueryArgs>>(args: TQueryArgs): TResult {
+  if (args.length === 1) {
+    const arg = args[0];
+    if (typeof arg === 'function') {
+      return {
+        fetch: arg,
+      } as any as TResult;
+    }
+    return arg;
+  }
+
+  if (args.length === 2) {
+    return {
+      initialData: args[0],
+      fetch: args[1],
+    } as any as TResult;
+  }
+
+  return {
+    initialData: args[0],
+    fetch: args[1],
+    getParams: args[2],
+  } as any as TResult;
+}
+
+export type GetQueryData<TQueryArgs> = GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>
+export type GetQueryParams<TQueryArgs> = GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>
+
+export type GetQueryDataTypeFromOptions<TQueryOptions> =
   TQueryOptions extends { initialData: infer TInitialData } ?
     TInitialData extends never[] ?
       GetDataTypeFromFetchType<TQueryOptions> :
         TInitialData:
           GetDataTypeFromFetchType<TQueryOptions>
 
-type GetDataTypeFromFetchType<TQueryOptions> = TQueryOptions extends { fetch: (...args: any) => infer TFunctionResult } ?
+export type GetQueryParamsTypeFromOptions<TQueryOptions> = TQueryOptions extends { getParams: (...args: any) => infer TParams } ? TParams : never;
+
+export type GetDataTypeFromFetchType<TQueryOptions> = TQueryOptions extends { fetch: (...args: any) => infer TFunctionResult } ?
   TFunctionResult extends Promise<infer TPromiseData> ?
     TPromiseData :
       TFunctionResult:
         never;
+
+export type GetQueryOptions<TQueryArgs> =
+  TQueryArgs extends [infer arg1, infer arg2, infer arg3] ?
+    GetQueryOptionsFor3Args<arg1, arg2, arg3> :
+    TQueryArgs extends [infer arg1, infer arg2] ?
+      GetQueryOptionsFor2Args<arg1, arg2> :
+        TQueryArgs extends [infer arg1] ?
+          GetQueryOptionsFor1Arg<arg1> :
+           GetQueryOptionsFor1Arg<TQueryArgs>;
+
+export type GetQueryOptionsFor3Args<TInitialData, TFetch, TGetProps> = {
+  fetch: TFetch,
+  initialData: TInitialData,
+  getProps: TGetProps
+}
+
+export type GetQueryOptionsFor2Args<TInitialData, TFetch> = {
+  fetch: TFetch,
+  initialData: TInitialData,
+}
+
+export type GetQueryOptionsFor1Arg<Arg> = Arg extends (...args: any) => any ?
+  { fetch: Arg } :
+  Arg;

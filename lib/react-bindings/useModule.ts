@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import { Simulate } from 'react-dom/test-utils';
 import { useForceUpdate, useOnCreate, useOnDestroy } from './hooks';
 import { useModuleInstance } from './useModuleInstance';
 import {
@@ -13,22 +14,13 @@ import { useAppContext } from './ReactModules';
 import { Store } from '../store';
 import { ComponentView, ReactStoreAdapter } from './react-store-adapter';
 import { isSimilar } from '../utils';
-import { Simulate } from 'react-dom/test-utils';
 import mouseDown = Simulate.mouseDown;
 
-export function useComponentView<
-  TModule,
-  TResult = GetModuleStateView<TModule>['props'] & {
-    componentView: ComponentView,
-    extend: <TNewProps>(
-      newPropsFactory: (props: GetModuleStateView<TModule>['props']) => TNewProps,
-    ) => ExtendView<GetModuleStateView<TModule>['props'], TNewProps>['props'] & {componentView: ComponentView }}
-  >
-(module: TModule,
-): TResult {
+export function useComponentView<TModule, TResult = GetUseComponentViewResult<TModule>>
+(module: TModule): TResult {
   const forceUpdate = useForceUpdate();
 
-  const { componentId, reactStore, component, provider } = useOnCreate(() => {
+  const { componentId, reactStore, component } = useOnCreate(() => {
 
     const provider = getInstanceMetadata(module).provider;
     const reactStore = provider.scope.resolve(ReactStoreAdapter);
@@ -67,7 +59,7 @@ export function useComponentView<
     });
 
     return {
-      componentId, component, moduleView, reactStore, provider
+      componentId, component, moduleView, reactStore, provider,
     };
   });
 
@@ -90,9 +82,10 @@ export function useComponentView<
 
     const watcherId = reactStore.createWatcher(component.id, () => {
       const prevSnapshot = component.lastSnapshot;
-      const newSnapshot = component.makeSnapshot();
 
-      console.log('compare ', componentId, prevSnapshot, newSnapshot);
+      console.log('START SNAPSHOT FOR', componentId);
+      const newSnapshot = component.makeSnapshot();
+      console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
 
       if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
         // no modules changed, do not call compare props
@@ -130,17 +123,15 @@ export function useComponentView<
 //   }));
 // }
 
-export function useModule<T extends TModuleLocatorType, TInitState extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps: TInitState|null = null, moduleName = '') {
+export function useModule<T extends TModuleLocatorType, TInitState extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps: TInitState|null = null, moduleName = ''): GetUseComponentViewResult<TModuleInstanceFor<T>> {
   const module = useModuleInstance(locator, initProps, moduleName);
   // const moduleView = useModuleView(module);
   return useComponentView(module);
 }
 
-// export function useConnectStore(component: ComponentView) {
-//   const scope = useAppContext().modulesScope;
-//   const store = scope.resolve(Store);
-//   const reactStore = scope.resolve(ReactStoreAdapter);
-//
-//   reactStore.createComponent(component);
-//
-// }
+export type GetUseComponentViewResult<TModuleInstance> =
+  GetModuleStateView<TModuleInstance>['props'] &
+  {
+    componentView: ComponentView,
+    extend: <TNewProps>(newPropsFactory: (props: GetModuleStateView<TModuleInstance>['props']) => TNewProps) => ExtendView<GetModuleStateView<TModuleInstance>['props'], TNewProps>['props'] & {componentView: ComponentView }
+  }

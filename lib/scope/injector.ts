@@ -2,22 +2,26 @@ import { TLoadingStatus, TModuleClass } from './interfaces';
 import { defineGetter, generateId } from './utils';
 import { getCurrentProvider } from './scope';
 import { Provider } from './provider';
+import { StateView } from '../store';
 
 // TODO allow only StateView instances for TViewValue
 
-export type TInjectorParams<TValue, TViewValue> = {
+export type TInjectorParams<TValue, TView, TExtraView> = {
   type: Symbol;
   loadingStatus?: TLoadingStatus,
-  init?(injector: Injector<TValue, TViewValue>): TViewValue;
-  load?(injector: Injector<TValue, TViewValue>): unknown;
+  init?(): TView;
+  load?(): unknown;
   getValue?(): TValue;
-  getViewValue?(): TViewValue;
-  destroy?(currentInjector: Injector<TValue, TViewValue>): unknown;
+  // getView?(): TView;
+  // getExtraView?(): TExtraView;
+
+  exportComponentData?(): InjectorComponentData<TView, TExtraView>;
+  destroy?(currentInjector: Injector<TValue, TView, TExtraView>): unknown;
 }
 
-export class Injector<TValue, TViewValue> {
+export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
   id = generateId();
-  params!: TInjectorParams<TValue, TViewValue>;
+  params!: TInjectorParams<TValue, TViewValue, TInjectedViewExtra>;
   loadingStatus: TLoadingStatus = 'not-started';
   propertyName = '';
   isDestroyed = false;
@@ -26,14 +30,14 @@ export class Injector<TValue, TViewValue> {
   }
 
   init() {
-    this.params.init && this.params.init(this);
+    this.params.init && this.params.init();
     const getValue = this.params.getValue;
     if (getValue) {
       defineGetter(this.provider.instance, this.propertyName, getValue);
     }
 
     const load = this.params.load;
-    const loadResult = load && load(this) as any;
+    const loadResult = load && load() as any;
     if (loadResult && loadResult.then) {
       this.setLoadingStatus('loading');
       loadResult.then(() => {
@@ -65,15 +69,26 @@ export class Injector<TValue, TViewValue> {
     return this.provider.instance[this.propertyName];
   }
 
-  hasViewValue() {
-    return !!this.params.getViewValue;
+  getComponentData(): InjectorComponentData<TViewValue, TInjectedViewExtra> {
+    const componentData = this.params.exportComponentData && this.params.exportComponentData();
+    if (!componentData) {
+      return ({
+        self: null as any,
+        extra: null as any,
+      });
+    }
+    return componentData;
   }
 
-  resolveViewValue(): TViewValue {
-    return this.params.getViewValue
-      ? this.params.getViewValue()
-      : this.resolveValue() as any;
-  }
+  // hasViewValue() {
+  //   return !!this.params.getView;
+  // }
+  //
+  // resolveViewValue(): TViewValue {
+  //   return this.params.getView
+  //     ? this.params.getView()
+  //     : this.resolveValue() as any;
+  // }
 
   get type() {
     return this.params.type;
@@ -81,18 +96,19 @@ export class Injector<TValue, TViewValue> {
 }
 
 export function createInjector<
-  TParams extends TInjectorParams<any, any>,
+  TParams extends TInjectorParams<any, any, any>,
   TValue = TParams extends { getValue(): infer R} ? R : unknown,
-  TViewValue = TParams extends { getViewValue(): infer R} ? R : unknown,
+  TView = TParams extends { getView(): infer R} ? R : unknown,
+  TViewExtra = TParams extends { getExtraView(): infer R} ? R : null,
   >
-(paramsCreator: (injector: Injector<any, any>) => TParams) {
+(paramsCreator: (injector: Injector<any, any, any>) => TParams) {
   const provider = getCurrentProvider();
   if (!provider) {
     throw new Error('Injections a not allowed for objects outside the Scope. Create this object via Scope.resolve() or Scope.init() or Scope.create()');
   }
-  const injector = new Injector<TValue, TViewValue>(provider);
+  const injector = new Injector<TValue, TView, TViewExtra>(provider);
   injector.params = paramsCreator(injector);
-  return injector as any as InjectedProp<TValue, TViewValue>;
+  return injector as any as InjectedProp<TValue, TView, TViewExtra>;
 }
 
 // DEFINE BUILT-IN INJECTORS
@@ -106,7 +122,7 @@ export function inject<T extends TModuleClass>(ModuleClass: T) {
   }));
 }
 
-export const ScopeInjectorType = Symbol('scopeInjector');
+export const ScopeInjectorType = Symbol('providerInjector');
 
 export function injectScope() {
   return createInjector(injector => ({
@@ -115,4 +131,19 @@ export function injectScope() {
   }));
 }
 
-export type InjectedProp<TInjectedValue, TInjectedView> = TInjectedValue & { __injector: Injector<TInjectedValue, TInjectedView> }
+
+export const ProviderInjectorType = Symbol('providerInjector');
+export function injectProvider() {
+  return createInjector(injector => ({
+    type: ProviderInjectorType,
+    getValue: () => injector.provider,
+  }));
+}
+
+
+export type InjectedProp<TValue, TView, TExtraView> = TValue & { __injector: Injector<TValue, TView, TExtraView> }
+
+export type InjectorComponentData<TView, TExtraView> = {
+  self: TView,
+  extra: TExtraView,
+}

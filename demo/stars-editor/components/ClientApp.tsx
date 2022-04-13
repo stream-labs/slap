@@ -9,11 +9,10 @@ import { HighloadPage } from './pages/HighloadPage';
 import { UsersPage } from './pages/UsersPage';
 import { WatchersPage } from './pages/WatchersPage';
 import { QueriesPage } from './pages/QueriesPage';
+import { ExtendedStatePage } from './pages/ExtendedState';
 
 export function ClientApp() {
   const { isLoading, activePage } = useModule(WindowService);
-
-  console.log('render root isLoading', isLoading);
 
   if (isLoading) return <div>App loading...</div>;
 
@@ -26,6 +25,7 @@ export function ClientApp() {
       {activePage === 'users' && <UsersPage /> }
       {activePage === 'watchers' && <WatchersPage /> }
       {activePage === 'queries' && <QueriesPage /> }
+      {activePage === 'extended' && <ExtendedStatePage /> }
     </Layout>
   );
 }

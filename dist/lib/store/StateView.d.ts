@@ -1,5 +1,4 @@
 import { Dict, Scope, TModuleInstanceFor } from '../scope';
-import { Store } from './Store';
 import { GetAllInjectedProps, GetInjectedProps } from './plugins';
 export declare class StateView<TProps = {}> {
     scope?: Scope | undefined;
@@ -27,39 +26,25 @@ export declare class StateView<TProps = {}> {
      * })
      */
     select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView;
-    extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): ExtendView<TProps, TNewProps>;
     clone(): StateView<TProps>;
     mergeView<TExtension extends StateView<any>, TResult = ExtendView<TProps, TExtension>>(extension: TExtension): TResult;
-    components: Dict<ComponentView<any>>;
-    registerComponent<TView extends StateView<TProps>>(store: Store, componentId: string, forceUpdate: Function): ComponentView<TView>;
-    destroyComponent(componentId: string): void;
 }
-export declare function createStateViewForModule<T>(module: T): StateView<GetModuleView<T, TModuleInstanceFor<T>>>;
-export declare type GetModuleView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>;
-export declare type GetModuleStateView<TModuleConfig> = StateView<GetModuleView<TModuleConfig>>;
-export declare type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetModuleView<TExtendedModule>>;
-export declare class ComponentView<TStateView extends StateView<any>> {
-    store: Store;
-    stateView: TStateView;
-    id: string;
-    forceUpdate: Function;
-    isDestroyed: boolean;
-    isMounted: boolean;
-    isInvalidated: boolean;
-    lastSnapshot: {
-        affectedModules: Dict<number>;
-        props: unknown;
-    };
-    constructor(store: Store, stateView: TStateView, id: string, forceUpdate: Function);
-    makeSnapshot(): {
-        affectedModules: {};
-        props: null;
-    };
-    needUpdate(): boolean;
-    mount(): void;
-    setInvalidated(invalidated: boolean): void;
-    destroy(): void;
-}
+export declare function createStateViewForModule<T>(module: T): GetModuleStateView<T>;
+export declare type GetModuleSelfView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = TModule extends {
+    exportComponentData: () => ({
+        self: StateView<infer TView>;
+    });
+} ? TView : {};
+export declare type GetModuleExtraView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = TModule extends {
+    exportComponentData: () => ({
+        extra: StateView<infer TView>;
+    });
+} ? TView : {};
+export declare type GetComponentDataForModule<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>, TSelfExport = GetModuleSelfView<TModuleConfig>, TExtraExport = GetModuleExtraView<TModuleConfig>, TInjectedProps = TModule extends {
+    exportComponentData: () => any;
+} ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>> = TSelfExport & TExtraExport & TInjectedProps;
+export declare type GetModuleStateView<TModuleConfig> = StateView<GetComponentDataForModule<TModuleConfig>>;
+export declare type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetComponentDataForModule<TExtendedModule>>;
 export declare type TModulePropDescriptor<TValue> = {
     type: string;
     name: string;

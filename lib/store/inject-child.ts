@@ -1,11 +1,11 @@
 import {
   createInjector, InjectedProp,
 } from '../scope/injector';
-import { GetModuleStateView } from './StateView';
+import { GetModuleExtraView, GetModuleStateView } from './StateView';
 
 export const ChildModuleInjectorType = Symbol('childModuleInjector');
 
-export function injectChild<TModule>(Module: TModule, ...args: any): InjectedProp<TModule, GetModuleStateView<TModule>> {
+export function injectChild<TModule>(Module: TModule, ...args: any): InjectedProp<TModule, GetModuleStateView<TModule>, GetModuleExtraView<TModule>> {
   return createInjector(injector => {
 
     const scope = injector.provider.resolveChildScope();
@@ -19,9 +19,9 @@ export function injectChild<TModule>(Module: TModule, ...args: any): InjectedPro
         scope.init(moduleName, ...args);
       },
       getValue: () => scope.resolve(moduleName),
-      getViewValue() {
+      exportComponentData: () => {
         const module = scope.resolve(moduleName) as any;
-        return (module.getView && module.getView()) || { } as any;
+        return module.exportComponentData && module.exportComponentData() as any;
       },
       destroy() {
         scope.unregister(moduleName);

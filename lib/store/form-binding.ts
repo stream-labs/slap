@@ -59,8 +59,11 @@ export function injectForm<TState, TExtraProps = {}>(
       getValue() {
         return binding;
       },
-      getViewValue() {
-        return binding;
+      exportComponentData() {
+        return {
+          self: binding,
+          extra: null,
+        };
       }
     };
   });

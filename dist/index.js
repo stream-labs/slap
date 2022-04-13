@@ -509,40 +509,33 @@ __exportStar(__webpack_require__(31), exports);
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ReactStoreAdapter = void 0;
+exports.ComponentView = exports.ReactStoreAdapter = void 0;
+const react_dom_1 = __webpack_require__(386);
 const Store_1 = __webpack_require__(607);
 const injector_1 = __webpack_require__(869);
-const react_dom_1 = __webpack_require__(386);
 class ReactStoreAdapter {
     constructor() {
         this.store = (0, injector_1.inject)(Store_1.Store);
+        this.components = {};
         this.watchers = {};
         this.watchersOrder = [];
-        // invalidatedComponents: ComponentView<any>[] = [];
-        this.components = {};
-        this.stateIsInvalidated = false;
         this.updateIsInProgress = false;
     }
+    registerComponent(moduleView, componentId, forceUpdate) {
+        const componentView = new ComponentView(this.store, moduleView, componentId, forceUpdate);
+        this.components[componentId] = componentView;
+        return componentView;
+    }
+    destroyComponent(componentId) {
+        const componentView = this.components[componentId];
+        if (!componentView)
+            return;
+        componentView.setDestroyed();
+        delete this.components[componentId];
+    }
     load() {
-        this.store.events.on('onMutation', () => this.onMutation());
+        this.store.events.on('onAfterMutations', () => this.onMutation());
     }
-    createComponent(component) {
-        this.components[component.id] = component;
-    }
-    mountComponent(component) {
-        component.mount();
-        // if (this.stateIsInvalidated && !this.hasUnmountedComponents()) {
-        //   this.updateUI();
-        // }
-    }
-    //
-    // hasUnmountedComponents() {
-    //   const hasUnmountedComponents = Object.keys(this.components).find(id => {
-    //     const comp = this.components[id];
-    //     return !comp.isMounted && !comp.isDestroyed;
-    //   });
-    //   return hasUnmountedComponents;
-    // }
     // TODO: rename to mount-component ?
     createWatcher(watcherId, cb) {
         this.watchersOrder.push(watcherId);
@@ -556,12 +549,6 @@ class ReactStoreAdapter {
     }
     onMutation() {
         this.updateUI();
-        // if (this.stateIsInvalidated) return;
-        // this.stateIsInvalidated = true;
-        //
-        // if (!this.hasUnmountedComponents()) {
-        //   this.updateUI();
-        // }
     }
     updateUI() {
         if (this.updateIsInProgress) {
@@ -574,30 +561,56 @@ class ReactStoreAdapter {
             watchersIds.forEach(id => {
                 this.watchers[id] && this.watchers[id]();
                 const component = this.components[id];
-                if (!component.needUpdate()) {
-                    console.error('Failed to update', component);
-                }
                 if (component.needUpdate()) {
                     component.forceUpdate();
                     component.setInvalidated(false);
                 }
             });
         });
-        // // collect invalidated components
-        // watchersIds.forEach(id => this.watchers[id] && this.watchers[id]());
-        //
-        // // force update components
-        // unstable_batchedUpdates(() => {
-        //
-        //   watchersIds.forEach(id => {
-        //     this.components[id].needUpdate() && this.components[id].forceUpdate()
-        //   });
-        // });
-        this.stateIsInvalidated = false;
         this.updateIsInProgress = false;
     }
 }
 exports.ReactStoreAdapter = ReactStoreAdapter;
+class ComponentView {
+    constructor(store, stateView, id, forceUpdate) {
+        this.store = store;
+        this.stateView = stateView;
+        this.id = id;
+        this.forceUpdate = forceUpdate;
+        this.isDestroyed = false;
+        this.isMounted = false;
+        this.isInvalidated = false;
+        this.lastSnapshot = {
+            affectedModules: {},
+            props: null,
+        };
+    }
+    makeSnapshot() {
+        const snapshot = {
+            affectedModules: {},
+            props: {},
+        };
+        snapshot.affectedModules = this.store.listenAffectedModules(() => {
+            snapshot.props = this.stateView.getSnapshot();
+        });
+        this.lastSnapshot = snapshot;
+        return snapshot;
+    }
+    needUpdate() {
+        return this.isInvalidated && this.isMounted && !this.isDestroyed;
+    }
+    setMounted() {
+        this.isMounted = true;
+    }
+    setInvalidated(invalidated) {
+        this.isInvalidated = invalidated;
+    }
+    setDestroyed() {
+        this.isDestroyed = true;
+        this.isMounted = false;
+    }
+}
+exports.ComponentView = ComponentView;
 
 
 /***/ }),
@@ -607,67 +620,58 @@ exports.ReactStoreAdapter = ReactStoreAdapter;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useConnectStore = exports.useModule = exports.useComponentView = void 0;
+exports.useModule = exports.useComponentView = void 0;
+const react_1 = __webpack_require__(156);
 const hooks_1 = __webpack_require__(985);
 const useModuleInstance_1 = __webpack_require__(878);
 const scope_1 = __webpack_require__(527);
 const StateView_1 = __webpack_require__(32);
-const react_1 = __webpack_require__(156);
-const ReactModules_1 = __webpack_require__(668);
 const store_1 = __webpack_require__(338);
 const react_store_adapter_1 = __webpack_require__(160);
 const utils_1 = __webpack_require__(225);
-function useComponentView(moduleView, moduleId, id) {
+function useComponentView(module) {
     const forceUpdate = (0, hooks_1.useForceUpdate)();
-    const store = (0, ReactModules_1.useScope)().resolve(store_1.Store);
-    const { componentId, componentView } = (0, hooks_1.useOnCreate)(() => {
-        const componentId = id || `${moduleId}__component__${(0, scope_1.generateId)()}`;
-        const componentView = moduleView.registerComponent(store, componentId, forceUpdate);
-        const stateView = componentView.stateView;
-        // // check affected components
-        // function selector() {
-        //   if (!stateView.hasSelectedProps) return;
-        //   const reactiveValues = stateView.getSnapshot();
-        //   return reactiveValues;
-        // }
-        function extend(newPropsFactory) {
-            const extendedView = moduleView.extend(newPropsFactory, componentId);
-            return useComponentView(extendedView, moduleId, componentId);
+    const { componentId, reactStore, component } = (0, hooks_1.useOnCreate)(() => {
+        const provider = (0, scope_1.getInstanceMetadata)(module).provider;
+        const reactStore = provider.scope.resolve(react_store_adapter_1.ReactStoreAdapter);
+        const store = provider.scope.resolve(store_1.Store);
+        const componentId = `${provider.instanceId}__component__${(0, scope_1.generateId)()}`;
+        let moduleView = (0, StateView_1.createStateViewForModule)(module);
+        const parentModuleView = provider.getMetadata('parentModuleView');
+        if (parentModuleView) {
+            moduleView = moduleView.mergeView(parentModuleView);
         }
-        stateView.defineProp({
+        const component = reactStore.registerComponent(moduleView, componentId, forceUpdate);
+        function extend(newPropsFactory) {
+            const newProvider = provider.resolveChildProvider(() => newPropsFactory(module), componentId);
+            newProvider.setMetadata('parentModuleView', moduleView);
+            store.setModuleContext(componentId, provider.childScope);
+            const result = useModule(componentId);
+            store.resetModuleContext(componentId);
+            return result;
+            // const extendedView = moduleView.extend(newPropsFactory, componentId);
+            // return useComponentView(extendedView, moduleId, componentId) as any;
+        }
+        moduleView.defineProp({
             type: 'extend',
             name: 'extend',
             getValue: () => extend,
         });
-        stateView.defineProp({
+        moduleView.defineProp({
             type: 'ComponentView',
             name: 'componentView',
-            getValue: () => componentView,
+            getValue: () => component,
         });
         return {
-            componentId, componentView,
+            componentId, component, moduleView, reactStore, provider,
         };
     });
     (0, hooks_1.useOnDestroy)(() => {
-        moduleView.destroyComponent(componentId);
+        reactStore.destroyComponent(componentId);
+        // // // TODO find better way of detecting one-off modules
+        // const shouldDestroyModule = provider.instanceId.includes('__component__');
+        // if (shouldDestroyModule) provider.scope.
     });
-    // useDetectChanges
-    // call selector to make selected props reactive
-    useConnectStore(componentView);
-    return componentView.stateView.proxy;
-}
-exports.useComponentView = useComponentView;
-function useModule(locator, initProps = null, moduleName = '') {
-    const module = (0, useModuleInstance_1.useModuleInstance)(locator, initProps, moduleName);
-    const moduleView = (0, hooks_1.useOnCreate)(() => (0, StateView_1.createStateViewForModule)(module));
-    return useComponentView(moduleView, (0, scope_1.getInstanceMetadata)(module).id);
-}
-exports.useModule = useModule;
-function useConnectStore(component) {
-    const scope = (0, ReactModules_1.useAppContext)().modulesScope;
-    const store = scope.resolve(store_1.Store);
-    const reactStore = scope.resolve(react_store_adapter_1.ReactStoreAdapter);
-    reactStore.createComponent(component);
     (0, react_1.useLayoutEffect)(() => {
         const stateView = component.stateView;
         if (!stateView.hasSelectedProps)
@@ -676,12 +680,15 @@ function useConnectStore(component) {
         // TODO do not run watchers for non-observable component views
         const watcherId = reactStore.createWatcher(component.id, () => {
             const prevSnapshot = component.lastSnapshot;
+            console.log('START SNAPSHOT FOR', componentId);
             const newSnapshot = component.makeSnapshot();
+            console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
             if ((0, utils_1.isSimilar)(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
                 // no modules changed, do not call compare props
                 return;
             }
             if (!(0, utils_1.isSimilar)(prevSnapshot.props, newSnapshot.props)) {
+                console.log('should render ', componentId);
                 // reactStore.updateUI();
                 component.setInvalidated(true);
             }
@@ -691,10 +698,28 @@ function useConnectStore(component) {
         };
     }, []);
     (0, react_1.useEffect)(() => {
-        reactStore.mountComponent(component);
+        component.setMounted();
     }, []);
+    return component.stateView.proxy;
 }
-exports.useConnectStore = useConnectStore;
+exports.useComponentView = useComponentView;
+// export type ModuleView<TModule> = {
+//   module: TModule,
+//   view: GetModuleStateView<TModule>,
+// }
+//
+// export function useModuleView<TModule>(module: TModule): ModuleView<TModule> {
+//   return useOnCreate(() => ({
+//     module,
+//     view: createStateViewForModule(module),
+//   }));
+// }
+function useModule(locator, initProps = null, moduleName = '') {
+    const module = (0, useModuleInstance_1.useModuleInstance)(locator, initProps, moduleName);
+    // const moduleView = useModuleView(module);
+    return useComponentView(module);
+}
+exports.useModule = useModule;
 
 
 /***/ }),
@@ -744,6 +769,7 @@ function useModuleInstance(locator, initProps = null, name = '') {
     }, []);
     // unregister the component from the module onDestroy
     (0, hooks_1.useOnDestroy)(() => {
+        isRoot && store.resetModuleContext(moduleName);
         if (isRoot)
             scope.dispose();
     });
@@ -855,7 +881,7 @@ __exportStar(__webpack_require__(158), exports);
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectScope = exports.ScopeInjectorType = exports.inject = exports.ModuleInjectorType = exports.createInjector = exports.Injector = void 0;
+exports.injectProvider = exports.ProviderInjectorType = exports.injectScope = exports.ScopeInjectorType = exports.inject = exports.ModuleInjectorType = exports.createInjector = exports.Injector = void 0;
 const utils_1 = __webpack_require__(986);
 const scope_1 = __webpack_require__(521);
 class Injector {
@@ -867,13 +893,13 @@ class Injector {
         this.isDestroyed = false;
     }
     init() {
-        this.params.init && this.params.init(this);
+        this.params.init && this.params.init();
         const getValue = this.params.getValue;
         if (getValue) {
             (0, utils_1.defineGetter)(this.provider.instance, this.propertyName, getValue);
         }
         const load = this.params.load;
-        const loadResult = load && load(this);
+        const loadResult = load && load();
         if (loadResult && loadResult.then) {
             this.setLoadingStatus('loading');
             loadResult.then(() => {
@@ -901,14 +927,25 @@ class Injector {
     resolveValue() {
         return this.provider.instance[this.propertyName];
     }
-    hasViewValue() {
-        return !!this.params.getViewValue;
+    getComponentData() {
+        const componentData = this.params.exportComponentData && this.params.exportComponentData();
+        if (!componentData) {
+            return ({
+                self: null,
+                extra: null,
+            });
+        }
+        return componentData;
     }
-    resolveViewValue() {
-        return this.params.getViewValue
-            ? this.params.getViewValue()
-            : this.resolveValue();
-    }
+    // hasViewValue() {
+    //   return !!this.params.getView;
+    // }
+    //
+    // resolveViewValue(): TViewValue {
+    //   return this.params.getView
+    //     ? this.params.getView()
+    //     : this.resolveValue() as any;
+    // }
     get type() {
         return this.params.type;
     }
@@ -933,7 +970,7 @@ function inject(ModuleClass) {
     }));
 }
 exports.inject = inject;
-exports.ScopeInjectorType = Symbol('scopeInjector');
+exports.ScopeInjectorType = Symbol('providerInjector');
 function injectScope() {
     return createInjector(injector => ({
         type: exports.ScopeInjectorType,
@@ -941,6 +978,14 @@ function injectScope() {
     }));
 }
 exports.injectScope = injectScope;
+exports.ProviderInjectorType = Symbol('providerInjector');
+function injectProvider() {
+    return createInjector(injector => ({
+        type: exports.ProviderInjectorType,
+        getValue: () => injector.provider,
+    }));
+}
+exports.injectProvider = injectProvider;
 
 
 /***/ }),
@@ -972,8 +1017,7 @@ class Provider {
         this.instance = null;
         this.metadata = {};
         this.injectors = {}; // dict of injectors by id
-        this.injectorsByProp = {}; // dict of injectors by propName
-        this.isInited = false; // instance is added to Scope
+        this.isInited = false; // true if instance is added to the Scope
         // private resolveInit!: Function;
         // waitForInit = new Promise(resolve => { this.resolveInit = resolve });
         this.injectionCompleted = false;
@@ -981,6 +1025,7 @@ class Provider {
         this.isAsync = false;
         this.isLoaded = false;
         this.waitForLoad = new Promise(resolve => { this.resolveLoad = resolve; });
+        this.childScope = null;
         this.events = (0, nanoevents_1.createNanoEvents)();
         if (!this.name)
             this.name = `AnonymousProvider__${(0, utils_1.generateId)()}`;
@@ -1041,7 +1086,6 @@ class Provider {
                 return;
             const injector = propValue;
             provider.injectors[injector.id] = injector;
-            provider.injectorsByProp[propName] = injector;
             injector.setPropertyName(propName);
         });
         // call init() for injectors
@@ -1062,9 +1106,14 @@ class Provider {
     }
     setMetadata(pluginName, data) {
         this.metadata[pluginName] = data;
+        return data;
     }
+    // destroy provider
     destroy() {
-        // destroy provider
+        if (this.childScope) {
+            this.childScope.dispose();
+        }
+        this.destroyInstance();
         // unsubscribe events
         this.events.events = {};
     }
@@ -1131,6 +1180,18 @@ class Provider {
     get instanceId() {
         return getInstanceMetadata(this.instance).id;
     }
+    resolveChildScope() {
+        if (!this.childScope)
+            this.childScope = this.scope.createChildScope();
+        return this.childScope;
+    }
+    resolveChildProvider(ModuleCreator, name) {
+        const childScope = this.resolveChildScope();
+        if (!childScope.isRegistered(name)) {
+            childScope.register(ModuleCreator, name);
+        }
+        return childScope.resolveProvider(name);
+    }
 }
 exports.Provider = Provider;
 function createInstanceMetadata(instance, provider) {
@@ -1188,12 +1249,12 @@ class Scope {
     registerMany(dependencies) {
         Object.keys(dependencies).forEach(depName => this.register(dependencies[depName], depName));
     }
-    register(ModuleCreator, name) {
+    register(ModuleCreator, name, options) {
         const moduleName = name || ModuleCreator.name || `AnonymousModule_${(0, utils_1.generateId)()}`;
         if (this.providers[moduleName]) {
             throw new Error(`${moduleName} already registered in the given Scope`);
         }
-        const provider = new provider_1.Provider(this, ModuleCreator, moduleName);
+        const provider = new provider_1.Provider(this, ModuleCreator, moduleName, options);
         this.providers[moduleName] = provider;
         this.events.emit('onModuleRegister', provider);
         return provider;
@@ -1229,7 +1290,9 @@ class Scope {
         return this.init(locator, ...[]);
     }
     unregister(locator) {
-        const provider = this.resolveProvider(locator);
+        const provider = this.getProvider(locator);
+        if (!provider)
+            return;
         provider.destroyInstance();
         delete this.providers[provider.id];
     }
@@ -1322,6 +1385,7 @@ class Scope {
         // destroy providers
         Object.keys(this.providers).forEach(providerName => {
             this.providers[providerName].destroy();
+            delete this.providers[providerName];
         });
         // unsubscribe events
         if (!this.parent)
@@ -1453,17 +1517,22 @@ exports.isClass = isClass;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectQuery = exports.QueryInjectorType = exports.Query = exports.QueryStateConfig = void 0;
+exports.getQueryOptionsFromArgs = exports.injectQuery = exports.QueryModule = exports.QueryStateConfig = void 0;
 const test_utils_1 = __webpack_require__(267);
 const scope_1 = __webpack_require__(527);
-const Store_1 = __webpack_require__(607);
 var error = test_utils_1.Simulate.error;
+const StateView_1 = __webpack_require__(32);
+const injectState_1 = __webpack_require__(307);
+const inject_watch_1 = __webpack_require__(650);
+const inject_child_1 = __webpack_require__(792);
 class QueryStateConfig {
     constructor() {
+        // constructor(public state: QueryState<TData, TParams, TError>) {}
         this.state = {
             status: 'idle',
             data: null,
             error: null,
+            params: null,
         };
     }
     setData(data) {
@@ -1475,25 +1544,45 @@ class QueryStateConfig {
         this.state.status = 'error';
         this.state.error = error;
     }
+    get isLoading() {
+        return this.state.status === 'loading';
+    }
 }
 exports.QueryStateConfig = QueryStateConfig;
 /**
  * Alternative for https://react-query.tanstack.com/reference/useQuery
  */
-class Query {
-    constructor(store, moduleName, propName, constructorOptions) {
-        this.store = store;
-        this.moduleName = moduleName;
+class QueryModule {
+    constructor(...args) {
+        this.state = (0, injectState_1.injectState)(QueryStateConfig);
+        this.watcher = (0, inject_watch_1.injectWatch)(this.getParams, this.refetch);
         this.fetchingPromise = null;
+        this.promiseId = '';
         this.enabled = true;
-        const options = Object.assign({ enabled: true, params: null, initialData: null, getParams: null }, constructorOptions);
+        this.isInitialFetch = true;
+        const computedOptions = getQueryOptionsFromArgs(args);
+        const options = Object.assign({ enabled: true, params: null, initialData: null, getParams: null, fetch: () => { } }, computedOptions);
         this.options = options;
         this.enabled = !!options.enabled;
-        this.params = options.getParams ? options.getParams() : {};
-        const stateConfig = new QueryStateConfig();
-        stateConfig.state.data = options.initialData;
-        this.state = this.store.createState(moduleName, propName, stateConfig);
+    }
+    load() {
         this.stateView = this.state.createView();
+        const queryMethods = new StateView_1.StateView();
+        queryMethods.defineProp({
+            type: 'QueryMethod',
+            name: 'refetch',
+            reactive: false,
+            getValue: () => {
+                return () => this.refetch();
+            },
+        });
+        this.queryView = this.stateView.mergeView(queryMethods);
+        const data = this.options.initialData;
+        this.state.nonReactiveUpdate({
+            params: this.getParams(),
+            data,
+        });
+        this.exec();
     }
     exec() {
         if (this.fetchingPromise)
@@ -1501,64 +1590,98 @@ class Query {
         return this.fetch();
     }
     fetch() {
-        const fetchResult = this.options.fetch(this);
+        const fetchResult = this.options.fetch();
         if (fetchResult === null || fetchResult === void 0 ? void 0 : fetchResult.then) {
+            if (this.isInitialFetch) {
+                this.state.nonReactiveUpdate({
+                    status: 'loading',
+                });
+                this.isInitialFetch = false;
+            }
+            else {
+                this.state.setStatus('loading');
+            }
+            const promiseId = (0, scope_1.generateId)();
+            this.promiseId = promiseId;
             this.fetchingPromise = fetchResult;
             return fetchResult.then((data) => {
-                if (!this.enabled)
+                if (!this.enabled || this.promiseId !== promiseId)
                     return;
                 this.fetchingPromise = null;
+                this.promiseId = '';
                 this.state.setData(data);
             })
                 .catch((e) => {
-                if (!this.enabled)
+                if (!this.enabled || this.promiseId !== promiseId)
                     return;
                 this.fetchingPromise = null;
+                this.promiseId = '';
                 this.state.setError(error);
             });
         }
+        // result is not a promise, set the data
+        this.state.setData(fetchResult);
         return Promise.resolve(fetchResult);
+    }
+    refetch() {
+        if (!this.enabled)
+            return;
+        this.stopFetching();
+        return this.fetch();
+    }
+    stopFetching() {
+        this.fetchingPromise = null;
+        this.promiseId = '';
     }
     setEnabled(enabled) {
         this.enabled = enabled;
+    }
+    getParams() {
+        return this.options.getParams ? this.options.getParams() : null;
     }
     destroy() {
         // prevent unfinished fetching
         this.setEnabled(false);
     }
-}
-exports.Query = Query;
-exports.QueryInjectorType = Symbol('queryInjector');
-// async function fetchOnlineUsers() {
-//   return new Promise<TUser[]>(r => {
-//     setTimeout(() => r([{ id: 'online1', name: 'Online User 1' }, { id: 'online2', name: 'Online User 2' }]), 3000);
-//   });
-// }
-function injectQuery(options) {
-    return (0, scope_1.createInjector)(injector => {
-        let query;
+    exportComponentData() {
         return {
-            type: exports.QueryInjectorType,
-            load: () => {
-                const propName = injector.propertyName;
-                const moduleName = injector.provider.id;
-                const store = injector.provider.scope.resolve(Store_1.Store);
-                query = new Query(store, moduleName, propName, options);
-                query.exec();
-            },
-            getValue() {
-                return query;
-            },
-            getViewValue() {
-                return query.stateView;
-            },
-            destroy() {
-                query.destroy();
-            },
+            self: this.queryView,
+            extra: null,
         };
-    });
+    }
+}
+exports.QueryModule = QueryModule;
+function injectQuery(...args) {
+    return (0, inject_child_1.injectChild)(QueryModule, ...args);
 }
 exports.injectQuery = injectQuery;
+/**
+ * convers Query constructor agrs to QueryOptions
+ * @param args
+ */
+function getQueryOptionsFromArgs(args) {
+    if (args.length === 1) {
+        const arg = args[0];
+        if (typeof arg === 'function') {
+            return {
+                fetch: arg,
+            };
+        }
+        return arg;
+    }
+    if (args.length === 2) {
+        return {
+            initialData: args[0],
+            fetch: args[1],
+        };
+    }
+    return {
+        initialData: args[0],
+        fetch: args[1],
+        getParams: args[2],
+    };
+}
+exports.getQueryOptionsFromArgs = getQueryOptionsFromArgs;
 
 
 /***/ }),
@@ -1568,7 +1691,7 @@ exports.injectQuery = injectQuery;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ComponentView = exports.createStateViewForModule = exports.StateView = void 0;
+exports.createStateViewForModule = exports.StateView = void 0;
 // composition layer
 // construct a ReactiveObject based on given presets
 // has module,stateSelector and allow extending
@@ -1586,8 +1709,6 @@ class StateView {
         this.hasSelectedProps = false;
         this.hasWildcardProps = false;
         this.wildcardPropCreator = null;
-        // TODO remove components
-        this.components = {};
         this.proxy = new Proxy({
             __proxyName: 'StateViewProxy', // set proxy name for debugging
         }, {
@@ -1636,7 +1757,7 @@ class StateView {
         (0, scope_1.forEach)(selectedDescriptors, (descr, propName) => {
             let value;
             if (descr.stateView) {
-                const getRev = this.descriptors.getRev;
+                const getRev = descr.stateView.descriptors.getRev;
                 if (getRev) {
                     value = getRev.getValue();
                 }
@@ -1680,27 +1801,28 @@ class StateView {
         return newViewFactory(this.props, this);
     }
     // eslint-disable-next-line no-dupe-class-members
-    extend(newPropsFactory, name) {
-        if (!this.scope) {
-            throw new Error('You should define a Scope to use .extend()');
-        }
-        if (!this.scope.isRegistered(name)) {
-            const factory = () => newPropsFactory(this.props, this);
-            const provider = this.scope.register(factory, name);
-            const extendedModule = this.scope.resolve(name);
-            const extendedModuleView = createStateViewForModule(extendedModule);
-            const mergedView = this.mergeView(extendedModuleView);
-            provider.setMetadata('StateView', mergedView);
-            // TODO destroy module after component destroy, create a component scope
-        }
-        const provider = this.scope.resolveProvider(name);
-        const extendedView = provider.getMetadata('StateView');
-        return extendedView;
-    }
+    // extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): ExtendView<TProps, TNewProps> {
+    //   if (!this.scope) {
+    //     throw new Error('You should define a Scope to use .extend()');
+    //   }
+    //
+    //   if (!this.scope.isRegistered(name)) {
+    //     const factory = () => newPropsFactory(this.props, this);
+    //     const provider = this.scope.register(factory, name);
+    //     const extendedModule = this.scope.resolve(name);
+    //     const extendedModuleView = createStateViewForModule(extendedModule);
+    //     const mergedView = this.mergeView(extendedModuleView);
+    //     provider.setMetadata('StateView', mergedView);
+    //     // TODO destroy module after component destroy, create a component scope
+    //   }
+    //
+    //   const provider = this.scope.resolveProvider(name);
+    //   const extendedView = provider.getMetadata('StateView');
+    //   return extendedView;
+    // }
     clone() {
         const clone = new StateView(this.scope);
         (0, scope_1.forEach)(this.descriptors, descriptor => clone.defineProp(descriptor));
-        clone.components = this.components;
         return clone;
     }
     mergeView(extension) {
@@ -1708,22 +1830,6 @@ class StateView {
         const mergeResult = this.clone();
         (0, scope_1.forEach)(extension.descriptors, descriptor => mergeResult.defineProp(descriptor));
         return mergeResult;
-    }
-    registerComponent(store, componentId, forceUpdate) {
-        const componentView = new ComponentView(store, this, componentId, forceUpdate);
-        this.components[componentId] = componentView;
-        return componentView;
-    }
-    destroyComponent(componentId) {
-        var _a;
-        if ((_a = this.scope) === null || _a === void 0 ? void 0 : _a.isRegistered(componentId)) {
-            this.scope.unregister(componentId);
-        }
-        const componentView = this.components[componentId];
-        if (!componentView)
-            return;
-        componentView.destroy();
-        delete this.components[componentId];
     }
 }
 exports.StateView = StateView;
@@ -1735,46 +1841,6 @@ function createStateViewForModule(module) {
         .select((0, plugins_1.pickInjectors)(module)); // expose injectors
 }
 exports.createStateViewForModule = createStateViewForModule;
-class ComponentView {
-    constructor(store, stateView, id, forceUpdate) {
-        this.store = store;
-        this.stateView = stateView;
-        this.id = id;
-        this.forceUpdate = forceUpdate;
-        this.isDestroyed = false;
-        this.isMounted = false;
-        this.isInvalidated = false;
-        this.lastSnapshot = {
-            affectedModules: {},
-            props: null,
-        };
-    }
-    makeSnapshot() {
-        const snapshot = {
-            affectedModules: {},
-            props: null,
-        };
-        snapshot.affectedModules = this.store.listenAffectedModules(() => {
-            snapshot.props = this.stateView.getSnapshot();
-        });
-        this.lastSnapshot = snapshot;
-        return snapshot;
-    }
-    needUpdate() {
-        return this.isInvalidated && this.isMounted && !this.isDestroyed;
-    }
-    mount() {
-        this.isMounted = true;
-    }
-    setInvalidated(invalidated) {
-        this.isInvalidated = invalidated;
-    }
-    destroy() {
-        this.isDestroyed = true;
-        this.isMounted = false;
-    }
-}
-exports.ComponentView = ComponentView;
 
 
 /***/ }),
@@ -1835,10 +1901,13 @@ class Store {
         }
         this.currentMutation = mutation;
         stateController.applyMutation(mutation);
+        this.events.emit('onMutation', mutation);
         this.currentMutation = null;
-        // trigger subscribed components to re-render
-        if (!mutation.silent)
-            this.events.emit('onMutation', mutation, this);
+        if (!mutation.silent) {
+            // trigger subscribed components to re-render
+            if (!mutation.silent)
+                this.events.emit('onAfterMutations');
+        }
     }
     toJSON() {
         // TODO use for debugging
@@ -1971,6 +2040,7 @@ class ModuleStateController {
             controller.metadata.config.mutations[mutationName].apply(controller, mutation.payload);
         });
         this.metadata.rev++;
+        console.log(`New revision for module ${moduleName}.${sectionName}`, this.metadata.rev);
         this.draftState = null;
     }
     get state() {
@@ -1993,18 +2063,18 @@ class ModuleStateController {
         return this.store.modulesMetadata[this.moduleName][this.sectionName];
     }
     createView() {
-        const metadata = this.metadata;
-        const config = metadata.config;
+        const config = this.metadata.config;
         const view = new StateView_1.StateView();
         const controller = this;
         view.defineProp({
             type: 'StateRev',
             name: 'getRev',
-            reactive: false,
+            reactive: true,
             getValue: () => {
                 // eslint-disable-next-line no-unused-expressions
                 controller.state; // read as reactive
-                return metadata.rev;
+                console.log(`read REV for ${controller.moduleName}.${controller.sectionName}`, controller.metadata.rev);
+                return controller.metadata.rev;
             },
         });
         (0, traverse_1.traverse)(config.state, stateKey => {
@@ -2095,8 +2165,11 @@ function injectForm(stateGetter, stateSetter, extraPropsGenerator) {
             getValue() {
                 return binding;
             },
-            getViewValue() {
-                return binding;
+            exportComponentData() {
+                return {
+                    self: binding,
+                    extra: null,
+                };
             }
         };
     });
@@ -2132,6 +2205,102 @@ __exportStar(__webpack_require__(890), exports);
 
 /***/ }),
 
+/***/ 792:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectChild = exports.ChildModuleInjectorType = void 0;
+const injector_1 = __webpack_require__(869);
+exports.ChildModuleInjectorType = Symbol('childModuleInjector');
+function injectChild(Module, ...args) {
+    return (0, injector_1.createInjector)(injector => {
+        const scope = injector.provider.resolveChildScope();
+        let moduleName = '';
+        return {
+            type: exports.ChildModuleInjectorType,
+            load() {
+                moduleName = injector.propertyName;
+                scope.register(Module, moduleName, { parentProvider: injector.provider });
+                scope.init(moduleName, ...args);
+            },
+            getValue: () => scope.resolve(moduleName),
+            exportComponentData: () => {
+                const module = scope.resolve(moduleName);
+                return module.exportComponentData && module.exportComponentData();
+            },
+            destroy() {
+                scope.unregister(moduleName);
+            },
+        };
+    });
+}
+exports.injectChild = injectChild;
+// function createStateForModule<TConfigCreator extends TStateConfigCreator>(provider: Provider<any>, propName: string, stateConfig: TConfigCreator): TStateControllerFor<TConfigCreator> {
+//   const moduleName = provider.instanceId;
+//   const store = provider.scope.resolve(Store);
+//   const moduleState = store.createState(moduleName, propName, stateConfig);
+//   createLoadingState(store, provider);
+//   return moduleState;
+// }
+//
+// function destroyStateForModule(provider: Provider<any>) {
+//   const moduleName = provider.instanceId;
+//   const store = provider.scope.resolve(Store);
+//   store.destroyModule(moduleName);
+// }
+
+
+/***/ }),
+
+/***/ 650:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectWatch = exports.WatchModule = void 0;
+const injector_1 = __webpack_require__(869);
+const Store_1 = __webpack_require__(607);
+const utils_1 = __webpack_require__(225);
+const inject_child_1 = __webpack_require__(792);
+const scope_1 = __webpack_require__(527);
+class WatchModule {
+    constructor(watchExpr, onChange, isEqual = utils_1.isSimilar) {
+        this.watchExpr = watchExpr;
+        this.onChange = onChange;
+        this.isEqual = isEqual;
+        this.store = (0, injector_1.inject)(Store_1.Store);
+        this.unwatch = null;
+        this.current = null;
+    }
+    load() {
+        const parentProvider = (0, scope_1.getInstanceMetadata)(this).provider.options.parentProvider;
+        if (!parentProvider) {
+            throw new Error('This module should have a parent module');
+        }
+        const context = parentProvider.instance;
+        this.current = this.watchExpr.call(context);
+        this.unwatch = this.store.events.on('onMutation', () => {
+            const prev = this.current;
+            this.current = this.watchExpr.call(context);
+            if (this.isEqual(this.current, prev))
+                return;
+            this.onChange.call(context, this.current, prev);
+        });
+    }
+    destroy() {
+        this.unwatch && this.unwatch();
+    }
+}
+exports.WatchModule = WatchModule;
+function injectWatch(expression, onChange, isEqual) {
+    return (0, inject_child_1.injectChild)(WatchModule, expression, onChange, isEqual);
+}
+exports.injectWatch = injectWatch;
+
+
+/***/ }),
+
 /***/ 307:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
@@ -2161,8 +2330,11 @@ function injectState(configCreator, onCreate) {
             getValue() {
                 return state;
             },
-            getViewValue() {
-                return stateView;
+            exportComponentData() {
+                return {
+                    self: stateView,
+                    extra: stateView,
+                };
             },
             destroy(injector) {
                 const moduleName = injector.provider.instanceId;
@@ -2322,24 +2494,43 @@ function pickInjectors(module) {
         const provider = (0, scope_1.getInstanceMetadata)(module).provider;
         let newView = view;
         (0, scope_1.forEach)(provider.injectors, injector => {
-            if (!injector.hasViewValue())
-                return;
-            const injectorView = injector.resolveViewValue();
-            newView = newView.mergeView(injectorView);
-            newView.defineProp({
-                type: 'InjectorView',
-                name: injector.propertyName,
-                reactive: true,
-                stateView: injectorView,
-                getValue() {
-                    return injectorView;
-                },
-            });
+            const componentData = injector.getComponentData();
+            const extraProps = componentData.extra;
+            if (extraProps) {
+                newView = newView.mergeView(extraProps);
+            }
+            const selfProps = componentData.self;
+            if (selfProps) {
+                newView.defineProp({
+                    type: 'InjectorView',
+                    name: injector.propertyName,
+                    reactive: true,
+                    stateView: selfProps,
+                    getValue() {
+                        return selfProps;
+                    },
+                });
+            }
         });
         return newView;
     };
 }
 exports.pickInjectors = pickInjectors;
+// const injProps: Queryprops;
+// injProps.onlineUsersQuery
+// const injProps: GetAllInjectedProps<QueriesModule>;
+// injProps.onlineUsersQuery
+// injProps.onlineUsersQuery.setData;
+// injProps.setData
+// //
+// const injProps2: GetFlattenExtraProps<QueriesModule>;
+// injProps2.onlineUsersQuery.setData;
+// injProps2.setData
+//
+//
+// const injPropsExtra: GetExtraInjectedProps<QueriesModule>;
+// const injPropsExtra2: GetModuleExtraView<QueriesModule>;
+// injPropsExtra2.
 // type TSuperUser = {
 //   id: string,
 //   name: string,

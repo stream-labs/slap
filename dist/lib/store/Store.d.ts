@@ -27,7 +27,8 @@ export declare class Store {
     events: import("nanoevents").Emitter<StoreEvents>;
 }
 export interface StoreEvents {
-    onMutation: (mutation: Mutation, store: Store) => void;
+    onMutation: (mutation: Mutation) => void;
+    onAfterMutations: () => void;
 }
 export declare class ModuleStateController {
     store: Store;

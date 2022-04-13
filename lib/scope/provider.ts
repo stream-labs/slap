@@ -14,7 +14,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   id: string;
   instance: TInstance | null = null;
   metadata: Dict<any> = {};
-  injectors: Dict<Injector<unknown, unknown>> = {}; // dict of injectors by id
+  injectors: Dict<Injector<unknown, unknown, unknown>> = {}; // dict of injectors by id
   factory: (args: TInitParams) => TInstance;
 
   isInited = false; // true if instance is added to the Scope
@@ -106,7 +106,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
       if (descriptor.get) return; // don't execute getters
       const propValue = descriptor.value;
       if (!(propValue instanceof Injector)) return;
-      const injector = propValue as Injector<unknown, unknown>;
+      const injector = propValue as Injector<unknown, unknown, unknown>;
       provider.injectors[injector.id] = injector;
       injector.setPropertyName(propName);
     });
@@ -162,7 +162,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   }
 
   handleInjectorStatusChange(
-    injector: Injector<unknown, unknown>,
+    injector: Injector<unknown, unknown, unknown>,
     currentStatus: TLoadingStatus,
     prevStatus: TLoadingStatus,
   ) {
@@ -258,7 +258,7 @@ export function getInstanceMetadata(instance: any) {
 
 export interface ProviderEvents {
   onInjectorStatusChange: (
-    injector: Injector<unknown, unknown>,
+    injector: Injector<unknown, unknown, unknown>,
     current: TLoadingStatus,
     prev: TLoadingStatus
   ) => unknown;

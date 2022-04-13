@@ -86,7 +86,7 @@ export class StateView<TProps = {}> {
     forEach(selectedDescriptors, (descr, propName) => {
       let value: unknown;
       if (descr.stateView) {
-        const getRev = (this.descriptors as any).getRev;
+        const getRev = (descr.stateView.descriptors as any).getRev;
         if (getRev) {
           value = getRev.getValue();
         } else {
@@ -133,25 +133,25 @@ export class StateView<TProps = {}> {
   }
 
   // eslint-disable-next-line no-dupe-class-members
-  extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): ExtendView<TProps, TNewProps> {
-    if (!this.scope) {
-      throw new Error('You should define a Scope to use .extend()');
-    }
-
-    if (!this.scope.isRegistered(name)) {
-      const factory = () => newPropsFactory(this.props, this);
-      const provider = this.scope.register(factory, name);
-      const extendedModule = this.scope.resolve(name);
-      const extendedModuleView = createStateViewForModule(extendedModule);
-      const mergedView = this.mergeView(extendedModuleView);
-      provider.setMetadata('StateView', mergedView);
-      // TODO destroy module after component destroy, create a component scope
-    }
-
-    const provider = this.scope.resolveProvider(name);
-    const extendedView = provider.getMetadata('StateView');
-    return extendedView;
-  }
+  // extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): ExtendView<TProps, TNewProps> {
+  //   if (!this.scope) {
+  //     throw new Error('You should define a Scope to use .extend()');
+  //   }
+  //
+  //   if (!this.scope.isRegistered(name)) {
+  //     const factory = () => newPropsFactory(this.props, this);
+  //     const provider = this.scope.register(factory, name);
+  //     const extendedModule = this.scope.resolve(name);
+  //     const extendedModuleView = createStateViewForModule(extendedModule);
+  //     const mergedView = this.mergeView(extendedModuleView);
+  //     provider.setMetadata('StateView', mergedView);
+  //     // TODO destroy module after component destroy, create a component scope
+  //   }
+  //
+  //   const provider = this.scope.resolveProvider(name);
+  //   const extendedView = provider.getMetadata('StateView');
+  //   return extendedView;
+  // }
 
   clone() {
     const clone = new StateView<TProps>(this.scope);
@@ -176,36 +176,31 @@ export function createStateViewForModule<T>(module: T) {
   const stateView = new StateView(scope);
   return stateView
     .select(pickProps(module)) // expose the module props
-    .select(pickInjectors(module)) as StateView<GetModuleView<T>>; // expose injectors
+    .select(pickInjectors(module)) as GetModuleStateView<T>; // expose injectors
 }
 
-export type GetModuleView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = TModule extends { getView: () => StateView<infer TView>} ? TView : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
-export type GetModuleStateView<TModuleConfig> = StateView<GetModuleView<TModuleConfig>>;
+export type GetModuleSelfView<
+  TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>
+  > = TModule extends { exportComponentData: () => ({ self: StateView<infer TView> })} ? TView : {}
 
-// const userExtention = {
-//
-//
-//   extendedFoo: 1,
-//
-//   state: injectState({
-//     selectedUserId: 'user2',
-//   }),
-// }
-//
-// const users = new UsersModule();
-// const usersView = createStateViewForModule(users);
-// usersView.props.state.users
-// usersView.props.users;
-// const extendedUser = usersView.extend(() => userExtention, 'userext');
-// extendedUser.props.users;
-// extendedUser.props.state;
-// extendedUser.props.selectedUserId;
-// extendedUser.props.loading;
+export type GetModuleExtraView<
+  TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>
+  > = TModule extends { exportComponentData: () => ({ extra: StateView<infer TView> })} ? TView : {}
 
-export type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetModuleView<TExtendedModule>>;
+export type GetComponentDataForModule<
+  TModuleConfig,
+  TModule = TModuleInstanceFor<TModuleConfig>,
+  TSelfExport = GetModuleSelfView<TModuleConfig>,
+  TExtraExport = GetModuleExtraView<TModuleConfig>,
+  TInjectedProps = TModule extends { exportComponentData: () => any } ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
+  > = TSelfExport & TExtraExport & TInjectedProps;
 
+// export type GetModuleView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> =
+//   TModule extends { getView: () => StateView<infer TView>} ? TView : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
 
+export type GetModuleStateView<TModuleConfig> = StateView<GetComponentDataForModule<TModuleConfig>>;
 
+export type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetComponentDataForModule<TExtendedModule>>;
 
 export type TModulePropDescriptor<TValue> = {
   type: string,

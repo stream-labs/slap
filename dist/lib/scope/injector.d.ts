@@ -1,18 +1,18 @@
 import { TLoadingStatus, TModuleClass } from './interfaces';
 import { Provider } from './provider';
-export declare type TInjectorParams<TValue, TViewValue> = {
+export declare type TInjectorParams<TValue, TView, TExtraView> = {
     type: Symbol;
     loadingStatus?: TLoadingStatus;
-    init?(injector: Injector<TValue, TViewValue>): TViewValue;
-    load?(injector: Injector<TValue, TViewValue>): unknown;
+    init?(): TView;
+    load?(): unknown;
     getValue?(): TValue;
-    getViewValue?(): TViewValue;
-    destroy?(currentInjector: Injector<TValue, TViewValue>): unknown;
+    exportComponentData?(): InjectorComponentData<TView, TExtraView>;
+    destroy?(currentInjector: Injector<TValue, TView, TExtraView>): unknown;
 };
-export declare class Injector<TValue, TViewValue> {
+export declare class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
     provider: Provider<any>;
     id: string;
-    params: TInjectorParams<TValue, TViewValue>;
+    params: TInjectorParams<TValue, TViewValue, TInjectedViewExtra>;
     loadingStatus: TLoadingStatus;
     propertyName: string;
     isDestroyed: boolean;
@@ -22,19 +22,26 @@ export declare class Injector<TValue, TViewValue> {
     setLoadingStatus(loadingStatus: TLoadingStatus): void;
     destroy(): void;
     resolveValue(): TValue;
-    hasViewValue(): boolean;
-    resolveViewValue(): TViewValue;
+    getComponentData(): InjectorComponentData<TViewValue, TInjectedViewExtra>;
     get type(): Symbol;
 }
-export declare function createInjector<TParams extends TInjectorParams<any, any>, TValue = TParams extends {
+export declare function createInjector<TParams extends TInjectorParams<any, any, any>, TValue = TParams extends {
     getValue(): infer R;
-} ? R : unknown, TViewValue = TParams extends {
-    getViewValue(): infer R;
-} ? R : unknown>(paramsCreator: (injector: Injector<any, any>) => TParams): InjectedProp<TValue, TViewValue>;
+} ? R : unknown, TView = TParams extends {
+    getView(): infer R;
+} ? R : unknown, TViewExtra = TParams extends {
+    getExtraView(): infer R;
+} ? R : null>(paramsCreator: (injector: Injector<any, any, any>) => TParams): InjectedProp<TValue, TView, TViewExtra>;
 export declare const ModuleInjectorType: unique symbol;
-export declare function inject<T extends TModuleClass>(ModuleClass: T): InjectedProp<import("./interfaces").TModuleInstanceFor<T>, unknown>;
+export declare function inject<T extends TModuleClass>(ModuleClass: T): InjectedProp<import("./interfaces").TModuleInstanceFor<T>, unknown, null>;
 export declare const ScopeInjectorType: unique symbol;
-export declare function injectScope(): InjectedProp<import("./scope").Scope, unknown>;
-export declare type InjectedProp<TInjectedValue, TInjectedView> = TInjectedValue & {
-    __injector: Injector<TInjectedValue, TInjectedView>;
+export declare function injectScope(): InjectedProp<import("./scope").Scope, unknown, null>;
+export declare const ProviderInjectorType: unique symbol;
+export declare function injectProvider(): InjectedProp<Provider<any, []>, unknown, null>;
+export declare type InjectedProp<TValue, TView, TExtraView> = TValue & {
+    __injector: Injector<TValue, TView, TExtraView>;
+};
+export declare type InjectorComponentData<TView, TExtraView> = {
+    self: TView;
+    extra: TExtraView;
 };

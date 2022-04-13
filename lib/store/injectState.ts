@@ -1,4 +1,8 @@
-import { createInjector, InjectedProp, Injector } from '../scope/injector';
+import {
+  createInjector,
+  InjectedProp,
+  Injector,
+} from '../scope/injector';
 
 import {
   ModuleStateController,
@@ -12,7 +16,7 @@ export function injectState<
   TConfigCreator extends TStateConfigCreator,
   TValue = TStateControllerFor<TConfigCreator>,
   TViewValue = StateView<TStateViewForStateConfig<TConfigCreator>>,
-  >(configCreator: TConfigCreator, onCreate?: (stateController: TValue, injector: Injector<TValue, TViewValue>) => unknown): InjectedProp<TValue, TViewValue> {
+  >(configCreator: TConfigCreator, onCreate?: (stateController: TValue, injector: Injector<TValue, TViewValue, TViewValue>) => unknown): InjectedProp<TValue, TViewValue, TViewValue> {
   return createInjector(injector => {
 
     const store = injector.provider.scope.resolve(Store);
@@ -35,8 +39,12 @@ export function injectState<
       getValue() {
         return state;
       },
-      getViewValue() {
-        return stateView;
+
+      exportComponentData() {
+        return {
+          self: stateView,
+          extra: stateView,
+        };
       },
       destroy(injector) {
         const moduleName = injector.provider.instanceId;

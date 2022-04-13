@@ -1,6 +1,7 @@
-import { GetProps, StateView } from '../StateView';
+import { GetModuleExtraView, GetProps, StateView } from '../StateView';
 import { forEach, getInstanceMetadata, Injector } from '../../scope';
 import { Flatten } from '../../scope/flatten';
+import { QueriesModule } from '../../../demo/stars-editor/components/pages/QueriesPage';
 
 export function pickInjectors<
   TView extends StateView<any>,
@@ -13,34 +14,63 @@ export function pickInjectors<
     let newView = view;
 
     forEach(provider.injectors, injector => {
-      if (!injector.hasViewValue()) return;
+      const componentData = injector.getComponentData();
 
-      const injectorView = injector.resolveViewValue() as StateView<any>;
-      if (!(injectorView instanceof StateView)) return;
 
-      newView = newView.mergeView(injectorView);
-      newView.defineProp({
-        type: 'InjectorView',
-        name: injector.propertyName,
-        reactive: true,
-        stateView: injectorView,
-        getValue() {
-          return injectorView;
-        },
-      });
+      const extraProps = componentData.extra;
+      if (extraProps) {
+        newView = newView.mergeView(extraProps as any);
+      }
+
+      const selfProps = componentData.self;
+      if (selfProps) {
+        newView.defineProp({
+          type: 'InjectorView',
+          name: injector.propertyName,
+          reactive: true,
+          stateView: selfProps as any,
+          getValue() {
+            return selfProps;
+          },
+        });
+      }
+
+
     });
 
     return newView;
   };
 }
 
-export type GetInjectedPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends { __injector: Injector<any, any>} ? TProp : never;
-export type GetInjectedProps<TModule> = {[K in keyof TModule as GetInjectedPropName<TModule, K>]: TModule[K] extends { __injector: Injector<any, StateView<infer TInjectorView>>} ? TInjectorView: never }
-export type GetFlattenInjectedProps<TModule> = Flatten<GetInjectedProps<TModule>>
-export type GetAllInjectedProps<TModule> = GetFlattenInjectedProps<TModule> & GetInjectedProps<TModule>;
+export type GetInjectedPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends { __injector: Injector<any, any, any>} ? TProp : never;
+export type GetInjectedExtraPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends { __injector: Injector<any, any, infer TExtraProps>} ? TExtraProps extends StateView ? TProp : never : never;
 
-export type PickInjectedViews<TView, TModule> = StateView<GetProps<TView> & GetFlattenInjectedProps<TModule>>;
+export type GetInjectedProps<TModule> = {[K in keyof TModule as GetInjectedPropName<TModule, K>]: TModule[K] extends { __injector: Injector<any, StateView<infer TInjectorView>, any>} ? TInjectorView: never }
+export type GetExtraInjectedProps<TModule> = {[K in keyof TModule as GetInjectedExtraPropName<TModule, K>]: TModule[K] extends { __injector: Injector<any, any, StateView<infer TExtraProps>>} ? TExtraProps: never }
+export type GetFlattenExtraProps<TModule> = keyof GetExtraInjectedProps<TModule> extends never ? {} : Flatten<GetExtraInjectedProps<TModule>>
+export type GetAllInjectedProps<TModule> = GetFlattenExtraProps<TModule> & GetInjectedProps<TModule>;
 
+export type PickInjectedViews<TView, TModule> = StateView<GetProps<TView> & GetAllInjectedProps<TModule>>;
+
+type Keytype = keyof GetExtraInjectedProps<QueriesModule>;
+type Queryprops = keyof GetExtraInjectedProps<QueriesModule> extends never ? {} : Flatten<GetExtraInjectedProps<QueriesModule>>
+
+// const injProps: Queryprops;
+// injProps.onlineUsersQuery
+
+// const injProps: GetAllInjectedProps<QueriesModule>;
+// injProps.onlineUsersQuery
+// injProps.onlineUsersQuery.setData;
+// injProps.setData
+// //
+// const injProps2: GetFlattenExtraProps<QueriesModule>;
+// injProps2.onlineUsersQuery.setData;
+// injProps2.setData
+//
+//
+// const injPropsExtra: GetExtraInjectedProps<QueriesModule>;
+// const injPropsExtra2: GetModuleExtraView<QueriesModule>;
+// injPropsExtra2.
 
 // type TSuperUser = {
 //   id: string,

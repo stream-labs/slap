@@ -15,7 +15,7 @@ export declare class Scope {
     settings: ScopeSettings;
     constructor(dependencies?: TModuleConstructorMap, settings?: Partial<ScopeSettings>);
     registerMany(dependencies: TModuleConstructorMap): void;
-    register<T extends TModuleCreator>(ModuleCreator: T, name?: string): TProviderFor<T>;
+    register<T extends TModuleCreator>(ModuleCreator: T, name?: string, options?: Partial<ProviderOptions>): TProviderFor<T>;
     getProvider<T extends TModuleLocatorType>(moduleLocator: T): TProviderFor<T> | null;
     resolveProvider<T extends TModuleLocatorType>(moduleLocator: T): TProviderFor<T>;
     getInstance<T extends TModuleLocatorType>(locator: T): TModuleInstanceFor<T> | null;
