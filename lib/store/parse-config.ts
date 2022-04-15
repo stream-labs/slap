@@ -1,4 +1,3 @@
-import { isPlainObject } from 'is-plain-object';
 import { Dict, isClass } from '../scope';
 import { traverse } from '../utils';
 import { TStateConfig } from './Store';

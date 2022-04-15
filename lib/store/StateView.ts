@@ -6,7 +6,6 @@ import {
 } from '../scope';
 import { getInstanceMetadata } from '../scope/provider';
 import { pickProps } from './plugins/pickProps';
-import { Store } from './Store';
 import {
   GetAllInjectedProps,
   GetInjectedProps,

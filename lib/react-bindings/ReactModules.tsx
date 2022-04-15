@@ -1,10 +1,10 @@
 import React, {
-  ReactNode, useContext, useEffect,
+  ReactNode, useContext,
 } from 'react';
 import { useOnCreate } from './hooks';
 import { Scope, TModuleConstructorMap } from '../scope';
 import { ReactStoreAdapter } from './react-store-adapter';
-import { Store } from '../store/Store';
+import { Store } from '../store';
 
 export type TAppContext = {
   rootScope: Scope; // keeps singleton services in the root scope

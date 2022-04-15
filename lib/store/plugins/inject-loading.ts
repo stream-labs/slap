@@ -1,5 +1,4 @@
-import { TLoadingStatus } from '../../scope';
-import { injectState } from '../injectState';
+import { injectState, TLoadingStatus } from '../..';
 
 export class LoadingState {
   loadingStatus: TLoadingStatus = 'not-started';

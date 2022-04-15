@@ -1,13 +1,10 @@
-import {
-  createInjector, inject, ModuleInjectorType,
-} from '../scope/injector';
+import { inject, getInstanceMetadata } from '../../scope';
 
 import {
   Store,
-} from './Store';
-import { isSimilar } from '../utils';
+} from '../Store';
+import { isSimilar } from '../../utils';
 import { injectChild } from './inject-child';
-import { getInstanceMetadata } from '../scope';
 
 export class WatchModule<T> {
 

@@ -2,13 +2,13 @@ import {
   createInjector,
   InjectedProp,
   Injector,
-} from '../scope/injector';
+} from '../../scope';
 
 import {
   ModuleStateController,
   Store, TStateConfigCreator, TStateControllerFor, TStateViewForStateConfig,
-} from './Store';
-import { StateView } from './StateView';
+} from '../Store';
+import { StateView } from '../StateView';
 
 export const StateInjectorType = Symbol('stateInjector');
 
@@ -53,17 +53,3 @@ export function injectState<
     };
   });
 }
-
-// function createStateForModule<TConfigCreator extends TStateConfigCreator>(provider: Provider<any>, propName: string, stateConfig: TConfigCreator): TStateControllerFor<TConfigCreator> {
-//   const moduleName = provider.instanceId;
-//   const store = provider.scope.resolve(Store);
-//   const moduleState = store.createState(moduleName, propName, stateConfig);
-//   createLoadingState(store, provider);
-//   return moduleState;
-// }
-//
-// function destroyStateForModule(provider: Provider<any>) {
-//   const moduleName = provider.instanceId;
-//   const store = provider.scope.resolve(Store);
-//   store.destroyModule(moduleName);
-// }

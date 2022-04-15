@@ -1,10 +1,7 @@
-import { Simulate } from 'react-dom/test-utils';
-import { createInjector, generateId, InjectedProp } from '../scope';
-import { Store, TStateControllerFor, TStateViewForStateConfig } from './Store';
-import error = Simulate.error;
-import { createStateViewForModule, GetModuleStateView, StateView } from './StateView';
-import { TUser } from '../../demo/stars-editor/components/pages/UsersPage';
-import { injectState } from './injectState';
+import { generateId } from '../../scope';
+import { TStateViewForStateConfig } from '../Store';
+import { StateView } from '../StateView';
+import { injectState } from './inject-state';
 import { injectWatch } from './inject-watch';
 import { injectChild } from './inject-child';
 
@@ -121,7 +118,7 @@ export class QueryModule<
           if (!this.enabled || this.promiseId !== promiseId) return;
           this.fetchingPromise = null;
           this.promiseId = '';
-          this.state.setError(error as any);
+          this.state.setError(e as any);
         });
     }
     // result is not a promise, set the data

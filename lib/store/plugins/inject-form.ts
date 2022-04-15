@@ -1,6 +1,6 @@
-import { StateView } from './StateView';
-import { createInjector } from '../scope';
-import { Store } from './Store';
+import { StateView } from '../StateView';
+import { createInjector, InjectedProp } from '../../scope';
+import { Store } from '../Store';
 
 export type TFormBindings<TState, TExtraProps = {}> = {
   [K in keyof TState]: {
@@ -49,7 +49,7 @@ export function injectForm<TState, TExtraProps = {}>(
   stateGetter: () => TState,
   stateSetter: (statePatch: Partial<TState>) => unknown,
   extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps,
-): TFormBindings<TState, TExtraProps> {
+): InjectedProp< StateView<TFormBindings<TState, TExtraProps>>, StateView<TFormBindings<TState, TExtraProps>>, null> {
   return createInjector(injector => {
 
     const binding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);

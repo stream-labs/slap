@@ -22,7 +22,10 @@ export declare class UsersState {
 export declare function fetchOnlineUsers(): Promise<TUser[]>;
 export declare function fetchBannedUsers(): Promise<TUser[]>;
 export declare class UsersModule {
-    editor: import("../../../../lib").InjectedProp<EditorService, unknown, null>;
+    editor: import("../../../../lib").GetInjectedProp<{
+        type: symbol;
+        getValue: () => EditorService;
+    }, EditorService, unknown, unknown>;
     state: import("../../../../lib").InjectedProp<import("../../../../lib").TStateControllerFor<typeof UsersState, UsersState, {
         users: TUser[];
     }>, import("../../../../lib").StateView<import("../../../../lib").TStateViewForStateConfig<typeof UsersState>>, import("../../../../lib").StateView<import("../../../../lib").TStateViewForStateConfig<typeof UsersState>>>;

@@ -4,11 +4,8 @@ import {
   injectState,
   TModuleInstanceFor,
   inject,
-  useModuleInstance
+  useModuleInstance, injectLoading, injectQuery, generateId
 } from '../../../../lib';
-import { generateId } from '../../../../lib/scope';
-import { injectQuery } from '../../../../lib/store/Query';
-import { injectLoading } from '../../../../lib/store/plugins/pickLoadingState';
 import { EditorService } from '../../services/editor.service';
 
 export type TUser = {
@@ -224,7 +221,3 @@ export function NestedLoadingState() {
 // const mi: TModuleInstanceFor<typeof buttonModule>;
 // const { onButtonClick } = mi;
 // onButtonClick();
-
-
-const myBaseModule = useModuleInstance(UsersModule);
-myBaseModule.state

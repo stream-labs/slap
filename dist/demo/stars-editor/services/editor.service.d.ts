@@ -10,7 +10,7 @@ export declare class EditorState {
     addSceneItem(sceneItem: TSceneItem): void;
 }
 export declare class EditorService {
-    state: import("../../../lib/scope/injector").InjectedProp<import("../../../lib").TStateControllerFor<typeof EditorState, EditorState, {
+    state: import("../../../lib").InjectedProp<import("../../../lib").TStateControllerFor<typeof EditorState, EditorState, {
         activeSceneId: string;
         activeItemId: string;
         scenes: TScene[];
@@ -19,13 +19,16 @@ export declare class EditorService {
         addScene: (scene: TScene) => void;
         addSceneItem: (sceneItem: TSceneItem) => void;
     }>, import("../../../lib").StateView<import("../../../lib").TStateViewForStateConfig<typeof EditorState>>, import("../../../lib").StateView<import("../../../lib").TStateViewForStateConfig<typeof EditorState>>>;
-    loading: import("../../../lib/scope/injector").InjectedProp<import("../../../lib").TStateControllerFor<typeof import("../../../lib/store/plugins/pickLoadingState").LoadingState, import("../../../lib/store/plugins/pickLoadingState").LoadingState, {
+    loading: import("../../../lib").InjectedProp<import("../../../lib").TStateControllerFor<typeof import("../../../lib").LoadingState, import("../../../lib").LoadingState, {
         loadingStatus: import("../../../lib").TLoadingStatus;
-    }>, import("../../../lib").StateView<import("../../../lib").TStateViewForStateConfig<typeof import("../../../lib/store/plugins/pickLoadingState").LoadingState>>, import("../../../lib").StateView<import("../../../lib").TStateViewForStateConfig<typeof import("../../../lib/store/plugins/pickLoadingState").LoadingState>>>;
-    scope: import("../../../lib/scope/injector").InjectedProp<import("../../../lib").Scope, unknown, null>;
+    }>, import("../../../lib").StateView<import("../../../lib").TStateViewForStateConfig<typeof import("../../../lib").LoadingState>>, import("../../../lib").StateView<import("../../../lib").TStateViewForStateConfig<typeof import("../../../lib").LoadingState>>>;
+    scope: import("../../../lib").GetInjectedProp<{
+        type: symbol;
+        getValue: () => import("../../../lib").Scope;
+    }, import("../../../lib").Scope, unknown, unknown>;
     load(): Promise<void>;
     get myRandomVal(): string;
-    bindActiveItem: {
+    bindActiveItem: import("../../../lib").InjectedProp<import("../../../lib").StateView<{
         id: {
             name: "id";
             value: string;
@@ -57,13 +60,48 @@ export declare class EditorService {
                 y: number;
             }) => unknown;
         };
-    };
+    }>, import("../../../lib").StateView<{
+        id: {
+            name: "id";
+            value: string;
+            onChange: (newVal: string) => unknown;
+        };
+        sceneId: {
+            name: "sceneId";
+            value: string;
+            onChange: (newVal: string) => unknown;
+        };
+        name: {
+            name: "name";
+            value: string;
+            onChange: (newVal: string) => unknown;
+        };
+        color: {
+            name: "color";
+            value: string;
+            onChange: (newVal: string) => unknown;
+        };
+        position: {
+            name: "position";
+            value: {
+                x: number;
+                y: number;
+            };
+            onChange: (newVal: {
+                x: number;
+                y: number;
+            }) => unknown;
+        };
+    }>, null>;
     getSceneController(id: string): SceneController;
     getSceneItemController(sceneId: string, itemId: string): SceneController;
 }
 export declare class SceneController {
     id: string;
-    editor: import("../../../lib/scope/injector").InjectedProp<EditorService, unknown, null>;
+    editor: import("../../../lib").GetInjectedProp<{
+        type: symbol;
+        getValue: () => EditorService;
+    }, EditorService, unknown, unknown>;
     constructor(id: string);
     makeActive(): void;
     selectItem(id: string): void;
@@ -71,7 +109,10 @@ export declare class SceneController {
 export declare class SceneItemController {
     sceneId: string;
     id: string;
-    editor: import("../../../lib/scope/injector").InjectedProp<EditorService, unknown, null>;
+    editor: import("../../../lib").GetInjectedProp<{
+        type: symbol;
+        getValue: () => EditorService;
+    }, EditorService, unknown, unknown>;
     constructor(sceneId: string, id: string);
     makeActive(): void;
     isSelected(): boolean;

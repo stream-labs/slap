@@ -1,7 +1,8 @@
 import React from 'react';
 import { message } from 'antd';
-import { generateId, injectState, useModule } from '../../../../lib';
-import { injectWatch } from '../../../../lib/store/inject-watch';
+import {
+  generateId, injectState, useModule, injectWatch,
+} from '../../../../lib';
 
 class MyWatchersModule {
 

@@ -1,7 +1,7 @@
 import {
   createInjector, InjectedProp,
-} from '../scope/injector';
-import { GetModuleExtraView, GetModuleStateView } from './StateView';
+} from '../../scope/injector';
+import { GetModuleExtraView, GetModuleStateView } from '../StateView';
 
 export const ChildModuleInjectorType = Symbol('childModuleInjector');
 
@@ -18,7 +18,7 @@ export function injectChild<TModule>(Module: TModule, ...args: any): InjectedPro
         scope.register(Module, moduleName, { parentProvider: injector.provider });
         scope.init(moduleName, ...args);
       },
-      getValue: () => scope.resolve(moduleName),
+      getValue: () => scope.resolve(moduleName) as any,
       exportComponentData: () => {
         const module = scope.resolve(moduleName) as any;
         return module.exportComponentData && module.exportComponentData() as any;
@@ -29,17 +29,3 @@ export function injectChild<TModule>(Module: TModule, ...args: any): InjectedPro
     };
   });
 }
-
-// function createStateForModule<TConfigCreator extends TStateConfigCreator>(provider: Provider<any>, propName: string, stateConfig: TConfigCreator): TStateControllerFor<TConfigCreator> {
-//   const moduleName = provider.instanceId;
-//   const store = provider.scope.resolve(Store);
-//   const moduleState = store.createState(moduleName, propName, stateConfig);
-//   createLoadingState(store, provider);
-//   return moduleState;
-// }
-//
-// function destroyStateForModule(provider: Provider<any>) {
-//   const moduleName = provider.instanceId;
-//   const store = provider.scope.resolve(Store);
-//   store.destroyModule(moduleName);
-// }

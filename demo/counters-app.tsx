@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-// import { SlapModuleRoot } from '../lib/ReactSlap';
 import './index.css';
-import { injectState } from '../lib/store/injectState';
+import { injectState } from '../lib';
 import { ReactModules, useAppContext } from '../lib/react-bindings/ReactModules';
 import { useModule } from '../lib/react-bindings/useModule';
 

@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { ReactModules, useModule } from '../lib';
+import { ReactModules, useModule, injectState } from '../lib';
 import './index.css';
-import { injectState } from '../lib/store/injectState';
 
 export function TodoListApp() {
   return (

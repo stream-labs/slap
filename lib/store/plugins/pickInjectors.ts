@@ -1,4 +1,4 @@
-import { GetModuleExtraView, GetProps, StateView } from '../StateView';
+import { GetProps, StateView } from '../StateView';
 import { forEach, getInstanceMetadata, Injector } from '../../scope';
 import { Flatten } from '../../scope/flatten';
 import { QueriesModule } from '../../../demo/stars-editor/components/pages/QueriesPage';
@@ -52,8 +52,8 @@ export type GetAllInjectedProps<TModule> = GetFlattenExtraProps<TModule> & GetIn
 
 export type PickInjectedViews<TView, TModule> = StateView<GetProps<TView> & GetAllInjectedProps<TModule>>;
 
-type Keytype = keyof GetExtraInjectedProps<QueriesModule>;
-type Queryprops = keyof GetExtraInjectedProps<QueriesModule> extends never ? {} : Flatten<GetExtraInjectedProps<QueriesModule>>
+// type Keytype = keyof GetExtraInjectedProps<QueriesModule>;
+// type Queryprops = keyof GetExtraInjectedProps<QueriesModule> extends never ? {} : Flatten<GetExtraInjectedProps<QueriesModule>>
 
 // const injProps: Queryprops;
 // injProps.onlineUsersQuery

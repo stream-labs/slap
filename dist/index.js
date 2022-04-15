@@ -188,69 +188,6 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 
 /***/ }),
 
-/***/ 531:
-/***/ ((module, exports, __webpack_require__) => {
-
-/* module decorator */ module = __webpack_require__.nmd(module);
-/** @license React v17.0.2
- * react-dom-test-utils.production.min.js
- *
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-var h=__webpack_require__(418),l=__webpack_require__(156),m=__webpack_require__(386),n=__webpack_require__(840);function p(a){for(var b="https://reactjs.org/docs/error-decoder.html?invariant="+a,c=1;c<arguments.length;c++)b+="&args[]="+encodeURIComponent(arguments[c]);return"Minified React error #"+a+"; visit "+b+" for the full message or use the non-minified dev environment for full errors and additional helpful warnings."}var q=l.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-function r(a){var b=a,c=a;if(a.alternate)for(;b.return;)b=b.return;else{a=b;do b=a,0!==(b.flags&1026)&&(c=b.return),a=b.return;while(a)}return 3===b.tag?c:null}function t(a){if(r(a)!==a)throw Error(p(188));}
-function aa(a){var b=a.alternate;if(!b){b=r(a);if(null===b)throw Error(p(188));return b!==a?null:a}for(var c=a,d=b;;){var e=c.return;if(null===e)break;var g=e.alternate;if(null===g){d=e.return;if(null!==d){c=d;continue}break}if(e.child===g.child){for(g=e.child;g;){if(g===c)return t(e),a;if(g===d)return t(e),b;g=g.sibling}throw Error(p(188));}if(c.return!==d.return)c=e,d=g;else{for(var f=!1,k=e.child;k;){if(k===c){f=!0;c=e;d=g;break}if(k===d){f=!0;d=e;c=g;break}k=k.sibling}if(!f){for(k=g.child;k;){if(k===
-c){f=!0;c=g;d=e;break}if(k===d){f=!0;d=g;c=e;break}k=k.sibling}if(!f)throw Error(p(189));}}if(c.alternate!==d)throw Error(p(190));}if(3!==c.tag)throw Error(p(188));return c.stateNode.current===c?a:b}function u(a){var b=a.keyCode;"charCode"in a?(a=a.charCode,0===a&&13===b&&(a=13)):a=b;10===a&&(a=13);return 32<=a||13===a?a:0}function v(){return!0}function w(){return!1}
-function x(a){function b(c,b,e,g,f){this._reactName=c;this._targetInst=e;this.type=b;this.nativeEvent=g;this.target=f;this.currentTarget=null;for(var d in a)a.hasOwnProperty(d)&&(c=a[d],this[d]=c?c(g):g[d]);this.isDefaultPrevented=(null!=g.defaultPrevented?g.defaultPrevented:!1===g.returnValue)?v:w;this.isPropagationStopped=w;return this}h(b.prototype,{preventDefault:function(){this.defaultPrevented=!0;var a=this.nativeEvent;a&&(a.preventDefault?a.preventDefault():"unknown"!==typeof a.returnValue&&
-(a.returnValue=!1),this.isDefaultPrevented=v)},stopPropagation:function(){var a=this.nativeEvent;a&&(a.stopPropagation?a.stopPropagation():"unknown"!==typeof a.cancelBubble&&(a.cancelBubble=!0),this.isPropagationStopped=v)},persist:function(){},isPersistent:v});return b}var y={eventPhase:0,bubbles:0,cancelable:0,timeStamp:function(a){return a.timeStamp||Date.now()},defaultPrevented:0,isTrusted:0},ba=x(y),z=h({},y,{view:0,detail:0});x(z);
-var A,B,C,E=h({},z,{screenX:0,screenY:0,clientX:0,clientY:0,pageX:0,pageY:0,ctrlKey:0,shiftKey:0,altKey:0,metaKey:0,getModifierState:D,button:0,buttons:0,relatedTarget:function(a){return void 0===a.relatedTarget?a.fromElement===a.srcElement?a.toElement:a.fromElement:a.relatedTarget},movementX:function(a){if("movementX"in a)return a.movementX;a!==C&&(C&&"mousemove"===a.type?(A=a.screenX-C.screenX,B=a.screenY-C.screenY):B=A=0,C=a);return A},movementY:function(a){return"movementY"in a?a.movementY:B}});
-x(E);var da=h({},E,{dataTransfer:0});x(da);var ea=h({},z,{relatedTarget:0});x(ea);var fa=h({},y,{animationName:0,elapsedTime:0,pseudoElement:0});x(fa);var ha=h({},y,{clipboardData:function(a){return"clipboardData"in a?a.clipboardData:window.clipboardData}});x(ha);var ia=h({},y,{data:0});x(ia);
-var ja={Esc:"Escape",Spacebar:" ",Left:"ArrowLeft",Up:"ArrowUp",Right:"ArrowRight",Down:"ArrowDown",Del:"Delete",Win:"OS",Menu:"ContextMenu",Apps:"ContextMenu",Scroll:"ScrollLock",MozPrintableKey:"Unidentified"},ka={8:"Backspace",9:"Tab",12:"Clear",13:"Enter",16:"Shift",17:"Control",18:"Alt",19:"Pause",20:"CapsLock",27:"Escape",32:" ",33:"PageUp",34:"PageDown",35:"End",36:"Home",37:"ArrowLeft",38:"ArrowUp",39:"ArrowRight",40:"ArrowDown",45:"Insert",46:"Delete",112:"F1",113:"F2",114:"F3",115:"F4",
-116:"F5",117:"F6",118:"F7",119:"F8",120:"F9",121:"F10",122:"F11",123:"F12",144:"NumLock",145:"ScrollLock",224:"Meta"},la={Alt:"altKey",Control:"ctrlKey",Meta:"metaKey",Shift:"shiftKey"};function ma(a){var b=this.nativeEvent;return b.getModifierState?b.getModifierState(a):(a=la[a])?!!b[a]:!1}function D(){return ma}
-var na=h({},z,{key:function(a){if(a.key){var b=ja[a.key]||a.key;if("Unidentified"!==b)return b}return"keypress"===a.type?(a=u(a),13===a?"Enter":String.fromCharCode(a)):"keydown"===a.type||"keyup"===a.type?ka[a.keyCode]||"Unidentified":""},code:0,location:0,ctrlKey:0,shiftKey:0,altKey:0,metaKey:0,repeat:0,locale:0,getModifierState:D,charCode:function(a){return"keypress"===a.type?u(a):0},keyCode:function(a){return"keydown"===a.type||"keyup"===a.type?a.keyCode:0},which:function(a){return"keypress"===
-a.type?u(a):"keydown"===a.type||"keyup"===a.type?a.keyCode:0}});x(na);var oa=h({},E,{pointerId:0,width:0,height:0,pressure:0,tangentialPressure:0,tiltX:0,tiltY:0,twist:0,pointerType:0,isPrimary:0});x(oa);var pa=h({},z,{touches:0,targetTouches:0,changedTouches:0,altKey:0,metaKey:0,ctrlKey:0,shiftKey:0,getModifierState:D});x(pa);var qa=h({},y,{propertyName:0,elapsedTime:0,pseudoElement:0});x(qa);
-var ra=h({},E,{deltaX:function(a){return"deltaX"in a?a.deltaX:"wheelDeltaX"in a?-a.wheelDeltaX:0},deltaY:function(a){return"deltaY"in a?a.deltaY:"wheelDeltaY"in a?-a.wheelDeltaY:"wheelDelta"in a?-a.wheelDelta:0},deltaZ:0,deltaMode:0});x(ra);var F=null;function G(a){if(null===F)try{var b=("require"+Math.random()).slice(0,7);F=(module&&module[b]).call(module,"timers").setImmediate}catch(c){F=function(a){var b=new MessageChannel;b.port1.onmessage=a;b.port2.postMessage(void 0)}}return F(a)}
-var H=m.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.Events,sa=H[5],I=H[6],ta=m.unstable_batchedUpdates,J=q.IsSomeRendererActing,K="function"===typeof n.unstable_flushAllWithoutAsserting,L=n.unstable_flushAllWithoutAsserting||function(){for(var a=!1;sa();)a=!0;return a};function M(a){try{L(),G(function(){L()?M(a):a()})}catch(b){a(b)}}var N=0,ua=!1,O=m.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.Events[6],va=m.unstable_batchedUpdates,Q=q.IsSomeRendererActing;
-function wa(a,b){jest.runOnlyPendingTimers();G(function(){try{n.unstable_flushAllWithoutAsserting()?wa(a,b):a()}catch(c){b(c)}})}function xa(a,b,c,d,e,g,f,k,ca){var P=Array.prototype.slice.call(arguments,3);try{b.apply(c,P)}catch(Ga){this.onError(Ga)}}var R=!1,S=null,T=!1,U=null,ya={onError:function(a){R=!0;S=a}};function za(a,b,c,d,e,g,f,k,ca){R=!1;S=null;xa.apply(ya,arguments)}
-function Aa(a,b,c,d,e,g,f,k,ca){za.apply(this,arguments);if(R){if(R){var P=S;R=!1;S=null}else throw Error(p(198));T||(T=!0,U=P)}}var V=m.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.Events,Ba=V[0],Ca=V[1],Da=V[2],Ea=V[3],Fa=V[4];function Ha(){}
-function Ia(a,b){if(!a)return[];a=aa(a);if(!a)return[];for(var c=a,d=[];;){if(5===c.tag||6===c.tag||1===c.tag||0===c.tag){var e=c.stateNode;b(e)&&d.push(e)}if(c.child)c.child.return=c,c=c.child;else{if(c===a)return d;for(;!c.sibling;){if(!c.return||c.return===a)return d;c=c.return}c.sibling.return=c.return;c=c.sibling}}}
-function W(a,b){if(a&&!a._reactInternals){var c=""+a;a=Array.isArray(a)?"an array":a&&1===a.nodeType&&a.tagName?"a DOM node":"[object Object]"===c?"object with keys {"+Object.keys(a).join(", ")+"}":c;throw Error(p(286,b,a));}}function X(a){return!(!a||1!==a.nodeType||!a.tagName)}function Y(a){return X(a)?!1:null!=a&&"function"===typeof a.render&&"function"===typeof a.setState}function Ja(a,b){return Y(a)?a._reactInternals.type===b:!1}
-function Z(a,b){W(a,"findAllInRenderedTree");return a?Ia(a._reactInternals,b):[]}function Ka(a,b){W(a,"scryRenderedDOMComponentsWithClass");return Z(a,function(a){if(X(a)){var c=a.className;"string"!==typeof c&&(c=a.getAttribute("class")||"");var e=c.split(/\s+/);if(!Array.isArray(b)){if(void 0===b)throw Error(p(11));b=b.split(/\s+/)}return b.every(function(a){return-1!==e.indexOf(a)})}return!1})}
-function La(a,b){W(a,"scryRenderedDOMComponentsWithTag");return Z(a,function(a){return X(a)&&a.tagName.toUpperCase()===b.toUpperCase()})}function Ma(a,b){W(a,"scryRenderedComponentsWithType");return Z(a,function(a){return Ja(a,b)})}function Na(a,b,c){var d=a.type||"unknown-event";a.currentTarget=Ca(c);Aa(d,b,void 0,a);a.currentTarget=null}
-function Oa(a,b,c){for(var d=[];a;){d.push(a);do a=a.return;while(a&&5!==a.tag);a=a?a:null}for(a=d.length;0<a--;)b(d[a],"captured",c);for(a=0;a<d.length;a++)b(d[a],"bubbled",c)}
-function Pa(a,b){var c=a.stateNode;if(!c)return null;var d=Da(c);if(!d)return null;c=d[b];a:switch(b){case "onClick":case "onClickCapture":case "onDoubleClick":case "onDoubleClickCapture":case "onMouseDown":case "onMouseDownCapture":case "onMouseMove":case "onMouseMoveCapture":case "onMouseUp":case "onMouseUpCapture":case "onMouseEnter":(d=!d.disabled)||(a=a.type,d=!("button"===a||"input"===a||"select"===a||"textarea"===a));a=!d;break a;default:a=!1}if(a)return null;if(c&&"function"!==typeof c)throw Error(p(231,
-b,typeof c));return c}function Qa(a,b,c){a&&c&&c._reactName&&(b=Pa(a,c._reactName))&&(null==c._dispatchListeners&&(c._dispatchListeners=[]),null==c._dispatchInstances&&(c._dispatchInstances=[]),c._dispatchListeners.push(b),c._dispatchInstances.push(a))}
-function Ra(a,b,c){var d=c._reactName;"captured"===b&&(d+="Capture");if(b=Pa(a,d))null==c._dispatchListeners&&(c._dispatchListeners=[]),null==c._dispatchInstances&&(c._dispatchInstances=[]),c._dispatchListeners.push(b),c._dispatchInstances.push(a)}var Sa={},Ta=new Set(["mouseEnter","mouseLeave","pointerEnter","pointerLeave"]);
-function Ua(a){return function(b,c){if(l.isValidElement(b))throw Error(p(228));if(Y(b))throw Error(p(229));var d="on"+a[0].toUpperCase()+a.slice(1),e=new Ha;e.target=b;e.type=a.toLowerCase();var g=Ba(b),f=new ba(d,e.type,g,e,b);f.persist();h(f,c);Ta.has(a)?f&&f._reactName&&Qa(f._targetInst,null,f):f&&f._reactName&&Oa(f._targetInst,Ra,f);m.unstable_batchedUpdates(function(){Ea(b);if(f){var a=f._dispatchListeners,c=f._dispatchInstances;if(Array.isArray(a))for(var d=0;d<a.length&&!f.isPropagationStopped();d++)Na(f,
-a[d],c[d]);else a&&Na(f,a,c);f._dispatchListeners=null;f._dispatchInstances=null;f.isPersistent()||f.constructor.release(f)}if(T)throw a=U,T=!1,U=null,a;});Fa()}}
-"blur cancel click close contextMenu copy cut auxClick doubleClick dragEnd dragStart drop focus input invalid keyDown keyPress keyUp mouseDown mouseUp paste pause play pointerCancel pointerDown pointerUp rateChange reset seeked submit touchCancel touchEnd touchStart volumeChange drag dragEnter dragExit dragLeave dragOver mouseMove mouseOut mouseOver pointerMove pointerOut pointerOver scroll toggle touchMove wheel abort animationEnd animationIteration animationStart canPlay canPlayThrough durationChange emptied encrypted ended error gotPointerCapture load loadedData loadedMetadata loadStart lostPointerCapture playing progress seeking stalled suspend timeUpdate transitionEnd waiting mouseEnter mouseLeave pointerEnter pointerLeave change select beforeInput compositionEnd compositionStart compositionUpdate".split(" ").forEach(function(a){Sa[a]=Ua(a)});
-exports.Simulate=Sa;
-exports.act=function(a){function b(){N--;J.current=c;I.current=d}!1===ua&&(ua=!0,console.error("act(...) is not supported in production builds of React, and might not behave as expected."));N++;var c=J.current,d=I.current;J.current=!0;I.current=!0;try{var e=ta(a)}catch(g){throw b(),g;}if(null!==e&&"object"===typeof e&&"function"===typeof e.then)return{then:function(a,d){e.then(function(){1<N||!0===K&&!0===c?(b(),a()):M(function(c){b();c?d(c):a()})},function(a){b();d(a)})}};try{1!==N||!1!==K&&!1!==
-c||L(),b()}catch(g){throw b(),g;}return{then:function(a){a()}}};exports.findAllInRenderedTree=Z;exports.findRenderedComponentWithType=function(a,b){W(a,"findRenderedComponentWithType");a=Ma(a,b);if(1!==a.length)throw Error("Did not find exactly one match (found: "+a.length+") for componentType:"+b);return a[0]};
-exports.findRenderedDOMComponentWithClass=function(a,b){W(a,"findRenderedDOMComponentWithClass");a=Ka(a,b);if(1!==a.length)throw Error("Did not find exactly one match (found: "+a.length+") for class:"+b);return a[0]};exports.findRenderedDOMComponentWithTag=function(a,b){W(a,"findRenderedDOMComponentWithTag");a=La(a,b);if(1!==a.length)throw Error("Did not find exactly one match (found: "+a.length+") for tag:"+b);return a[0]};exports.isCompositeComponent=Y;exports.isCompositeComponentWithType=Ja;
-exports.isDOMComponent=X;exports.isDOMComponentElement=function(a){return!!(a&&l.isValidElement(a)&&a.tagName)};exports.isElement=function(a){return l.isValidElement(a)};exports.isElementOfType=function(a,b){return l.isValidElement(a)&&a.type===b};exports.mockComponent=function(a,b){b=b||a.mockTagName||"div";a.prototype.render.mockImplementation(function(){return l.createElement(b,null,this.props.children)});return this};exports.nativeTouchData=function(a,b){return{touches:[{pageX:a,pageY:b}]}};
-exports.renderIntoDocument=function(a){var b=document.createElement("div");return m.render(a,b)};exports.scryRenderedComponentsWithType=Ma;exports.scryRenderedDOMComponentsWithClass=Ka;exports.scryRenderedDOMComponentsWithTag=La;exports.traverseTwoPhase=Oa;
-exports.unstable_concurrentAct=function(a){function b(){Q.current=c;O.current=d}if(void 0===n.unstable_flushAllWithoutAsserting)throw Error("This version of `act` requires a special mock build of Scheduler.");if(!0!==setTimeout._isMockFunction)throw Error("This version of `act` requires Jest's timer mocks (i.e. jest.useFakeTimers).");var c=Q.current,d=O.current;Q.current=!0;O.current=!0;try{var e=va(a);if("object"===typeof e&&null!==e&&"function"===typeof e.then)return{then:function(a,c){e.then(function(){wa(function(){b();
-a()},function(a){b();c(a)})},function(a){b();c(a)})}};try{do var g=n.unstable_flushAllWithoutAsserting();while(g)}finally{b()}}catch(f){throw b(),f;}};
-
-
-/***/ }),
-
-/***/ 267:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-
-
-if (true) {
-  module.exports = __webpack_require__(531);
-} else {}
-
-
-/***/ }),
-
 /***/ 251:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
@@ -280,45 +217,6 @@ if (true) {
 
 /***/ }),
 
-/***/ 53:
-/***/ ((__unused_webpack_module, exports) => {
-
-/** @license React v0.20.2
- * scheduler.production.min.js
- *
- * Copyright (c) Facebook, Inc. and its affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- */
-var f,g,h,k;if("object"===typeof performance&&"function"===typeof performance.now){var l=performance;exports.unstable_now=function(){return l.now()}}else{var p=Date,q=p.now();exports.unstable_now=function(){return p.now()-q}}
-if("undefined"===typeof window||"function"!==typeof MessageChannel){var t=null,u=null,w=function(){if(null!==t)try{var a=exports.unstable_now();t(!0,a);t=null}catch(b){throw setTimeout(w,0),b;}};f=function(a){null!==t?setTimeout(f,0,a):(t=a,setTimeout(w,0))};g=function(a,b){u=setTimeout(a,b)};h=function(){clearTimeout(u)};exports.unstable_shouldYield=function(){return!1};k=exports.unstable_forceFrameRate=function(){}}else{var x=window.setTimeout,y=window.clearTimeout;if("undefined"!==typeof console){var z=
-window.cancelAnimationFrame;"function"!==typeof window.requestAnimationFrame&&console.error("This browser doesn't support requestAnimationFrame. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills");"function"!==typeof z&&console.error("This browser doesn't support cancelAnimationFrame. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills")}var A=!1,B=null,C=-1,D=5,E=0;exports.unstable_shouldYield=function(){return exports.unstable_now()>=
-E};k=function(){};exports.unstable_forceFrameRate=function(a){0>a||125<a?console.error("forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported"):D=0<a?Math.floor(1E3/a):5};var F=new MessageChannel,G=F.port2;F.port1.onmessage=function(){if(null!==B){var a=exports.unstable_now();E=a+D;try{B(!0,a)?G.postMessage(null):(A=!1,B=null)}catch(b){throw G.postMessage(null),b;}}else A=!1};f=function(a){B=a;A||(A=!0,G.postMessage(null))};g=function(a,b){C=
-x(function(){a(exports.unstable_now())},b)};h=function(){y(C);C=-1}}function H(a,b){var c=a.length;a.push(b);a:for(;;){var d=c-1>>>1,e=a[d];if(void 0!==e&&0<I(e,b))a[d]=b,a[c]=e,c=d;else break a}}function J(a){a=a[0];return void 0===a?null:a}
-function K(a){var b=a[0];if(void 0!==b){var c=a.pop();if(c!==b){a[0]=c;a:for(var d=0,e=a.length;d<e;){var m=2*(d+1)-1,n=a[m],v=m+1,r=a[v];if(void 0!==n&&0>I(n,c))void 0!==r&&0>I(r,n)?(a[d]=r,a[v]=c,d=v):(a[d]=n,a[m]=c,d=m);else if(void 0!==r&&0>I(r,c))a[d]=r,a[v]=c,d=v;else break a}}return b}return null}function I(a,b){var c=a.sortIndex-b.sortIndex;return 0!==c?c:a.id-b.id}var L=[],M=[],N=1,O=null,P=3,Q=!1,R=!1,S=!1;
-function T(a){for(var b=J(M);null!==b;){if(null===b.callback)K(M);else if(b.startTime<=a)K(M),b.sortIndex=b.expirationTime,H(L,b);else break;b=J(M)}}function U(a){S=!1;T(a);if(!R)if(null!==J(L))R=!0,f(V);else{var b=J(M);null!==b&&g(U,b.startTime-a)}}
-function V(a,b){R=!1;S&&(S=!1,h());Q=!0;var c=P;try{T(b);for(O=J(L);null!==O&&(!(O.expirationTime>b)||a&&!exports.unstable_shouldYield());){var d=O.callback;if("function"===typeof d){O.callback=null;P=O.priorityLevel;var e=d(O.expirationTime<=b);b=exports.unstable_now();"function"===typeof e?O.callback=e:O===J(L)&&K(L);T(b)}else K(L);O=J(L)}if(null!==O)var m=!0;else{var n=J(M);null!==n&&g(U,n.startTime-b);m=!1}return m}finally{O=null,P=c,Q=!1}}var W=k;exports.unstable_IdlePriority=5;
-exports.unstable_ImmediatePriority=1;exports.unstable_LowPriority=4;exports.unstable_NormalPriority=3;exports.unstable_Profiling=null;exports.unstable_UserBlockingPriority=2;exports.unstable_cancelCallback=function(a){a.callback=null};exports.unstable_continueExecution=function(){R||Q||(R=!0,f(V))};exports.unstable_getCurrentPriorityLevel=function(){return P};exports.unstable_getFirstCallbackNode=function(){return J(L)};
-exports.unstable_next=function(a){switch(P){case 1:case 2:case 3:var b=3;break;default:b=P}var c=P;P=b;try{return a()}finally{P=c}};exports.unstable_pauseExecution=function(){};exports.unstable_requestPaint=W;exports.unstable_runWithPriority=function(a,b){switch(a){case 1:case 2:case 3:case 4:case 5:break;default:a=3}var c=P;P=a;try{return b()}finally{P=c}};
-exports.unstable_scheduleCallback=function(a,b,c){var d=exports.unstable_now();"object"===typeof c&&null!==c?(c=c.delay,c="number"===typeof c&&0<c?d+c:d):c=d;switch(a){case 1:var e=-1;break;case 2:e=250;break;case 5:e=1073741823;break;case 4:e=1E4;break;default:e=5E3}e=c+e;a={id:N++,callback:b,priorityLevel:a,startTime:c,expirationTime:e,sortIndex:-1};c>d?(a.sortIndex=c,H(M,a),null===J(L)&&a===J(M)&&(S?h():S=!0,g(U,c-d))):(a.sortIndex=e,H(L,a),R||Q||(R=!0,f(V)));return a};
-exports.unstable_wrapCallback=function(a){var b=P;return function(){var c=P;P=b;try{return a.apply(this,arguments)}finally{P=c}}};
-
-
-/***/ }),
-
-/***/ 840:
-/***/ ((module, __unused_webpack_exports, __webpack_require__) => {
-
-
-
-if (true) {
-  module.exports = __webpack_require__(53);
-} else {}
-
-
-/***/ }),
-
 /***/ 18:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -342,7 +240,7 @@ __exportStar(__webpack_require__(225), exports);
 
 /***/ }),
 
-/***/ 668:
+/***/ 686:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
@@ -372,7 +270,7 @@ const react_1 = __importStar(__webpack_require__(156));
 const hooks_1 = __webpack_require__(985);
 const scope_1 = __webpack_require__(527);
 const react_store_adapter_1 = __webpack_require__(160);
-const Store_1 = __webpack_require__(607);
+const store_1 = __webpack_require__(338);
 exports.SlapContext = react_1.default.createContext(null);
 function useAppContext() {
     return (0, react_1.useContext)(exports.SlapContext);
@@ -383,7 +281,7 @@ function useScope() {
 }
 exports.useScope = useScope;
 function createApp(Services = {}) {
-    const rootScope = new scope_1.Scope(Object.assign(Object.assign({}, Services), { Store: Store_1.Store, ReactStoreAdapter: react_store_adapter_1.ReactStoreAdapter }));
+    const rootScope = new scope_1.Scope(Object.assign(Object.assign({}, Services), { Store: store_1.Store, ReactStoreAdapter: react_store_adapter_1.ReactStoreAdapter }));
     const modulesScope = rootScope.createChildScope({}, { autoregister: true });
     rootScope.init(react_store_adapter_1.ReactStoreAdapter);
     return { rootScope, modulesScope };
@@ -495,7 +393,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(985), exports);
 __exportStar(__webpack_require__(160), exports);
-__exportStar(__webpack_require__(668), exports);
+__exportStar(__webpack_require__(686), exports);
 __exportStar(__webpack_require__(985), exports);
 __exportStar(__webpack_require__(309), exports);
 __exportStar(__webpack_require__(878), exports);
@@ -732,7 +630,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.useModuleInstance = void 0;
 const react_1 = __webpack_require__(156);
 const hooks_1 = __webpack_require__(985);
-const ReactModules_1 = __webpack_require__(668);
+const ReactModules_1 = __webpack_require__(686);
 const Store_1 = __webpack_require__(607);
 function useModuleInstance(locator, initProps = null, name = '') {
     const rootScope = (0, ReactModules_1.useAppContext)().modulesScope;
@@ -1512,180 +1410,6 @@ exports.isClass = isClass;
 
 /***/ }),
 
-/***/ 989:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getQueryOptionsFromArgs = exports.injectQuery = exports.QueryModule = exports.QueryStateConfig = void 0;
-const test_utils_1 = __webpack_require__(267);
-const scope_1 = __webpack_require__(527);
-var error = test_utils_1.Simulate.error;
-const StateView_1 = __webpack_require__(32);
-const injectState_1 = __webpack_require__(307);
-const inject_watch_1 = __webpack_require__(650);
-const inject_child_1 = __webpack_require__(792);
-class QueryStateConfig {
-    constructor() {
-        // constructor(public state: QueryState<TData, TParams, TError>) {}
-        this.state = {
-            status: 'idle',
-            data: null,
-            error: null,
-            params: null,
-        };
-    }
-    setData(data) {
-        this.state.status = 'success';
-        this.state.data = data;
-        console.log('query fetched', data);
-    }
-    setError(error) {
-        this.state.status = 'error';
-        this.state.error = error;
-    }
-    get isLoading() {
-        return this.state.status === 'loading';
-    }
-}
-exports.QueryStateConfig = QueryStateConfig;
-/**
- * Alternative for https://react-query.tanstack.com/reference/useQuery
- */
-class QueryModule {
-    constructor(...args) {
-        this.state = (0, injectState_1.injectState)(QueryStateConfig);
-        this.watcher = (0, inject_watch_1.injectWatch)(this.getParams, this.refetch);
-        this.fetchingPromise = null;
-        this.promiseId = '';
-        this.enabled = true;
-        this.isInitialFetch = true;
-        const computedOptions = getQueryOptionsFromArgs(args);
-        const options = Object.assign({ enabled: true, params: null, initialData: null, getParams: null, fetch: () => { } }, computedOptions);
-        this.options = options;
-        this.enabled = !!options.enabled;
-    }
-    load() {
-        this.stateView = this.state.createView();
-        const queryMethods = new StateView_1.StateView();
-        queryMethods.defineProp({
-            type: 'QueryMethod',
-            name: 'refetch',
-            reactive: false,
-            getValue: () => {
-                return () => this.refetch();
-            },
-        });
-        this.queryView = this.stateView.mergeView(queryMethods);
-        const data = this.options.initialData;
-        this.state.nonReactiveUpdate({
-            params: this.getParams(),
-            data,
-        });
-        this.exec();
-    }
-    exec() {
-        if (this.fetchingPromise)
-            return this.fetchingPromise;
-        return this.fetch();
-    }
-    fetch() {
-        const fetchResult = this.options.fetch();
-        if (fetchResult === null || fetchResult === void 0 ? void 0 : fetchResult.then) {
-            if (this.isInitialFetch) {
-                this.state.nonReactiveUpdate({
-                    status: 'loading',
-                });
-                this.isInitialFetch = false;
-            }
-            else {
-                this.state.setStatus('loading');
-            }
-            const promiseId = (0, scope_1.generateId)();
-            this.promiseId = promiseId;
-            this.fetchingPromise = fetchResult;
-            return fetchResult.then((data) => {
-                if (!this.enabled || this.promiseId !== promiseId)
-                    return;
-                this.fetchingPromise = null;
-                this.promiseId = '';
-                this.state.setData(data);
-            })
-                .catch((e) => {
-                if (!this.enabled || this.promiseId !== promiseId)
-                    return;
-                this.fetchingPromise = null;
-                this.promiseId = '';
-                this.state.setError(error);
-            });
-        }
-        // result is not a promise, set the data
-        this.state.setData(fetchResult);
-        return Promise.resolve(fetchResult);
-    }
-    refetch() {
-        if (!this.enabled)
-            return;
-        this.stopFetching();
-        return this.fetch();
-    }
-    stopFetching() {
-        this.fetchingPromise = null;
-        this.promiseId = '';
-    }
-    setEnabled(enabled) {
-        this.enabled = enabled;
-    }
-    getParams() {
-        return this.options.getParams ? this.options.getParams() : null;
-    }
-    destroy() {
-        // prevent unfinished fetching
-        this.setEnabled(false);
-    }
-    exportComponentData() {
-        return {
-            self: this.queryView,
-            extra: null,
-        };
-    }
-}
-exports.QueryModule = QueryModule;
-function injectQuery(...args) {
-    return (0, inject_child_1.injectChild)(QueryModule, ...args);
-}
-exports.injectQuery = injectQuery;
-/**
- * convers Query constructor agrs to QueryOptions
- * @param args
- */
-function getQueryOptionsFromArgs(args) {
-    if (args.length === 1) {
-        const arg = args[0];
-        if (typeof arg === 'function') {
-            return {
-                fetch: arg,
-            };
-        }
-        return arg;
-    }
-    if (args.length === 2) {
-        return {
-            initialData: args[0],
-            fetch: args[1],
-        };
-    }
-    return {
-        initialData: args[0],
-        fetch: args[1],
-        getParams: args[2],
-    };
-}
-exports.getQueryOptionsFromArgs = getQueryOptionsFromArgs;
-
-
-/***/ }),
-
 /***/ 32:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
@@ -2128,57 +1852,6 @@ exports.defaultStateConfig = {
 
 /***/ }),
 
-/***/ 938:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectForm = exports.FormInjectorType = exports.createFormBinding = void 0;
-const StateView_1 = __webpack_require__(32);
-const scope_1 = __webpack_require__(527);
-function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
-    const stateView = new StateView_1.StateView();
-    stateView.defineProp({
-        type: 'FormStateRev',
-        name: 'getRev',
-        getValue: () => (stateGetter()),
-    });
-    stateView.defineWildcardProp(propName => {
-        stateView.defineProp({
-            type: 'FormInputBinding',
-            name: propName,
-            reactive: true,
-            getValue: () => (Object.assign({ name: propName, value: stateGetter()[propName], onChange: (newVal) => {
-                    stateSetter({ [propName]: newVal });
-                } }, (extraPropsGenerator ? extraPropsGenerator(propName) : {})))
-        });
-    });
-    return stateView;
-}
-exports.createFormBinding = createFormBinding;
-exports.FormInjectorType = Symbol('formInjector');
-function injectForm(stateGetter, stateSetter, extraPropsGenerator) {
-    return (0, scope_1.createInjector)(injector => {
-        const binding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
-        return {
-            type: exports.FormInjectorType,
-            getValue() {
-                return binding;
-            },
-            exportComponentData() {
-                return {
-                    self: binding,
-                    extra: null,
-                };
-            }
-        };
-    });
-}
-exports.injectForm = injectForm;
-
-
-/***/ }),
-
 /***/ 338:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -2196,167 +1869,8 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(607), exports);
 __exportStar(__webpack_require__(32), exports);
-__exportStar(__webpack_require__(307), exports);
-__exportStar(__webpack_require__(938), exports);
-__exportStar(__webpack_require__(989), exports);
 __exportStar(__webpack_require__(837), exports);
 __exportStar(__webpack_require__(890), exports);
-
-
-/***/ }),
-
-/***/ 792:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectChild = exports.ChildModuleInjectorType = void 0;
-const injector_1 = __webpack_require__(869);
-exports.ChildModuleInjectorType = Symbol('childModuleInjector');
-function injectChild(Module, ...args) {
-    return (0, injector_1.createInjector)(injector => {
-        const scope = injector.provider.resolveChildScope();
-        let moduleName = '';
-        return {
-            type: exports.ChildModuleInjectorType,
-            load() {
-                moduleName = injector.propertyName;
-                scope.register(Module, moduleName, { parentProvider: injector.provider });
-                scope.init(moduleName, ...args);
-            },
-            getValue: () => scope.resolve(moduleName),
-            exportComponentData: () => {
-                const module = scope.resolve(moduleName);
-                return module.exportComponentData && module.exportComponentData();
-            },
-            destroy() {
-                scope.unregister(moduleName);
-            },
-        };
-    });
-}
-exports.injectChild = injectChild;
-// function createStateForModule<TConfigCreator extends TStateConfigCreator>(provider: Provider<any>, propName: string, stateConfig: TConfigCreator): TStateControllerFor<TConfigCreator> {
-//   const moduleName = provider.instanceId;
-//   const store = provider.scope.resolve(Store);
-//   const moduleState = store.createState(moduleName, propName, stateConfig);
-//   createLoadingState(store, provider);
-//   return moduleState;
-// }
-//
-// function destroyStateForModule(provider: Provider<any>) {
-//   const moduleName = provider.instanceId;
-//   const store = provider.scope.resolve(Store);
-//   store.destroyModule(moduleName);
-// }
-
-
-/***/ }),
-
-/***/ 650:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectWatch = exports.WatchModule = void 0;
-const injector_1 = __webpack_require__(869);
-const Store_1 = __webpack_require__(607);
-const utils_1 = __webpack_require__(225);
-const inject_child_1 = __webpack_require__(792);
-const scope_1 = __webpack_require__(527);
-class WatchModule {
-    constructor(watchExpr, onChange, isEqual = utils_1.isSimilar) {
-        this.watchExpr = watchExpr;
-        this.onChange = onChange;
-        this.isEqual = isEqual;
-        this.store = (0, injector_1.inject)(Store_1.Store);
-        this.unwatch = null;
-        this.current = null;
-    }
-    load() {
-        const parentProvider = (0, scope_1.getInstanceMetadata)(this).provider.options.parentProvider;
-        if (!parentProvider) {
-            throw new Error('This module should have a parent module');
-        }
-        const context = parentProvider.instance;
-        this.current = this.watchExpr.call(context);
-        this.unwatch = this.store.events.on('onMutation', () => {
-            const prev = this.current;
-            this.current = this.watchExpr.call(context);
-            if (this.isEqual(this.current, prev))
-                return;
-            this.onChange.call(context, this.current, prev);
-        });
-    }
-    destroy() {
-        this.unwatch && this.unwatch();
-    }
-}
-exports.WatchModule = WatchModule;
-function injectWatch(expression, onChange, isEqual) {
-    return (0, inject_child_1.injectChild)(WatchModule, expression, onChange, isEqual);
-}
-exports.injectWatch = injectWatch;
-
-
-/***/ }),
-
-/***/ 307:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectState = exports.StateInjectorType = void 0;
-const injector_1 = __webpack_require__(869);
-const Store_1 = __webpack_require__(607);
-exports.StateInjectorType = Symbol('stateInjector');
-function injectState(configCreator, onCreate) {
-    return (0, injector_1.createInjector)(injector => {
-        const store = injector.provider.scope.resolve(Store_1.Store);
-        let state = null;
-        let stateView = null;
-        function createState(propName) {
-            const moduleName = injector.provider.instanceId;
-            const moduleState = store.createState(moduleName, propName, configCreator);
-            return moduleState;
-        }
-        return {
-            type: exports.StateInjectorType,
-            load: () => {
-                state = createState(injector.propertyName);
-                stateView = state.createView();
-                onCreate && onCreate(state, injector);
-            },
-            getValue() {
-                return state;
-            },
-            exportComponentData() {
-                return {
-                    self: stateView,
-                    extra: stateView,
-                };
-            },
-            destroy(injector) {
-                const moduleName = injector.provider.instanceId;
-                store.destroyModule(moduleName);
-            },
-        };
-    });
-}
-exports.injectState = injectState;
-// function createStateForModule<TConfigCreator extends TStateConfigCreator>(provider: Provider<any>, propName: string, stateConfig: TConfigCreator): TStateControllerFor<TConfigCreator> {
-//   const moduleName = provider.instanceId;
-//   const store = provider.scope.resolve(Store);
-//   const moduleState = store.createState(moduleName, propName, stateConfig);
-//   createLoadingState(store, provider);
-//   return moduleState;
-// }
-//
-// function destroyStateForModule(provider: Provider<any>) {
-//   const moduleName = provider.instanceId;
-//   const store = provider.scope.resolve(Store);
-//   store.destroyModule(moduleName);
-// }
 
 
 /***/ }),
@@ -2475,9 +1989,405 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-__exportStar(__webpack_require__(187), exports);
-__exportStar(__webpack_require__(209), exports);
+__exportStar(__webpack_require__(835), exports);
+__exportStar(__webpack_require__(334), exports);
+__exportStar(__webpack_require__(854), exports);
+__exportStar(__webpack_require__(746), exports);
+__exportStar(__webpack_require__(300), exports);
+__exportStar(__webpack_require__(668), exports);
 __exportStar(__webpack_require__(49), exports);
+__exportStar(__webpack_require__(187), exports);
+
+
+/***/ }),
+
+/***/ 835:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectChild = exports.ChildModuleInjectorType = void 0;
+const injector_1 = __webpack_require__(869);
+exports.ChildModuleInjectorType = Symbol('childModuleInjector');
+function injectChild(Module, ...args) {
+    return (0, injector_1.createInjector)(injector => {
+        const scope = injector.provider.resolveChildScope();
+        let moduleName = '';
+        return {
+            type: exports.ChildModuleInjectorType,
+            load() {
+                moduleName = injector.propertyName;
+                scope.register(Module, moduleName, { parentProvider: injector.provider });
+                scope.init(moduleName, ...args);
+            },
+            getValue: () => scope.resolve(moduleName),
+            exportComponentData: () => {
+                const module = scope.resolve(moduleName);
+                return module.exportComponentData && module.exportComponentData();
+            },
+            destroy() {
+                scope.unregister(moduleName);
+            },
+        };
+    });
+}
+exports.injectChild = injectChild;
+
+
+/***/ }),
+
+/***/ 334:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectForm = exports.FormInjectorType = exports.createFormBinding = void 0;
+const StateView_1 = __webpack_require__(32);
+const scope_1 = __webpack_require__(527);
+function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
+    const stateView = new StateView_1.StateView();
+    stateView.defineProp({
+        type: 'FormStateRev',
+        name: 'getRev',
+        getValue: () => (stateGetter()),
+    });
+    stateView.defineWildcardProp(propName => {
+        stateView.defineProp({
+            type: 'FormInputBinding',
+            name: propName,
+            reactive: true,
+            getValue: () => (Object.assign({ name: propName, value: stateGetter()[propName], onChange: (newVal) => {
+                    stateSetter({ [propName]: newVal });
+                } }, (extraPropsGenerator ? extraPropsGenerator(propName) : {})))
+        });
+    });
+    return stateView;
+}
+exports.createFormBinding = createFormBinding;
+exports.FormInjectorType = Symbol('formInjector');
+function injectForm(stateGetter, stateSetter, extraPropsGenerator) {
+    return (0, scope_1.createInjector)(injector => {
+        const binding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
+        return {
+            type: exports.FormInjectorType,
+            getValue() {
+                return binding;
+            },
+            exportComponentData() {
+                return {
+                    self: binding,
+                    extra: null,
+                };
+            }
+        };
+    });
+}
+exports.injectForm = injectForm;
+
+
+/***/ }),
+
+/***/ 854:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectLoading = exports.LoadingState = void 0;
+const __1 = __webpack_require__(18);
+class LoadingState {
+    constructor() {
+        this.loadingStatus = 'not-started';
+    }
+    get isLoading() {
+        return this.loadingStatus === 'loading';
+    }
+    get isLoaded() {
+        return this.loadingStatus === 'done';
+    }
+}
+exports.LoadingState = LoadingState;
+function injectLoading() {
+    return (0, __1.injectState)(LoadingState, (stateController, injector) => {
+        const provider = injector.provider;
+        provider.events.on('onModuleInit', () => {
+            if (!provider.isAsync) {
+                stateController.nonReactiveUpdate({ loadingStatus: 'done' });
+                return;
+            }
+            stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
+            provider.waitForLoad.then(() => {
+                stateController.setLoadingStatus('done');
+            });
+        });
+    });
+}
+exports.injectLoading = injectLoading;
+
+
+/***/ }),
+
+/***/ 746:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getQueryOptionsFromArgs = exports.injectQuery = exports.QueryModule = exports.QueryStateConfig = void 0;
+const scope_1 = __webpack_require__(527);
+const StateView_1 = __webpack_require__(32);
+const inject_state_1 = __webpack_require__(300);
+const inject_watch_1 = __webpack_require__(668);
+const inject_child_1 = __webpack_require__(835);
+class QueryStateConfig {
+    constructor() {
+        // constructor(public state: QueryState<TData, TParams, TError>) {}
+        this.state = {
+            status: 'idle',
+            data: null,
+            error: null,
+            params: null,
+        };
+    }
+    setData(data) {
+        this.state.status = 'success';
+        this.state.data = data;
+        console.log('query fetched', data);
+    }
+    setError(error) {
+        this.state.status = 'error';
+        this.state.error = error;
+    }
+    get isLoading() {
+        return this.state.status === 'loading';
+    }
+}
+exports.QueryStateConfig = QueryStateConfig;
+/**
+ * Alternative for https://react-query.tanstack.com/reference/useQuery
+ */
+class QueryModule {
+    constructor(...args) {
+        this.state = (0, inject_state_1.injectState)(QueryStateConfig);
+        this.watcher = (0, inject_watch_1.injectWatch)(this.getParams, this.refetch);
+        this.fetchingPromise = null;
+        this.promiseId = '';
+        this.enabled = true;
+        this.isInitialFetch = true;
+        const computedOptions = getQueryOptionsFromArgs(args);
+        const options = Object.assign({ enabled: true, params: null, initialData: null, getParams: null, fetch: () => { } }, computedOptions);
+        this.options = options;
+        this.enabled = !!options.enabled;
+    }
+    load() {
+        this.stateView = this.state.createView();
+        const queryMethods = new StateView_1.StateView();
+        queryMethods.defineProp({
+            type: 'QueryMethod',
+            name: 'refetch',
+            reactive: false,
+            getValue: () => {
+                return () => this.refetch();
+            },
+        });
+        this.queryView = this.stateView.mergeView(queryMethods);
+        const data = this.options.initialData;
+        this.state.nonReactiveUpdate({
+            params: this.getParams(),
+            data,
+        });
+        this.exec();
+    }
+    exec() {
+        if (this.fetchingPromise)
+            return this.fetchingPromise;
+        return this.fetch();
+    }
+    fetch() {
+        const fetchResult = this.options.fetch();
+        if (fetchResult === null || fetchResult === void 0 ? void 0 : fetchResult.then) {
+            if (this.isInitialFetch) {
+                this.state.nonReactiveUpdate({
+                    status: 'loading',
+                });
+                this.isInitialFetch = false;
+            }
+            else {
+                this.state.setStatus('loading');
+            }
+            const promiseId = (0, scope_1.generateId)();
+            this.promiseId = promiseId;
+            this.fetchingPromise = fetchResult;
+            return fetchResult.then((data) => {
+                if (!this.enabled || this.promiseId !== promiseId)
+                    return;
+                this.fetchingPromise = null;
+                this.promiseId = '';
+                this.state.setData(data);
+            })
+                .catch((e) => {
+                if (!this.enabled || this.promiseId !== promiseId)
+                    return;
+                this.fetchingPromise = null;
+                this.promiseId = '';
+                this.state.setError(e);
+            });
+        }
+        // result is not a promise, set the data
+        this.state.setData(fetchResult);
+        return Promise.resolve(fetchResult);
+    }
+    refetch() {
+        if (!this.enabled)
+            return;
+        this.stopFetching();
+        return this.fetch();
+    }
+    stopFetching() {
+        this.fetchingPromise = null;
+        this.promiseId = '';
+    }
+    setEnabled(enabled) {
+        this.enabled = enabled;
+    }
+    getParams() {
+        return this.options.getParams ? this.options.getParams() : null;
+    }
+    destroy() {
+        // prevent unfinished fetching
+        this.setEnabled(false);
+    }
+    exportComponentData() {
+        return {
+            self: this.queryView,
+            extra: null,
+        };
+    }
+}
+exports.QueryModule = QueryModule;
+function injectQuery(...args) {
+    return (0, inject_child_1.injectChild)(QueryModule, ...args);
+}
+exports.injectQuery = injectQuery;
+/**
+ * convers Query constructor agrs to QueryOptions
+ * @param args
+ */
+function getQueryOptionsFromArgs(args) {
+    if (args.length === 1) {
+        const arg = args[0];
+        if (typeof arg === 'function') {
+            return {
+                fetch: arg,
+            };
+        }
+        return arg;
+    }
+    if (args.length === 2) {
+        return {
+            initialData: args[0],
+            fetch: args[1],
+        };
+    }
+    return {
+        initialData: args[0],
+        fetch: args[1],
+        getParams: args[2],
+    };
+}
+exports.getQueryOptionsFromArgs = getQueryOptionsFromArgs;
+
+
+/***/ }),
+
+/***/ 300:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectState = exports.StateInjectorType = void 0;
+const scope_1 = __webpack_require__(527);
+const Store_1 = __webpack_require__(607);
+exports.StateInjectorType = Symbol('stateInjector');
+function injectState(configCreator, onCreate) {
+    return (0, scope_1.createInjector)(injector => {
+        const store = injector.provider.scope.resolve(Store_1.Store);
+        let state = null;
+        let stateView = null;
+        function createState(propName) {
+            const moduleName = injector.provider.instanceId;
+            const moduleState = store.createState(moduleName, propName, configCreator);
+            return moduleState;
+        }
+        return {
+            type: exports.StateInjectorType,
+            load: () => {
+                state = createState(injector.propertyName);
+                stateView = state.createView();
+                onCreate && onCreate(state, injector);
+            },
+            getValue() {
+                return state;
+            },
+            exportComponentData() {
+                return {
+                    self: stateView,
+                    extra: stateView,
+                };
+            },
+            destroy(injector) {
+                const moduleName = injector.provider.instanceId;
+                store.destroyModule(moduleName);
+            },
+        };
+    });
+}
+exports.injectState = injectState;
+
+
+/***/ }),
+
+/***/ 668:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.injectWatch = exports.WatchModule = void 0;
+const scope_1 = __webpack_require__(527);
+const Store_1 = __webpack_require__(607);
+const utils_1 = __webpack_require__(225);
+const inject_child_1 = __webpack_require__(835);
+class WatchModule {
+    constructor(watchExpr, onChange, isEqual = utils_1.isSimilar) {
+        this.watchExpr = watchExpr;
+        this.onChange = onChange;
+        this.isEqual = isEqual;
+        this.store = (0, scope_1.inject)(Store_1.Store);
+        this.unwatch = null;
+        this.current = null;
+    }
+    load() {
+        const parentProvider = (0, scope_1.getInstanceMetadata)(this).provider.options.parentProvider;
+        if (!parentProvider) {
+            throw new Error('This module should have a parent module');
+        }
+        const context = parentProvider.instance;
+        this.current = this.watchExpr.call(context);
+        this.unwatch = this.store.events.on('onMutation', () => {
+            const prev = this.current;
+            this.current = this.watchExpr.call(context);
+            if (this.isEqual(this.current, prev))
+                return;
+            this.onChange.call(context, this.current, prev);
+        });
+    }
+    destroy() {
+        this.unwatch && this.unwatch();
+    }
+}
+exports.WatchModule = WatchModule;
+function injectWatch(expression, onChange, isEqual) {
+    return (0, inject_child_1.injectChild)(WatchModule, expression, onChange, isEqual);
+}
+exports.injectWatch = injectWatch;
 
 
 /***/ }),
@@ -2516,6 +2426,8 @@ function pickInjectors(module) {
     };
 }
 exports.pickInjectors = pickInjectors;
+// type Keytype = keyof GetExtraInjectedProps<QueriesModule>;
+// type Queryprops = keyof GetExtraInjectedProps<QueriesModule> extends never ? {} : Flatten<GetExtraInjectedProps<QueriesModule>>
 // const injProps: Queryprops;
 // injProps.onlineUsersQuery
 // const injProps: GetAllInjectedProps<QueriesModule>;
@@ -2577,55 +2489,16 @@ exports.pickInjectors = pickInjectors;
 
 /***/ }),
 
-/***/ 209:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectLoading = exports.LoadingState = void 0;
-const injectState_1 = __webpack_require__(307);
-class LoadingState {
-    constructor() {
-        this.loadingStatus = 'not-started';
-    }
-    get isLoading() {
-        return this.loadingStatus === 'loading';
-    }
-    get isLoaded() {
-        return this.loadingStatus === 'done';
-    }
-}
-exports.LoadingState = LoadingState;
-function injectLoading() {
-    return (0, injectState_1.injectState)(LoadingState, (stateController, injector) => {
-        const provider = injector.provider;
-        provider.events.on('onModuleInit', () => {
-            if (!provider.isAsync) {
-                stateController.nonReactiveUpdate({ loadingStatus: 'done' });
-                return;
-            }
-            stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
-            provider.waitForLoad.then(() => {
-                stateController.setLoadingStatus('done');
-            });
-        });
-    });
-}
-exports.injectLoading = injectLoading;
-
-
-/***/ }),
-
 /***/ 49:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.pickProps = void 0;
-const traverse_1 = __webpack_require__(222);
+const utils_1 = __webpack_require__(225);
 function pickProps(module) {
     return function (props, view) {
-        (0, traverse_1.traverse)(module, (propName, descr) => {
+        (0, utils_1.traverse)(module, (propName, descr) => {
             const isGetter = !!descr.get;
             const isFunction = !isGetter && typeof descr.value === 'function';
             const getValue = isFunction ? () => descr.value.bind(module) : () => module[propName];
@@ -2841,16 +2714,13 @@ let createNanoEvents = () => ({
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			id: moduleId,
-/******/ 			loaded: false,
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
 /******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -2882,15 +2752,6 @@ let createNanoEvents = () => ({
 /******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
 /******/ 			}
 /******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/node module decorator */
-/******/ 	(() => {
-/******/ 		__webpack_require__.nmd = (module) => {
-/******/ 			module.paths = [];
-/******/ 			if (!module.children) module.children = [];
-/******/ 			return module;
 /******/ 		};
 /******/ 	})();
 /******/ 	

@@ -1,5 +1,5 @@
 import { GetProps, StateView } from '../StateView';
-import { traverse } from '../../utils/traverse';
+import { traverse } from '../../utils';
 
 export type PickModuleProps<TView, TModule> = StateView<GetProps<TView> & TModule>
 

@@ -1,5 +1,4 @@
-import { injectState } from '../../../lib/store/injectState';
-import { injectLoading } from '../../../lib/store/plugins/pickLoadingState';
+import { injectState, injectLoading } from '../../../lib';
 
 export class WindowState {
   activePage = 'queries';

@@ -1,9 +1,7 @@
 import React, { CSSProperties } from 'react';
 import { Rnd } from 'react-rnd';
 import { EditorService, TSceneItem } from '../../../services/editor.service';
-import { inject } from '../../../../../lib/scope/injector';
-import { useModule } from '../../../../../lib';
-import { injectState } from '../../../../../lib/store/injectState';
+import { inject, injectState, useModule } from '../../../../../lib';
 
 const wrapperStyle: CSSProperties = {
   height: '100%',

@@ -1,7 +1,4 @@
-import { injectState } from '../../../lib/store/injectState';
-import { inject, injectScope } from '../../../lib/scope/injector';
-import { injectForm } from '../../../lib/store/form-binding';
-import { injectLoading } from '../../../lib/store/plugins/pickLoadingState';
+import { inject, injectForm, injectLoading, injectScope, injectState } from '../../../lib';
 
 export class EditorState {
   readonly persistent = true;

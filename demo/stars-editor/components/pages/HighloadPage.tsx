@@ -1,7 +1,5 @@
 import React, { CSSProperties } from 'react';
-import { Dict } from '../../../../lib/scope';
-import { injectState } from '../../../../lib/store/injectState';
-import { useModule } from '../../../../lib/react-bindings/useModule';
+import { Dict, injectState, useModule } from '../../../../lib';
 
 type TCard = {
   id: string,

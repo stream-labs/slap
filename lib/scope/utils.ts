@@ -1,5 +1,3 @@
-import { isPlainObject } from 'is-plain-object';
-
 let idCounter = 1;
 
 export function generateId() {
