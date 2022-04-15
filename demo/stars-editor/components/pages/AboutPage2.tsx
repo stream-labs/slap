@@ -15,6 +15,9 @@ const { foo, bar } = useModule(MyModule);
 const { foo, bar, zoom } = useModule(MyModule).extend(m => ({
   zoom: 3,
 }));
+
+
+
 //
 // export function AboutPage () {
 //

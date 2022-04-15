@@ -34,10 +34,10 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
     const component = reactStore.registerComponent(moduleView, componentId, forceUpdate);
 
     function extend<TNewProps>(
-      newPropsFactory: (props: TModule) => TNewProps,
+      newPropsFactory: (props: GetModuleStateView<TModule>['props']) => TNewProps,
     ): (ExtendView<GetModuleStateView<TModule>['props'], TNewProps>)['props'] {
-      const newProvider = provider.resolveChildProvider(() => newPropsFactory(module), componentId);
-      newProvider.setMetadata('parentModuleView', moduleView);
+      const newProvider = provider.resolveChildProvider(() => newPropsFactory(moduleView.props), componentId);
+      newProvider.setMetadata('parentModuleView', moduleView);// TODO remove metadata
       store.setModuleContext(componentId, provider.childScope!);
       const result = useModule(componentId) as any;
       store.resetModuleContext(componentId);
@@ -83,9 +83,9 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
     const watcherId = reactStore.createWatcher(component.id, () => {
       const prevSnapshot = component.lastSnapshot;
 
-      console.log('START SNAPSHOT FOR', componentId);
+      // console.log('START SNAPSHOT FOR', componentId);
       const newSnapshot = component.makeSnapshot();
-      console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
+      // console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
 
       if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
         // no modules changed, do not call compare props
@@ -94,7 +94,7 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
 
       if (!isSimilar(prevSnapshot.props, newSnapshot.props)) {
 
-        console.log('should render ', componentId);
+        // console.log('should render ', componentId);
         // reactStore.updateUI();
         component.setInvalidated(true);
       }
@@ -110,18 +110,6 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
 
   return component.stateView.proxy as TResult;
 }
-
-// export type ModuleView<TModule> = {
-//   module: TModule,
-//   view: GetModuleStateView<TModule>,
-// }
-//
-// export function useModuleView<TModule>(module: TModule): ModuleView<TModule> {
-//   return useOnCreate(() => ({
-//     module,
-//     view: createStateViewForModule(module),
-//   }));
-// }
 
 export function useModule<T extends TModuleLocatorType, TInitState extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps: TInitState|null = null, moduleName = ''): GetUseComponentViewResult<TModuleInstanceFor<T>> {
   const module = useModuleInstance(locator, initProps, moduleName);

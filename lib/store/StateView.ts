@@ -51,6 +51,8 @@ export class StateView<TProps = {}> {
     };
     (this.descriptors as any)[descriptor.name] = descriptor;
     if (descriptor.reactive) this.hasReactiveProps = true;
+    // const getValue = descriptor.stateView ? () => descriptor.stateView!.props : () => descriptor.getValue;
+    // defineGetter(this.props as any, descriptor.name, getValue);
     defineGetter(this.props as any, descriptor.name, () => descriptor.getValue());
   }
 

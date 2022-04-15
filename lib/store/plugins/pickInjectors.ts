@@ -30,7 +30,7 @@ export function pickInjectors<
           reactive: true,
           stateView: selfProps as any,
           getValue() {
-            return selfProps;
+            return injector.resolveValue();
           },
         });
       }

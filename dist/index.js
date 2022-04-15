@@ -541,8 +541,8 @@ function useComponentView(module) {
         }
         const component = reactStore.registerComponent(moduleView, componentId, forceUpdate);
         function extend(newPropsFactory) {
-            const newProvider = provider.resolveChildProvider(() => newPropsFactory(module), componentId);
-            newProvider.setMetadata('parentModuleView', moduleView);
+            const newProvider = provider.resolveChildProvider(() => newPropsFactory(moduleView.props), componentId);
+            newProvider.setMetadata('parentModuleView', moduleView); // TODO remove metadata
             store.setModuleContext(componentId, provider.childScope);
             const result = useModule(componentId);
             store.resetModuleContext(componentId);
@@ -578,15 +578,15 @@ function useComponentView(module) {
         // TODO do not run watchers for non-observable component views
         const watcherId = reactStore.createWatcher(component.id, () => {
             const prevSnapshot = component.lastSnapshot;
-            console.log('START SNAPSHOT FOR', componentId);
+            // console.log('START SNAPSHOT FOR', componentId);
             const newSnapshot = component.makeSnapshot();
-            console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
+            // console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
             if ((0, utils_1.isSimilar)(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
                 // no modules changed, do not call compare props
                 return;
             }
             if (!(0, utils_1.isSimilar)(prevSnapshot.props, newSnapshot.props)) {
-                console.log('should render ', componentId);
+                // console.log('should render ', componentId);
                 // reactStore.updateUI();
                 component.setInvalidated(true);
             }
@@ -601,17 +601,6 @@ function useComponentView(module) {
     return component.stateView.proxy;
 }
 exports.useComponentView = useComponentView;
-// export type ModuleView<TModule> = {
-//   module: TModule,
-//   view: GetModuleStateView<TModule>,
-// }
-//
-// export function useModuleView<TModule>(module: TModule): ModuleView<TModule> {
-//   return useOnCreate(() => ({
-//     module,
-//     view: createStateViewForModule(module),
-//   }));
-// }
 function useModule(locator, initProps = null, moduleName = '') {
     const module = (0, useModuleInstance_1.useModuleInstance)(locator, initProps, moduleName);
     // const moduleView = useModuleView(module);
@@ -1451,6 +1440,8 @@ class StateView {
         this.descriptors[descriptor.name] = descriptor;
         if (descriptor.reactive)
             this.hasReactiveProps = true;
+        // const getValue = descriptor.stateView ? () => descriptor.stateView!.props : () => descriptor.getValue;
+        // defineGetter(this.props as any, descriptor.name, getValue);
         (0, scope_1.defineGetter)(this.props, descriptor.name, () => descriptor.getValue());
     }
     defineWildcardProp(cb) {
@@ -1764,7 +1755,7 @@ class ModuleStateController {
             controller.metadata.config.mutations[mutationName].apply(controller, mutation.payload);
         });
         this.metadata.rev++;
-        console.log(`New revision for module ${moduleName}.${sectionName}`, this.metadata.rev);
+        // console.log(`New revision for module ${moduleName}.${sectionName}`, this.metadata.rev);
         this.draftState = null;
     }
     get state() {
@@ -1797,7 +1788,7 @@ class ModuleStateController {
             getValue: () => {
                 // eslint-disable-next-line no-unused-expressions
                 controller.state; // read as reactive
-                console.log(`read REV for ${controller.moduleName}.${controller.sectionName}`, controller.metadata.rev);
+                // console.log(`read REV for ${controller.moduleName}.${controller.sectionName}`, controller.metadata.rev);
                 return controller.metadata.rev;
             },
         });
@@ -2417,7 +2408,7 @@ function pickInjectors(module) {
                     reactive: true,
                     stateView: selfProps,
                     getValue() {
-                        return selfProps;
+                        return injector.resolveValue();
                     },
                 });
             }
