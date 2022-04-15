@@ -452,20 +452,24 @@ class ReactStoreAdapter {
         if (this.updateIsInProgress) {
             throw new Error('Can not update ');
         }
-        this.updateIsInProgress = true;
         const watchersIds = [...this.watchersOrder];
-        // force update components
-        (0, react_dom_1.unstable_batchedUpdates)(() => {
-            watchersIds.forEach(id => {
-                this.watchers[id] && this.watchers[id]();
-                const component = this.components[id];
-                if (component.needUpdate()) {
-                    component.forceUpdate();
-                    component.setInvalidated(false);
-                }
+        this.updateIsInProgress = true;
+        try {
+            // force update components
+            (0, react_dom_1.unstable_batchedUpdates)(() => {
+                watchersIds.forEach(id => {
+                    this.watchers[id] && this.watchers[id]();
+                    const component = this.components[id];
+                    if (component.needUpdate()) {
+                        component.forceUpdate();
+                        component.setInvalidated(false);
+                    }
+                });
             });
-        });
-        this.updateIsInProgress = false;
+        }
+        finally {
+            this.updateIsInProgress = false;
+        }
     }
 }
 exports.ReactStoreAdapter = ReactStoreAdapter;

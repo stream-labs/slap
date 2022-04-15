@@ -56,9 +56,12 @@ export class Store {
     }
 
     this.currentMutation = mutation;
-    stateController.applyMutation(mutation);
-    this.events.emit('onMutation', mutation);
-    this.currentMutation = null;
+    try {
+      stateController.applyMutation(mutation);
+      this.events.emit('onMutation', mutation);
+    } finally {
+      this.currentMutation = null;
+    }
 
     if (!mutation.silent) {
       // trigger subscribed components to re-render
