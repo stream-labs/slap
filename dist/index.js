@@ -450,7 +450,7 @@ class ReactStoreAdapter {
     }
     updateUI() {
         if (this.updateIsInProgress) {
-            throw new Error('Can not update ');
+            console.error('Tried to update component state before component has been mounted.');
         }
         const watchersIds = [...this.watchersOrder];
         this.updateIsInProgress = true;
@@ -585,10 +585,10 @@ function useComponentView(module) {
             // console.log('START SNAPSHOT FOR', componentId);
             const newSnapshot = component.makeSnapshot();
             // console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
-            if ((0, utils_1.isSimilar)(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
-                // no modules changed, do not call compare props
-                return;
-            }
+            // if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
+            //   // no modules changed, do not call compare props
+            //   return;
+            // }
             if (!(0, utils_1.isSimilar)(prevSnapshot.props, newSnapshot.props)) {
                 // console.log('should render ', componentId);
                 // reactStore.updateUI();
@@ -1619,9 +1619,13 @@ class Store {
             throw new Error('Can not run mutation while previous mutation is not completed');
         }
         this.currentMutation = mutation;
-        stateController.applyMutation(mutation);
-        this.events.emit('onMutation', mutation);
-        this.currentMutation = null;
+        try {
+            stateController.applyMutation(mutation);
+            this.events.emit('onMutation', mutation);
+        }
+        finally {
+            this.currentMutation = null;
+        }
         if (!mutation.silent) {
             // trigger subscribed components to re-render
             if (!mutation.silent)
