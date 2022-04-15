@@ -51,7 +51,7 @@ export class ReactStoreAdapter {
 
   updateUI() {
     if (this.updateIsInProgress) {
-      throw new Error('Can not update ');
+      console.error('Tried to update component state before component has been mounted.');
     }
     const watchersIds = [...this.watchersOrder];
 

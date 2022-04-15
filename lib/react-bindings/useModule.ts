@@ -87,10 +87,10 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
       const newSnapshot = component.makeSnapshot();
       // console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
 
-      if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
-        // no modules changed, do not call compare props
-        return;
-      }
+      // if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
+      //   // no modules changed, do not call compare props
+      //   return;
+      // }
 
       if (!isSimilar(prevSnapshot.props, newSnapshot.props)) {
 
