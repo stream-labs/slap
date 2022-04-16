@@ -7,6 +7,10 @@ class CounterModule {
     count: 0,
   });
 
+  load() {
+    this.reset();
+  }
+
   @mutation()
   reset() {
     this.state.count = 0;

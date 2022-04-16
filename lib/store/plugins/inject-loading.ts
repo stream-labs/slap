@@ -13,7 +13,7 @@ export class LoadingState {
 }
 
 export function injectLoading() {
-  return injectState(LoadingState, statefulModule => {
+  return injectState(LoadingState, false,statefulModule => {
 
     const parentProvider = getInstanceMetadata(statefulModule).provider.injector!.provider;
 

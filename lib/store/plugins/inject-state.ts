@@ -20,9 +20,10 @@ export function injectState<
   TViewValue = StateView<TStateViewForStateConfig<TConfigCreator>>,
 >(
   configCreator: TConfigCreator,
+  allowMutationDecorators = true,
   onCreate?: (statefulModule: StatefulModule<TConfigCreator>) => unknown,
 ): InjectedProp<TValue, TViewValue, TViewValue> {
-  return injectChild(StatefulModule, configCreator, onCreate) as any as InjectedProp<TValue, TViewValue, TViewValue>;
+  return injectChild(StatefulModule, configCreator, allowMutationDecorators, onCreate) as any as InjectedProp<TValue, TViewValue, TViewValue>;
 }
 
 // export function injectState<
@@ -74,7 +75,7 @@ export class StatefulModule<TStateConfig> {
   stateController!: TStateControllerFor<TStateConfig>;
   stateView!: StateView<TStateViewForStateConfig<TStateConfig>>;
 
-  constructor(public stateConfig: TStateConfig, public onCreate?: (module: StatefulModule<TStateConfig>) => unknown) {
+  constructor(public stateConfig: TStateConfig, public allowMutationDecorators = true, public onCreate?: (module: StatefulModule<TStateConfig>) => unknown) {
   }
 
   get injector() {
@@ -97,11 +98,16 @@ export class StatefulModule<TStateConfig> {
     this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
 
     // register methods marked with the @mutation() decorators
-    const parentModule = parentProvider.instance;
-    const mutations: string[] = parentModule.__mutations || [];
-    mutations.forEach(mutationName => {
-      this.stateController.registerMutation(mutationName, parentModule[mutationName]);
-    });
+    if (this.allowMutationDecorators) {
+      const parentModule = parentProvider.instance;
+      const mutations: string[] = parentModule.__mutations || [];
+      mutations.forEach(mutationName => {
+        const mutation = parentModule[mutationName];
+        this.stateController.registerMutation(mutationName, mutation);
+        parentModule[mutationName] = (...args: any) => (this.stateController as any)[mutationName](...args);
+      });
+
+    }
 
 
     this.stateView = this.stateController.createView() as StateView<TStateViewForStateConfig<TStateConfig>>;

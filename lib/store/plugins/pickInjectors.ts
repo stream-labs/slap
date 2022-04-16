@@ -19,6 +19,10 @@ export function pickInjectors<
 
       const extraProps = componentData.extra;
       if (extraProps) {
+        const extraPropsView = extraProps as StateView<any>;
+        forEach(extraPropsView.descriptors, (descriptor, p) => {
+          if (!(descriptor.name in module)) newView.defineProp(descriptor);
+        });
         newView = newView.mergeView(extraProps as any);
       }
 
