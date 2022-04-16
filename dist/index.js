@@ -1421,7 +1421,8 @@ class StateView {
         this.hasWildcardProps = false;
         this.wildcardPropCreator = null;
         this.proxy = new Proxy({
-            __proxyName: 'StateViewProxy', // set proxy name for debugging
+            __proxyName: 'StateViewProxy',
+            __target: this,
         }, {
             get: (target, propName) => {
                 if (propName === 'hasOwnProperty')
@@ -1706,14 +1707,12 @@ class ModuleStateController {
             config.mutations[mutationName] = mutationMethod;
             controller.registerMutation(mutationName, mutationMethod);
         });
+        // create default mutations
+        this.registerDefaultMutations();
         // create other mutations
         Object.keys(config.mutations).forEach(propName => {
             this.registerMutation(propName, config.mutations[propName]);
         });
-        // define bulk non-reactive state mutation
-        const nonReactiveUpdate = 'nonReactiveUpdate';
-        config.mutations[nonReactiveUpdate] = (statePatch) => Object.assign(controller, statePatch);
-        controller.registerMutation('nonReactiveUpdate', config.mutations[nonReactiveUpdate], true);
     }
     registerMutation(mutationName, mutationMethod, silent = false) {
         const controller = this;
@@ -1760,6 +1759,12 @@ class ModuleStateController {
         this.metadata.rev++;
         // console.log(`New revision for module ${moduleName}.${sectionName}`, this.metadata.rev);
         this.draftState = null;
+    }
+    registerDefaultMutations() {
+        const controller = this;
+        const updateStateMutation = (statePatch) => Object.assign(controller, statePatch);
+        controller.registerMutation('update', updateStateMutation);
+        controller.registerMutation('nonReactiveUpdate', updateStateMutation, true);
     }
     get state() {
         if (this.draftState)
@@ -2044,31 +2049,36 @@ exports.injectChild = injectChild;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectForm = exports.FormInjectorType = exports.createFormBinding = void 0;
+exports.injectFormBinding = exports.FormInjectorType = exports.createFormBinding = void 0;
 const StateView_1 = __webpack_require__(32);
 const scope_1 = __webpack_require__(527);
 function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
+    function getState() {
+        if (typeof stateGetter === 'function')
+            return stateGetter();
+        return stateGetter;
+    }
     const stateView = new StateView_1.StateView();
     stateView.defineProp({
         type: 'FormStateRev',
         name: 'getRev',
-        getValue: () => (stateGetter()),
+        getValue: () => (getState()),
     });
     stateView.defineWildcardProp(propName => {
         stateView.defineProp({
             type: 'FormInputBinding',
             name: propName,
             reactive: true,
-            getValue: () => (Object.assign({ name: propName, value: stateGetter()[propName], onChange: (newVal) => {
+            getValue: () => (Object.assign({ name: propName, value: getState()[propName], onChange: (newVal) => {
                     stateSetter({ [propName]: newVal });
-                } }, (extraPropsGenerator ? extraPropsGenerator(propName) : {})))
+                } }, (extraPropsGenerator ? extraPropsGenerator(propName) : {}))),
         });
     });
     return stateView;
 }
 exports.createFormBinding = createFormBinding;
 exports.FormInjectorType = Symbol('formInjector');
-function injectForm(stateGetter, stateSetter, extraPropsGenerator) {
+function injectFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     return (0, scope_1.createInjector)(injector => {
         const binding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
         return {
@@ -2085,7 +2095,7 @@ function injectForm(stateGetter, stateSetter, extraPropsGenerator) {
         };
     });
 }
-exports.injectForm = injectForm;
+exports.injectFormBinding = injectFormBinding;
 
 
 /***/ }),
@@ -2701,8 +2711,8 @@ exports.copyProps = copyProps;
  */
 function merge(obj1, obj2) {
     const result = {};
-    copyProps(result, obj1);
-    copyProps(result, obj2);
+    copyProps(obj1, result);
+    copyProps(obj2, result);
     return result;
 }
 exports.merge = merge;

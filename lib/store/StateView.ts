@@ -27,6 +27,7 @@ export class StateView<TProps = {}> {
     this.proxy = new Proxy(
       {
         __proxyName: 'StateViewProxy', // set proxy name for debugging
+        __target: this,
       },
       {
         get: (target: any, propName: string) => {

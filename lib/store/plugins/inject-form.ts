@@ -11,17 +11,24 @@ export type TFormBindings<TState, TExtraProps = {}> = {
 } & TExtraProps
 
 export function createFormBinding<TState, TExtraProps = {}>(
-  stateGetter: () => TState,
+  stateGetter: TState | (() => TState),
   stateSetter: (statePatch: Partial<TState>) => unknown,
   extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps,
 ): StateView<TFormBindings<TState, TExtraProps>> {
+
+
+  function getState(): TState {
+    if (typeof stateGetter === 'function') return (stateGetter as Function)();
+    return stateGetter;
+  }
+
 
   const stateView = new StateView<TFormBindings<TState, TExtraProps>>();
 
   stateView.defineProp({
     type: 'FormStateRev',
     name: 'getRev',
-    getValue: () => (stateGetter()),
+    getValue: () => (getState()),
   });
 
   stateView.defineWildcardProp(propName => {
@@ -31,12 +38,12 @@ export function createFormBinding<TState, TExtraProps = {}>(
       reactive: true,
       getValue: () => ({
         name: propName,
-        value: (stateGetter() as any)[propName],
+        value: (getState() as any)[propName],
         onChange: (newVal: unknown) => {
           (stateSetter as any)({ [propName]: newVal });
         },
         ...(extraPropsGenerator ? extraPropsGenerator(propName as keyof TState) : {}),
-      })
+      }),
     });
   });
 
@@ -45,8 +52,8 @@ export function createFormBinding<TState, TExtraProps = {}>(
 
 export const FormInjectorType = Symbol('formInjector');
 
-export function injectForm<TState, TExtraProps = {}>(
-  stateGetter: () => TState,
+export function injectFormBinding<TState, TExtraProps = {}>(
+  stateGetter: TState | (() => TState),
   stateSetter: (statePatch: Partial<TState>) => unknown,
   extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps,
 ): InjectedProp< StateView<TFormBindings<TState, TExtraProps>>, StateView<TFormBindings<TState, TExtraProps>>, null> {

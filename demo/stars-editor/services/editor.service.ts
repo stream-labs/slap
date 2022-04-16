@@ -1,4 +1,4 @@
-import { inject, injectForm, injectLoading, injectScope, injectState } from '../../../lib';
+import { inject, injectFormBinding, injectLoading, injectScope, injectState } from '../../../lib';
 
 export class EditorState {
   readonly persistent = true;
@@ -53,7 +53,7 @@ export class EditorService {
     return this.state.activeItemId + 1;
   }
 
-  bindActiveItem = injectForm(() => this.state.activeItem!, patch => this.state.updateItem(this.state.activeItemId, patch));
+  bindActiveItem = injectFormBinding(() => this.state.activeItem!, patch => this.state.updateItem(this.state.activeItemId, patch));
 
   getSceneController(id: string) {
     return this.scope.create(SceneController, id);

@@ -18,11 +18,11 @@ export function copyProps<TSource, TTarget = {}>(source: TSource, target?: TTarg
  * Property descriptors will be preserved
  * Prototype properties will be included
  */
-export function merge<T1, T2, TResult = GetMerge<T1, T2>>(obj1: any, obj2: any): TResult {
+export function merge<T1, T2, TResult = GetMerge<T1, T2>>(obj1: T1, obj2: T2): TResult {
   const result = {};
 
-  copyProps(result, obj1);
-  copyProps(result, obj2);
+  copyProps(obj1, result);
+  copyProps(obj2, result);
 
   return result as TResult;
 }
