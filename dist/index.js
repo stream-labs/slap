@@ -2120,7 +2120,7 @@ class LoadingState {
 }
 exports.LoadingState = LoadingState;
 function injectLoading() {
-    return (0, __1.injectState)(LoadingState, statefulModule => {
+    return (0, __1.injectState)(LoadingState, false, statefulModule => {
         const parentProvider = (0, __1.getInstanceMetadata)(statefulModule).provider.injector.provider;
         parentProvider.events.on('onModuleInit', () => {
             if (!parentProvider.isAsync) {
@@ -2323,8 +2323,8 @@ const scope_1 = __webpack_require__(527);
 const Store_1 = __webpack_require__(607);
 const inject_child_1 = __webpack_require__(835);
 exports.StateInjectorType = Symbol('stateInjector');
-function injectState(configCreator, onCreate) {
-    return (0, inject_child_1.injectChild)(StatefulModule, configCreator, onCreate);
+function injectState(configCreator, allowMutationDecorators = true, onCreate) {
+    return (0, inject_child_1.injectChild)(StatefulModule, configCreator, allowMutationDecorators, onCreate);
 }
 exports.injectState = injectState;
 // export function injectState<
@@ -2369,8 +2369,9 @@ exports.injectState = injectState;
 //   });
 // }
 class StatefulModule {
-    constructor(stateConfig, onCreate) {
+    constructor(stateConfig, allowMutationDecorators = true, onCreate) {
         this.stateConfig = stateConfig;
+        this.allowMutationDecorators = allowMutationDecorators;
         this.onCreate = onCreate;
         this.store = (0, scope_1.inject)(Store_1.Store);
         this.provider = (0, scope_1.injectProvider)();
@@ -2392,11 +2393,15 @@ class StatefulModule {
         const moduleName = this.moduleName;
         this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
         // register methods marked with the @mutation() decorators
-        const parentModule = parentProvider.instance;
-        const mutations = parentModule.__mutations || [];
-        mutations.forEach(mutationName => {
-            this.stateController.registerMutation(mutationName, parentModule[mutationName]);
-        });
+        if (this.allowMutationDecorators) {
+            const parentModule = parentProvider.instance;
+            const mutations = parentModule.__mutations || [];
+            mutations.forEach(mutationName => {
+                const mutation = parentModule[mutationName];
+                this.stateController.registerMutation(mutationName, mutation);
+                parentModule[mutationName] = (...args) => this.stateController[mutationName](...args);
+            });
+        }
         this.stateView = this.stateController.createView();
         this.onCreate && this.onCreate(this);
     }
@@ -2491,6 +2496,11 @@ function pickInjectors(module) {
             const componentData = injector.getComponentData();
             const extraProps = componentData.extra;
             if (extraProps) {
+                const extraPropsView = extraProps;
+                (0, scope_1.forEach)(extraPropsView.descriptors, (descriptor, p) => {
+                    if (!(descriptor.name in module))
+                        newView.defineProp(descriptor);
+                });
                 newView = newView.mergeView(extraProps);
             }
             const selfProps = componentData.self;
