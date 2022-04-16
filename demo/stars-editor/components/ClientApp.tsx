@@ -10,6 +10,7 @@ import { UsersPage } from './pages/UsersPage';
 import { WatchersPage } from './pages/WatchersPage';
 import { QueriesPage } from './pages/QueriesPage';
 import { ExtendedStatePage } from './pages/ExtendedState';
+import { MutationDecoratorPage } from './pages/MutationDecorator';
 
 export function ClientApp() {
   const { isLoading, activePage } = useModule(WindowService);
@@ -26,6 +27,7 @@ export function ClientApp() {
       {activePage === 'watchers' && <WatchersPage /> }
       {activePage === 'queries' && <QueriesPage /> }
       {activePage === 'extended' && <ExtendedStatePage /> }
+      {activePage === 'mutation' && <MutationDecoratorPage /> }
     </Layout>
   );
 }

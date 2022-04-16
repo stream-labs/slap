@@ -1,4 +1,4 @@
-import { injectState, TLoadingStatus } from '../..';
+import { getInstanceMetadata, injectState, TLoadingStatus } from '../..';
 
 export class LoadingState {
   loadingStatus: TLoadingStatus = 'not-started';
@@ -13,21 +13,21 @@ export class LoadingState {
 }
 
 export function injectLoading() {
-  return injectState(LoadingState, (stateController, injector) => {
+  return injectState(LoadingState, statefulModule => {
 
-    const provider = injector.provider;
+    const parentProvider = getInstanceMetadata(statefulModule).provider.injector!.provider;
 
-    provider.events.on('onModuleInit', () => {
+    parentProvider.events.on('onModuleInit', () => {
 
-      if (!provider.isAsync) {
-        stateController.nonReactiveUpdate({ loadingStatus: 'done' });
+      if (!parentProvider.isAsync) {
+        statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'done' });
         return;
       }
 
-      stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
+      statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
 
-      provider.waitForLoad.then(() => {
-        stateController.setLoadingStatus('done');
+      parentProvider.waitForLoad.then(() => {
+        statefulModule.stateController.setLoadingStatus('done');
       });
     });
   });

@@ -149,12 +149,12 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     if (!instance) return;
 
     // destroy instance
-    instance.destroy && instance.destroy();
+    instance.onDestroy && instance.onDestroy();
     this.initParams = [] as any;
 
     // destroy injectors
     Object.keys(this.injectors).forEach(injectorName => {
-      this.injectors[injectorName].destroy();
+      this.injectors[injectorName].onDestroy();
     });
 
     this.instance = null;
@@ -232,6 +232,10 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     return childScope.resolveProvider(name) as TProviderFor<T>;
   }
 
+  get injector() {
+    return this.options.injector;
+  }
+
   events = createNanoEvents<ProviderEvents>();
 }
 
@@ -267,6 +271,14 @@ export interface ProviderEvents {
 }
 
 export type ProviderOptions = {
+
+  /**
+   * Should call lifecycle hooks: init, load, onLoad
+   */
   shouldCallHooks: boolean;
-  parentProvider: Provider<any>;
+
+  /**
+   * Keeps injector if the module has been injected as a child module
+   */
+  injector: Injector<any, any, any>;
 }

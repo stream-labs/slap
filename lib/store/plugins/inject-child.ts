@@ -1,11 +1,18 @@
 import {
   createInjector, InjectedProp,
 } from '../../scope/injector';
-import { GetModuleExtraView, GetModuleStateView } from '../StateView';
+import {
+  GetComponentDataForModule,
+  GetModuleExtraView, GetModuleStateView,
+  StateView
+} from '../StateView';
+import { AppModule, TModuleInstanceFor } from '../../scope';
 
 export const ChildModuleInjectorType = Symbol('childModuleInjector');
 
-export function injectChild<TModule>(Module: TModule, ...args: any): InjectedProp<TModule, GetModuleStateView<TModule>, GetModuleExtraView<TModule>> {
+export type GetModuleInjectorValue<TModuleConfig> = TModuleInstanceFor<TModuleConfig> extends { exportInjectorValue: (...args: any) => infer TValue } ? TValue : TModuleInstanceFor<TModuleConfig>;
+
+export function injectChild<TModule>(Module: TModule, ...args: any): InjectedProp<GetModuleInjectorValue<TModule>, GetModuleStateView<TModule>, GetModuleExtraView<TModule>> {
   return createInjector(injector => {
 
     const scope = injector.provider.resolveChildScope();
@@ -15,12 +22,18 @@ export function injectChild<TModule>(Module: TModule, ...args: any): InjectedPro
       type: ChildModuleInjectorType,
       load() {
         moduleName = injector.propertyName;
-        scope.register(Module, moduleName, { parentProvider: injector.provider });
+        scope.register(Module, moduleName, { injector });
         scope.init(moduleName, ...args);
       },
-      getValue: () => scope.resolve(moduleName) as any,
+      getValue: () => {
+        const module = scope.resolve(moduleName) as AppModule;
+        if (module.exportInjectorValue) {
+          return module.exportInjectorValue();
+        }
+        return module;
+      },
       exportComponentData: () => {
-        const module = scope.resolve(moduleName) as any;
+        const module = scope.resolve(moduleName) as AppModule;
         return module.exportComponentData && module.exportComponentData() as any;
       },
       destroy() {

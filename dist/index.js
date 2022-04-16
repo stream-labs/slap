@@ -811,8 +811,8 @@ class Injector {
         this.loadingStatus = loadingStatus;
         this.provider.handleInjectorStatusChange(this, this.loadingStatus, prevStatus);
     }
-    destroy() {
-        this.params.destroy && this.params.destroy(this);
+    onDestroy() {
+        this.params.onDestroy && this.params.onDestroy();
         this.isDestroyed = true;
     }
     resolveValue() {
@@ -828,15 +828,6 @@ class Injector {
         }
         return componentData;
     }
-    // hasViewValue() {
-    //   return !!this.params.getView;
-    // }
-    //
-    // resolveViewValue(): TViewValue {
-    //   return this.params.getView
-    //     ? this.params.getView()
-    //     : this.resolveValue() as any;
-    // }
     get type() {
         return this.params.type;
     }
@@ -1013,11 +1004,11 @@ class Provider {
         if (!instance)
             return;
         // destroy instance
-        instance.destroy && instance.destroy();
+        instance.onDestroy && instance.onDestroy();
         this.initParams = [];
         // destroy injectors
         Object.keys(this.injectors).forEach(injectorName => {
-            this.injectors[injectorName].destroy();
+            this.injectors[injectorName].onDestroy();
         });
         this.instance = null;
         this.isInited = false;
@@ -1082,6 +1073,9 @@ class Provider {
             childScope.register(ModuleCreator, name);
         }
         return childScope.resolveProvider(name);
+    }
+    get injector() {
+        return this.options.injector;
     }
 }
 exports.Provider = Provider;
@@ -1591,8 +1585,6 @@ class Store {
         this.modulesMetadata = {};
         this.currentMutation = null;
         this.moduleRevisions = {};
-        // TODO : move to hooks?
-        this.currentScope = {};
         this.recordingAccessors = 0;
         this.affectedModules = {};
         this.currentContext = {};
@@ -1621,11 +1613,11 @@ class Store {
         this.currentMutation = mutation;
         try {
             stateController.applyMutation(mutation);
-            this.events.emit('onMutation', mutation);
         }
         finally {
             this.currentMutation = null;
         }
+        this.events.emit('onMutation', mutation);
         if (!mutation.silent) {
             // trigger subscribed components to re-render
             if (!mutation.silent)
@@ -1634,12 +1626,6 @@ class Store {
     }
     toJSON() {
         // TODO use for debugging
-    }
-    setModuleScope(moduleName, scope) {
-        this.currentScope[moduleName] = scope;
-    }
-    resetModuleScope(moduleName) {
-        delete this.currentScope[moduleName];
     }
     destroyModule(moduleName) {
         delete this.rootState[moduleName];
@@ -1683,9 +1669,11 @@ class ModuleStateController {
         store.rootState[moduleName][sectionName] = (0, immer_1.default)(defaultState, () => { });
         // create metadata
         const controller = this;
+        const getters = {};
         const metadata = {
             config,
             controller,
+            getters,
             rev: 0,
         };
         if (!store.modulesMetadata[moduleName])
@@ -1693,14 +1681,18 @@ class ModuleStateController {
         store.modulesMetadata[moduleName][sectionName] = metadata;
         // generate getters
         Object.keys(defaultState).forEach(propName => {
-            (0, scope_1.defineGetter)(controller, propName, () => controller.state[propName]);
+            const getter = () => controller.state[propName];
+            (0, scope_1.defineGetter)(controller, propName, getter);
+            (0, scope_1.defineGetter)(getters, propName, getter);
             (0, scope_1.defineSetter)(controller, propName, val => {
                 controller.state[propName] = val;
                 return true;
             });
         });
         Object.keys(config.getters).forEach(propName => {
-            (0, scope_1.defineGetter)(controller, propName, () => config.getters[propName].get.apply(controller));
+            const getter = () => config.getters[propName].get.apply(controller);
+            (0, scope_1.defineGetter)(controller, propName, getter);
+            (0, scope_1.defineGetter)(getters, propName, getter);
         });
         Object.keys(config.getterMethods).forEach(propName => {
             (0, scope_1.defineGetter)(controller, propName, () => (...args) => config.getterMethods[propName].apply(controller, args));
@@ -1726,6 +1718,9 @@ class ModuleStateController {
     registerMutation(mutationName, mutationMethod, silent = false) {
         const controller = this;
         const { store, moduleName, sectionName } = controller;
+        if (!controller.metadata.config.mutations[mutationName]) {
+            controller.metadata.config.mutations[mutationName] = mutationMethod;
+        }
         // override the original Module method to dispatch mutations
         controller[mutationName] = function (...args) {
             // if this method was called from another mutation
@@ -1784,6 +1779,9 @@ class ModuleStateController {
     }
     get metadata() {
         return this.store.modulesMetadata[this.moduleName][this.sectionName];
+    }
+    get getters() {
+        return this.metadata.getters;
     }
     createView() {
         const config = this.metadata.config;
@@ -2016,10 +2014,16 @@ function injectChild(Module, ...args) {
             type: exports.ChildModuleInjectorType,
             load() {
                 moduleName = injector.propertyName;
-                scope.register(Module, moduleName, { parentProvider: injector.provider });
+                scope.register(Module, moduleName, { injector });
                 scope.init(moduleName, ...args);
             },
-            getValue: () => scope.resolve(moduleName),
+            getValue: () => {
+                const module = scope.resolve(moduleName);
+                if (module.exportInjectorValue) {
+                    return module.exportInjectorValue();
+                }
+                return module;
+            },
             exportComponentData: () => {
                 const module = scope.resolve(moduleName);
                 return module.exportComponentData && module.exportComponentData();
@@ -2106,16 +2110,16 @@ class LoadingState {
 }
 exports.LoadingState = LoadingState;
 function injectLoading() {
-    return (0, __1.injectState)(LoadingState, (stateController, injector) => {
-        const provider = injector.provider;
-        provider.events.on('onModuleInit', () => {
-            if (!provider.isAsync) {
-                stateController.nonReactiveUpdate({ loadingStatus: 'done' });
+    return (0, __1.injectState)(LoadingState, statefulModule => {
+        const parentProvider = (0, __1.getInstanceMetadata)(statefulModule).provider.injector.provider;
+        parentProvider.events.on('onModuleInit', () => {
+            if (!parentProvider.isAsync) {
+                statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'done' });
                 return;
             }
-            stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
-            provider.waitForLoad.then(() => {
-                stateController.setLoadingStatus('done');
+            statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
+            parentProvider.waitForLoad.then(() => {
+                statefulModule.stateController.setLoadingStatus('done');
             });
         });
     });
@@ -2172,12 +2176,11 @@ class QueryModule {
         this.enabled = true;
         this.isInitialFetch = true;
         const computedOptions = getQueryOptionsFromArgs(args);
-        const options = Object.assign({ enabled: true, params: null, initialData: null, getParams: null, fetch: () => { } }, computedOptions);
+        const options = Object.assign({ enabled: true, params: null, initialData: null, getParams: null, fetch: () => { }, onSuccess: () => { }, onError: () => { } }, computedOptions);
         this.options = options;
         this.enabled = !!options.enabled;
     }
     load() {
-        this.stateView = this.state.createView();
         const queryMethods = new StateView_1.StateView();
         queryMethods.defineProp({
             type: 'QueryMethod',
@@ -2187,6 +2190,7 @@ class QueryModule {
                 return () => this.refetch();
             },
         });
+        this.stateView = this.state.createView();
         this.queryView = this.stateView.mergeView(queryMethods);
         const data = this.options.initialData;
         this.state.nonReactiveUpdate({
@@ -2228,10 +2232,12 @@ class QueryModule {
                 this.fetchingPromise = null;
                 this.promiseId = '';
                 this.state.setError(e);
+                this.options.onError && this.options.onError();
             });
         }
         // result is not a promise, set the data
         this.state.setData(fetchResult);
+        this.options.onSuccess && this.options.onSuccess();
         return Promise.resolve(fetchResult);
     }
     refetch() {
@@ -2250,7 +2256,7 @@ class QueryModule {
     getParams() {
         return this.options.getParams ? this.options.getParams() : null;
     }
-    destroy() {
+    onDestroy() {
         // prevent unfinished fetching
         this.setEnabled(false);
     }
@@ -2302,44 +2308,113 @@ exports.getQueryOptionsFromArgs = getQueryOptionsFromArgs;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectState = exports.StateInjectorType = void 0;
+exports.mutation = exports.StatefulModule = exports.injectState = exports.StateInjectorType = void 0;
 const scope_1 = __webpack_require__(527);
 const Store_1 = __webpack_require__(607);
+const inject_child_1 = __webpack_require__(835);
 exports.StateInjectorType = Symbol('stateInjector');
 function injectState(configCreator, onCreate) {
-    return (0, scope_1.createInjector)(injector => {
-        const store = injector.provider.scope.resolve(Store_1.Store);
-        let state = null;
-        let stateView = null;
-        function createState(propName) {
-            const moduleName = injector.provider.instanceId;
-            const moduleState = store.createState(moduleName, propName, configCreator);
-            return moduleState;
-        }
-        return {
-            type: exports.StateInjectorType,
-            load: () => {
-                state = createState(injector.propertyName);
-                stateView = state.createView();
-                onCreate && onCreate(state, injector);
-            },
-            getValue() {
-                return state;
-            },
-            exportComponentData() {
-                return {
-                    self: stateView,
-                    extra: stateView,
-                };
-            },
-            destroy(injector) {
-                const moduleName = injector.provider.instanceId;
-                store.destroyModule(moduleName);
-            },
-        };
-    });
+    return (0, inject_child_1.injectChild)(StatefulModule, configCreator, onCreate);
 }
 exports.injectState = injectState;
+// export function injectState<
+//   TConfigCreator extends TStateConfigCreator,
+//   TValue = TStateControllerFor<TConfigCreator>,
+//   TViewValue = StateView<TStateViewForStateConfig<TConfigCreator>>,
+//   >(configCreator: TConfigCreator, onCreate?: (stateController: TValue, injector: Injector<TValue, TViewValue, TViewValue>) => unknown): InjectedProp<TValue, TViewValue, TViewValue> {
+//   return createInjector(injector => {
+//
+//     const store = injector.provider.scope.resolve(Store);
+//     let state: TValue = null as any;
+//     let stateView: TViewValue = null as any;
+//
+//     function createState(propName: string) {
+//       const moduleName = injector.provider.instanceId;
+//       const moduleState = store.createState(moduleName, propName, configCreator);
+//       return moduleState;
+//     }
+//
+//     return {
+//       type: StateInjectorType,
+//       load: () => {
+//         state = createState(injector.propertyName) as TValue;
+//         stateView = (state as any as ModuleStateController).createView() as any as TViewValue;
+//         onCreate && onCreate(state, injector);
+//       },
+//       getValue() {
+//         return state;
+//       },
+//
+//       exportComponentData() {
+//         return {
+//           self: stateView,
+//           extra: stateView,
+//         };
+//       },
+//       onDestroy() {
+//         const moduleName = injector.provider.instanceId;
+//         store.destroyModule(moduleName);
+//       },
+//     };
+//   });
+// }
+class StatefulModule {
+    constructor(stateConfig, onCreate) {
+        this.stateConfig = stateConfig;
+        this.onCreate = onCreate;
+        this.store = (0, scope_1.inject)(Store_1.Store);
+        this.provider = (0, scope_1.injectProvider)();
+    }
+    get injector() {
+        const injector = this.provider.options.injector;
+        if (!injector) {
+            throw new Error('This module should be injected');
+        }
+        return injector;
+    }
+    get moduleName() {
+        return this.injector.provider.id;
+    }
+    load() {
+        const injector = this.injector;
+        const parentProvider = injector.provider;
+        const sectionName = injector.propertyName;
+        const moduleName = this.moduleName;
+        this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
+        // register methods marked with the @mutation() decorators
+        const parentModule = parentProvider.instance;
+        const mutations = parentModule.__mutations || [];
+        mutations.forEach(mutationName => {
+            this.stateController.registerMutation(mutationName, parentModule[mutationName]);
+        });
+        this.stateView = this.stateController.createView();
+        this.onCreate && this.onCreate(this);
+    }
+    onDestroy() {
+        this.store.destroyModule(this.moduleName);
+    }
+    exportInjectorValue() {
+        return this.stateController;
+    }
+    exportComponentData() {
+        return {
+            self: this.stateView,
+            extra: this.stateView,
+        };
+    }
+}
+exports.StatefulModule = StatefulModule;
+/**
+ * A decorator that registers the object method as an mutation
+ */
+function mutation() {
+    return function (target, methodName) {
+        target.__mutations = target.__mutations || [];
+        // mark the method as an mutation
+        target.__mutations.push(methodName);
+    };
+}
+exports.mutation = mutation;
 
 
 /***/ }),
@@ -2364,11 +2439,11 @@ class WatchModule {
         this.current = null;
     }
     load() {
-        const parentProvider = (0, scope_1.getInstanceMetadata)(this).provider.options.parentProvider;
-        if (!parentProvider) {
+        const injector = (0, scope_1.getInstanceMetadata)(this).provider.options.injector;
+        if (!injector) {
             throw new Error('This module should have a parent module');
         }
-        const context = parentProvider.instance;
+        const context = injector.provider.instance;
         this.current = this.watchExpr.call(context);
         this.unwatch = this.store.events.on('onMutation', () => {
             const prev = this.current;
@@ -2378,7 +2453,7 @@ class WatchModule {
             this.onChange.call(context, this.current, prev);
         });
     }
-    destroy() {
+    onDestroy() {
         this.unwatch && this.unwatch();
     }
 }
@@ -2532,6 +2607,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(233), exports);
+__exportStar(__webpack_require__(725), exports);
 __exportStar(__webpack_require__(222), exports);
 
 
@@ -2595,6 +2671,41 @@ function isEqual(obj1, obj2) {
     return isDeepEqual(obj1, obj2, 0, 1);
 }
 exports.isEqual = isEqual;
+
+
+/***/ }),
+
+/***/ 725:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.merge = exports.copyProps = void 0;
+const traverse_1 = __webpack_require__(222);
+/**
+ * copy props from source to targets
+ */
+function copyProps(source, target) {
+    if (!target)
+        target = {};
+    (0, traverse_1.traverse)(source, (propName, descriptor) => {
+        Object.defineProperty(target, propName, descriptor);
+    });
+    return target;
+}
+exports.copyProps = copyProps;
+/**
+ * Create and merged object
+ * Property descriptors will be preserved
+ * Prototype properties will be included
+ */
+function merge(obj1, obj2) {
+    const result = {};
+    copyProps(result, obj1);
+    copyProps(result, obj2);
+    return result;
+}
+exports.merge = merge;
 
 
 /***/ }),

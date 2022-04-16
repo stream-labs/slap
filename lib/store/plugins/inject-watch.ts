@@ -19,12 +19,12 @@ export class WatchModule<T> {
   ) {}
 
   load() {
-    const parentProvider = getInstanceMetadata(this).provider.options.parentProvider;
-    if (!parentProvider) {
+    const injector = getInstanceMetadata(this).provider.options.injector;
+    if (!injector) {
       throw new Error('This module should have a parent module');
     }
 
-    const context = parentProvider.instance;
+    const context = injector.provider.instance;
     this.current = this.watchExpr.call(context);
     this.unwatch = this.store.events.on('onMutation', () => {
       const prev = this.current!;
@@ -34,7 +34,7 @@ export class WatchModule<T> {
     });
   }
 
-  destroy() {
+  onDestroy() {
     this.unwatch && this.unwatch();
   }
 

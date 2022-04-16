@@ -7,7 +7,7 @@ export declare type InjectorParams<TValue, TView, TExtraView> = {
     load?(): unknown;
     getValue?(): TValue;
     exportComponentData?(): InjectorComponentData<TView, TExtraView>;
-    destroy?(currentInjector: Injector<TValue, TView, TExtraView>): unknown;
+    onDestroy?(): unknown;
 };
 export declare class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
     provider: Provider<any>;
@@ -20,7 +20,7 @@ export declare class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
     init(): void;
     setPropertyName(propertyName: string): void;
     setLoadingStatus(loadingStatus: TLoadingStatus): void;
-    destroy(): void;
+    onDestroy(): void;
     resolveValue(): TValue;
     getComponentData(): InjectorComponentData<TViewValue, TInjectedViewExtra>;
     get type(): Symbol;

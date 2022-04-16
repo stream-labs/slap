@@ -62,6 +62,8 @@ export class QueryModule<
       initialData: null,
       getParams: null,
       fetch: () => {},
+      onSuccess: () => {},
+      onError: () => {},
       ...computedOptions,
     };
 
@@ -70,7 +72,6 @@ export class QueryModule<
   }
 
   load() {
-    this.stateView = this.state.createView() as any;
     const queryMethods = new StateView();
     queryMethods.defineProp({
       type: 'QueryMethod',
@@ -80,6 +81,7 @@ export class QueryModule<
         return () => this.refetch();
       },
     });
+    this.stateView = this.state.createView() as any;
     this.queryView = this.stateView.mergeView(queryMethods);
     const data = this.options.initialData;
     this.state.nonReactiveUpdate({
@@ -119,10 +121,12 @@ export class QueryModule<
           this.fetchingPromise = null;
           this.promiseId = '';
           this.state.setError(e as any);
+          this.options.onError && this.options.onError();
         });
     }
     // result is not a promise, set the data
     this.state.setData(fetchResult);
+    this.options.onSuccess && this.options.onSuccess();
 
     return Promise.resolve(fetchResult);
   }
@@ -146,7 +150,7 @@ export class QueryModule<
     return this.options.getParams ? this.options.getParams() : null;
   }
 
-  destroy() {
+  onDestroy() {
     // prevent unfinished fetching
     this.setEnabled(false);
   }
@@ -171,6 +175,8 @@ export type QueryOptionalOptions = {
   enabled: boolean,
   initialData: any,
   getParams: (() => any) | null,
+  onSuccess: (() => any) | null,
+  onError: (() => any) | null,
 }
 
 export type QueryOptions = QueryOptionalOptions & QueryRequiredOptions;

@@ -42,6 +42,7 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     get instanceId(): string;
     resolveChildScope(): Scope;
     resolveChildProvider<T extends TModuleCreator>(ModuleCreator: T, name: string): TProviderFor<T>;
+    get injector(): Injector<any, any, any> | undefined;
     events: import("nanoevents").Emitter<ProviderEvents>;
 }
 export declare function createInstanceMetadata(instance: any, provider: Provider<any, any>): void;
@@ -55,6 +56,12 @@ export interface ProviderEvents {
     onModuleLoaded: () => unknown;
 }
 export declare type ProviderOptions = {
+    /**
+     * Should call lifecycle hooks: init, load, onLoad
+     */
     shouldCallHooks: boolean;
-    parentProvider: Provider<any>;
+    /**
+     * Keeps injector if the module has been injected as a child module
+     */
+    injector: Injector<any, any, any>;
 };

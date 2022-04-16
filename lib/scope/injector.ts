@@ -13,7 +13,7 @@ export type InjectorParams<TValue, TView, TExtraView> = {
   getValue?(): TValue;
 
   exportComponentData?(): InjectorComponentData<TView, TExtraView>;
-  destroy?(currentInjector: Injector<TValue, TView, TExtraView>): unknown;
+  onDestroy?(): unknown;
 }
 
 export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
@@ -57,8 +57,8 @@ export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
     this.provider.handleInjectorStatusChange(this, this.loadingStatus, prevStatus);
   }
 
-  destroy() {
-    this.params.destroy && this.params.destroy(this);
+  onDestroy() {
+    this.params.onDestroy && this.params.onDestroy();
     this.isDestroyed = true;
   }
 
@@ -76,16 +76,6 @@ export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
     }
     return componentData;
   }
-
-  // hasViewValue() {
-  //   return !!this.params.getView;
-  // }
-  //
-  // resolveViewValue(): TViewValue {
-  //   return this.params.getView
-  //     ? this.params.getView()
-  //     : this.resolveValue() as any;
-  // }
 
   get type() {
     return this.params.type;

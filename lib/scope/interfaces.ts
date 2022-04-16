@@ -34,3 +34,11 @@ export type TModuleInstanceFor<TModuleLocator> =
 
 export type TProviderFor<TModuleLocator extends TModuleLocatorType> = Provider<TModuleInstanceFor<TModuleLocator>>
 export type TLoadingStatus = 'not-started' | 'loading' | 'done' | 'error';
+
+export interface AppModule {
+  init?(): unknown;
+  load?(): Promise<unknown> | unknown;
+  onLoad?(): unknown;
+  exportInjectorValue?(): any
+  exportComponentData?(): { self: any; extra: any },
+}
