@@ -76,6 +76,7 @@ export class Store {
   destroyModule(moduleName: string) {
     delete this.rootState[moduleName];
     delete this.modulesMetadata[moduleName];
+    console.log('UNREGISTER STORE', moduleName);
   }
 
   recordingAccessors = 0;

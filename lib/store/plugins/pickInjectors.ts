@@ -1,7 +1,6 @@
 import { GetProps, StateView } from '../StateView';
 import { forEach, getInstanceMetadata, Injector } from '../../scope';
 import { Flatten } from '../../scope/flatten';
-import { QueriesModule } from '../../../demo/stars-editor/components/pages/QueriesPage';
 
 export function pickInjectors<
   TView extends StateView<any>,

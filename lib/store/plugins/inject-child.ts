@@ -6,7 +6,7 @@ import {
   GetModuleExtraView, GetModuleStateView,
   StateView
 } from '../StateView';
-import { AppModule, TModuleInstanceFor } from '../../scope';
+import { InjectableModule, generateId, TModuleInstanceFor } from '../../scope';
 
 export const ChildModuleInjectorType = Symbol('childModuleInjector');
 
@@ -16,24 +16,21 @@ export function injectChild<TModule>(Module: TModule, ...args: any): InjectedPro
   return createInjector(injector => {
 
     const scope = injector.provider.resolveChildScope();
-    let moduleName = '';
+    const moduleName = `${injector.provider.id}__injected_module_${generateId()}`;
+    scope.register(Module, moduleName, { injector });
+    scope.init(moduleName, ...args);
 
     return {
       type: ChildModuleInjectorType,
-      load() {
-        moduleName = injector.propertyName;
-        scope.register(Module, moduleName, { injector });
-        scope.init(moduleName, ...args);
-      },
       getValue: () => {
-        const module = scope.resolve(moduleName) as AppModule;
+        const module = scope.resolve(moduleName) as InjectableModule;
         if (module.exportInjectorValue) {
           return module.exportInjectorValue();
         }
         return module;
       },
       exportComponentData: () => {
-        const module = scope.resolve(moduleName) as AppModule;
+        const module = scope.resolve(moduleName) as InjectableModule;
         return module.exportComponentData && module.exportComponentData() as any;
       },
       destroy() {

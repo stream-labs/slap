@@ -26,48 +26,6 @@ export function injectState<
   return injectChild(StatefulModule, configCreator, allowMutationDecorators, onCreate) as any as InjectedProp<TValue, TViewValue, TViewValue>;
 }
 
-// export function injectState<
-//   TConfigCreator extends TStateConfigCreator,
-//   TValue = TStateControllerFor<TConfigCreator>,
-//   TViewValue = StateView<TStateViewForStateConfig<TConfigCreator>>,
-//   >(configCreator: TConfigCreator, onCreate?: (stateController: TValue, injector: Injector<TValue, TViewValue, TViewValue>) => unknown): InjectedProp<TValue, TViewValue, TViewValue> {
-//   return createInjector(injector => {
-//
-//     const store = injector.provider.scope.resolve(Store);
-//     let state: TValue = null as any;
-//     let stateView: TViewValue = null as any;
-//
-//     function createState(propName: string) {
-//       const moduleName = injector.provider.instanceId;
-//       const moduleState = store.createState(moduleName, propName, configCreator);
-//       return moduleState;
-//     }
-//
-//     return {
-//       type: StateInjectorType,
-//       load: () => {
-//         state = createState(injector.propertyName) as TValue;
-//         stateView = (state as any as ModuleStateController).createView() as any as TViewValue;
-//         onCreate && onCreate(state, injector);
-//       },
-//       getValue() {
-//         return state;
-//       },
-//
-//       exportComponentData() {
-//         return {
-//           self: stateView,
-//           extra: stateView,
-//         };
-//       },
-//       onDestroy() {
-//         const moduleName = injector.provider.instanceId;
-//         store.destroyModule(moduleName);
-//       },
-//     };
-//   });
-// }
-
 export class StatefulModule<TStateConfig> {
 
   store = inject(Store);
@@ -90,17 +48,17 @@ export class StatefulModule<TStateConfig> {
     return this.injector.provider.id;
   }
 
-  load() {
+  init() {
     const injector = this.injector;
     const parentProvider = injector.provider;
-    const sectionName = injector.propertyName;
+    const sectionName = this.provider.name;
     const moduleName = this.moduleName;
     this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
 
     // register methods marked with the @mutation() decorators
     if (this.allowMutationDecorators) {
       const parentModule = parentProvider.instance;
-      const mutations: string[] = parentModule.__mutations || [];
+      const mutations: string[] = parentProvider.creator?.prototype?.__mutations || [];
       mutations.forEach(mutationName => {
         const mutation = parentModule[mutationName];
         this.stateController.registerMutation(mutationName, mutation);
@@ -108,7 +66,6 @@ export class StatefulModule<TStateConfig> {
       });
 
     }
-
 
     this.stateView = this.stateController.createView() as StateView<TStateViewForStateConfig<TStateConfig>>;
     this.onCreate && this.onCreate(this);
@@ -130,8 +87,6 @@ export class StatefulModule<TStateConfig> {
   }
 
 }
-
-
 
 /**
  * A decorator that registers the object method as an mutation

@@ -24,15 +24,14 @@ export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
   isDestroyed = false;
 
   constructor(public provider: Provider<any>) {
+    provider.registerInjector(this);
   }
 
   init() {
     this.params.init && this.params.init();
-    const getValue = this.params.getValue;
-    if (getValue) {
-      defineGetter(this.provider.instance, this.propertyName, getValue);
-    }
+  }
 
+  load() {
     const load = this.params.load;
     const loadResult = load && load() as any;
     if (loadResult && loadResult.then) {
@@ -43,11 +42,14 @@ export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
     } else {
       this.loadingStatus = 'done';
     }
-
   }
 
   setPropertyName(propertyName: string) {
     this.propertyName = propertyName;
+    const getValue = this.params.getValue;
+    if (getValue) {
+      defineGetter(this.provider.instance, propertyName, getValue);
+    }
   }
 
   setLoadingStatus(loadingStatus: TLoadingStatus) {
@@ -63,7 +65,7 @@ export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
   }
 
   resolveValue(): TValue {
-    return this.provider.instance[this.propertyName];
+    return this.params.getValue!();
   }
 
   getComponentData(): InjectorComponentData<TViewValue, TInjectedViewExtra> {
@@ -97,7 +99,15 @@ export function createInjector<TParams extends InjectorParams<any, any, any>>
   }
   const injector = new Injector<unknown, unknown, unknown>(provider);
   injector.params = paramsCreator(injector);
-  return injector as any as GetInjectedProp<TParams>;
+  injector.init();
+  const value = injector.resolveValue();
+  const returnValue = value instanceof Object ? value : {};
+  const injectorProxy = new Proxy(returnValue, {
+    get(target, p) {
+      return p === '__injector' ? injector : (target as any)[p];
+    },
+  });
+  return injectorProxy as any as GetInjectedProp<TParams>;
 }
 
 // DEFINE BUILT-IN INJECTORS

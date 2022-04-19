@@ -35,7 +35,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   constructor(
     public scope: Scope,
-    creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance,
+    public creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance,
     public name = '',
     public options: Partial<ProviderOptions> = {},
   ) {
@@ -77,7 +77,8 @@ export class Provider<TInstance, TInitParams extends [] = []> {
       instance.init && instance.init();
     }
 
-    this.resolveInjectors();
+    this.resolveInjectedProps();
+    this.loadInjectors();
     return instance;
   }
 
@@ -87,33 +88,31 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     this.checkModuleIsLoaded();
   }
 
-  /**
-   * Resolve injectors for just created object
-   *
-   *  WARNING!
-   *  this code is executed for every object creation
-   *  and should care about performance
-   */
-  private resolveInjectors() {
+  registerInjector(injector: Injector<unknown, unknown, unknown>) {
+    this.injectors[injector.id] = injector;
+  }
+
+  private resolveInjectedProps() {
     const provider = this;
     const instance = provider.instance;
     const descriptors = Object.getOwnPropertyDescriptors(instance);
-    let hasAsyncInjectors = false;
 
-    // register injectors
+    // set propetyNames for injectors
     Object.keys(descriptors).forEach(propName => {
       const descriptor = descriptors[propName];
       if (descriptor.get) return; // don't execute getters
       const propValue = descriptor.value;
-      if (!(propValue instanceof Injector)) return;
-      const injector = propValue as Injector<unknown, unknown, unknown>;
-      provider.injectors[injector.id] = injector;
+      if (!(propValue?.__injector)) return;
+      const injector = propValue.__injector as Injector<unknown, unknown, unknown>;
       injector.setPropertyName(propName);
     });
+  }
 
-    // call init() for injectors
+  private loadInjectors() {
+    let hasAsyncInjectors = false;
+    // call load() for injectors
     Object.values(this.injectors).forEach(injector => {
-      injector.init();
+      injector.load();
       if (injector.loadingStatus !== 'done') hasAsyncInjectors = true;
     });
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  createStateViewForModule, useComponentView, useModuleInstance, useModule, inject, QueryModule
+  createStateViewForModule, useComponentView, useModuleInstance, useModule, inject, QueryModule,
 } from '../../../../dist/lib';
 // import { UsersModule } from './UsersPage';
 // import { createStateViewForModule, useComponentView, useModuleInstance } from '../../../../lib';
@@ -10,13 +10,18 @@ class MyModule {
   foo: 1;
   bar: 2;
 }
-const { foo, bar } = useModule(MyModule);
 
-const { foo, bar, zoom } = useModule(MyModule).extend(m => ({
-  zoom: 3,
-}));
+const {
+  foo, bar, zoom, log,
+} = useModule(MyModule).extend(m => {
 
+  const result = {
+    zoom: 3,
+    log: this.zoom,
+  }
+  return result;
 
+});
 
 //
 // export function AboutPage () {
