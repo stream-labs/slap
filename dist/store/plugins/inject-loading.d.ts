@@ -4,6 +4,6 @@ export declare class LoadingState {
     get isLoading(): boolean;
     get isLoaded(): boolean;
 }
-export declare function injectLoading(): import("../..").InjectedProp<import("../Store").TStateControllerFor<typeof LoadingState, LoadingState, {
+export declare function injectLoading(): import("../..").InjectedProp<import("../Store").GetStateControllerFor<typeof LoadingState, LoadingState, {
     loadingStatus: TLoadingStatus;
-}>, import("../StateView").StateView<import("../Store").TStateViewForStateConfig<typeof LoadingState>>, import("../StateView").StateView<import("../Store").TStateViewForStateConfig<typeof LoadingState>>>;
+}>, import("./inject-state").GetStateViewFor<typeof LoadingState>, import("./inject-state").GetStateViewFor<typeof LoadingState>>;

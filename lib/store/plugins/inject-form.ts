@@ -27,7 +27,7 @@ export function createFormBinding<TState, TExtraProps = {}>(
   stateView.defineProp({
     type: 'FormStateRev',
     name: 'getRev',
-    getValue: () => (getState()),
+    getValue: () => ({ ...getState() }),
   });
 
   stateView.defineWildcardProp(propName => {
@@ -49,7 +49,7 @@ export function createFormBinding<TState, TExtraProps = {}>(
   return stateView;
 }
 
-// TODO fix styles
+// TODO fix types
 export class FormBindingModule {
 
   formBinding: any;
@@ -71,6 +71,8 @@ export function injectFormBinding<TState, TExtraProps = {}>(
   stateGetter: TState | (() => TState),
   stateSetter: (statePatch: Partial<TState>) => unknown,
   extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps,
-): InjectedProp< StateView<TFormBindings<TState, TExtraProps>>, StateView<TFormBindings<TState, TExtraProps>>, null> {
+): GetInjectedFormBinding<TState, TExtraProps> {
   return injectChild(FormBindingModule, stateGetter, stateSetter, extraPropsGenerator) as any;
 }
+
+export type GetInjectedFormBinding<TState, TExtraProps = {}> = InjectedProp<FormBindingModule, StateView<TFormBindings<TState, TExtraProps>>, null>

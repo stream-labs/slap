@@ -16,4 +16,5 @@ export declare class FormBindingModule {
         extra: null;
     };
 }
-export declare function injectFormBinding<TState, TExtraProps = {}>(stateGetter: TState | (() => TState), stateSetter: (statePatch: Partial<TState>) => unknown, extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps): InjectedProp<StateView<TFormBindings<TState, TExtraProps>>, StateView<TFormBindings<TState, TExtraProps>>, null>;
+export declare function injectFormBinding<TState, TExtraProps = {}>(stateGetter: TState | (() => TState), stateSetter: (statePatch: Partial<TState>) => unknown, extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps): GetInjectedFormBinding<TState, TExtraProps>;
+export declare type GetInjectedFormBinding<TState, TExtraProps = {}> = InjectedProp<FormBindingModule, StateView<TFormBindings<TState, TExtraProps>>, null>;

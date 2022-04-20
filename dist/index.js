@@ -1614,7 +1614,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.defaultStateConfig = exports.ModuleStateController = exports.Store = void 0;
+exports.defaultStateConfig = exports.StateController = exports.Store = void 0;
 const immer_1 = __importDefault(__webpack_require__(172));
 const nanoevents_1 = __webpack_require__(111);
 const scope_1 = __webpack_require__(527);
@@ -1644,7 +1644,7 @@ class Store {
         }
         const config = (0, parse_config_1.parseStateConfig)(configCreator);
         console.log('REGISTER STORE', moduleName, sectionName);
-        const controller = new ModuleStateController(this, moduleName, sectionName, config);
+        const controller = new StateController(this, moduleName, sectionName, config);
         return controller;
     }
     dispatchMutation(mutation) {
@@ -1705,7 +1705,7 @@ class Store {
     }
 }
 exports.Store = Store;
-class ModuleStateController {
+class StateController {
     constructor(store, moduleName, sectionName, config) {
         this.store = store;
         this.moduleName = moduleName;
@@ -1886,7 +1886,7 @@ class ModuleStateController {
         return view;
     }
 }
-exports.ModuleStateController = ModuleStateController;
+exports.StateController = StateController;
 //
 // /**
 //  * use immerjs API to clone the object
@@ -2112,7 +2112,7 @@ function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     stateView.defineProp({
         type: 'FormStateRev',
         name: 'getRev',
-        getValue: () => (getState()),
+        getValue: () => (Object.assign({}, getState())),
     });
     stateView.defineWildcardProp(propName => {
         stateView.defineProp({
@@ -2127,7 +2127,7 @@ function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     return stateView;
 }
 exports.createFormBinding = createFormBinding;
-// TODO fix styles
+// TODO fix types
 class FormBindingModule {
     constructor(stateGetter, stateSetter, extraPropsGenerator) {
         this.formBinding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
@@ -2374,6 +2374,7 @@ exports.mutation = exports.StatefulModule = exports.injectState = exports.StateI
 const scope_1 = __webpack_require__(527);
 const Store_1 = __webpack_require__(607);
 const inject_child_1 = __webpack_require__(835);
+const inject_form_1 = __webpack_require__(334);
 exports.StateInjectorType = Symbol('stateInjector');
 function injectState(configCreator, allowMutationDecorators = true, onCreate) {
     return (0, inject_child_1.injectChild)(StatefulModule, configCreator, allowMutationDecorators, onCreate);
@@ -2389,6 +2390,7 @@ class StatefulModule {
         const moduleName = this.moduleName;
         const sectionName = this.provider.id;
         this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
+        this.formBinding = (0, inject_form_1.injectFormBinding)(() => this.stateController.getters, patch => this.stateController.update(patch));
         // TODO find better solution for injecting the provider
         (0, scope_1.defineGetter)(this.stateController, '__provider', () => this.provider, { enumerable: false });
     }
@@ -2409,6 +2411,15 @@ class StatefulModule {
             });
         }
         this.stateView = this.stateController.createView();
+        this.stateView.defineProp({
+            type: 'StateFormBinding',
+            name: 'bind',
+            reactive: true,
+            stateView: this.formBinding.formBinding,
+            getValue: () => {
+                return this.formBinding.formBinding;
+            },
+        });
         this.onCreate && this.onCreate(this);
     }
     get moduleName() {

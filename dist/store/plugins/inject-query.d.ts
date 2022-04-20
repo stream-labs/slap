@@ -10,7 +10,7 @@ export declare class QueryStateConfig<TData, TParams, TError> {
  * Alternative for https://react-query.tanstack.com/reference/useQuery
  */
 export declare class QueryModule<TConstructorArgs extends Array<any>, TData = GetQueryData<TConstructorArgs>, TParams = GetQueryParams<TConstructorArgs>, TError = unknown> {
-    state: import("../../scope").InjectedProp<import("../Store").TStateControllerFor<typeof QueryStateConfig, QueryStateConfig<unknown, unknown, unknown>, QueryState<unknown, unknown, unknown>>, StateView<TStateViewForStateConfig<typeof QueryStateConfig>>, StateView<TStateViewForStateConfig<typeof QueryStateConfig>>>;
+    state: import("../../scope").InjectedProp<import("../Store").GetStateControllerFor<typeof QueryStateConfig, QueryStateConfig<unknown, unknown, unknown>, QueryState<unknown, unknown, unknown>>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>>;
     watcher: import("../../scope").InjectedProp<import("./inject-watch").WatchModule<unknown>, import("../StateView").GetModuleStateView<typeof import("./inject-watch").WatchModule>, {}>;
     fetchingPromise: Promise<TData> | null;
     promiseId: string;

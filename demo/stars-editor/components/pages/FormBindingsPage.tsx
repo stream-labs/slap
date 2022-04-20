@@ -32,6 +32,7 @@ export function FormBindingsPage () {
     <div>
       <BindFormFromMultipleStates />
       <BindFormFromExtendedState />
+      <DirectStateBinding />
     </div>
   );
 
@@ -60,7 +61,7 @@ function BindFormFromMultipleStates() {
 }
 function BindFormFromExtendedState() {
   const {
-    bind, name, address, items, addItem, itemName, setItemName, bindOrder,
+    bind, name, address, items, bindOrder, addItem
   } = useModule(MyModule).extend(m => {
 
     const orderState = injectState({
@@ -89,7 +90,37 @@ function BindFormFromExtendedState() {
       </div>
       <div>Edit Name <TextInput {...bind.name} /></div>
       <div>Edit Address <TextInput {...bind.address} /></div>
-      {/* <div>Add Item <TextInput {...bindOrder.itemName} /><button onClick={addItem}>Add</button></div> */}
+      <div>Add Item <TextInput {...bindOrder.itemName} /><button onClick={addItem}>Add</button></div>
+
+    </div>
+  );
+}
+
+function DirectStateBinding() {
+  const {
+    age,
+    nickname,
+    bind,
+  } = useModule(() => {
+
+    const myState = injectState({
+      age: 0,
+      nickname: 'My Nickname',
+    });
+
+    return { myState };
+
+  });
+
+  return (
+    <div>
+      <h2>Direct state binding</h2>
+      <div>
+        Age {age} <br />
+        Nickname: {nickname} <br />
+      </div>
+      <div>Edit Age <TextInput {...bind.age} /></div>
+      <div>Edit Nickname <TextInput {...bind.nickname} /></div>
 
     </div>
   );

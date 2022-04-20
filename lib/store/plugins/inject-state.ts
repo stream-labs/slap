@@ -5,19 +5,20 @@ import {
 } from '../../scope';
 
 import {
-  ModuleStateController,
-  Store, TStateConfigCreator, TStateControllerFor, TStateViewForStateConfig,
+  StateController,
+  Store, TStateConfigCreator, GetStateControllerFor, TStateFor, TStateViewForStateConfig,
 } from '../Store';
 import { StateView } from '../StateView';
 import { injectChild } from './inject-child';
+import { GetInjectedFormBinding, injectFormBinding, TFormBindings } from './inject-form';
 
 export const StateInjectorType = Symbol('stateInjector');
 
 export function injectState<
 
   TConfigCreator extends TStateConfigCreator,
-  TValue = TStateControllerFor<TConfigCreator>,
-  TViewValue = StateView<TStateViewForStateConfig<TConfigCreator>>,
+  TValue = GetStateControllerFor<TConfigCreator>,
+  TViewValue = GetStateViewFor<TConfigCreator>,
 >(
   configCreator: TConfigCreator,
   allowMutationDecorators = true,
@@ -30,15 +31,16 @@ export class StatefulModule<TStateConfig> {
 
   store = inject(Store);
   provider = injectProvider();
-  stateController!: TStateControllerFor<TStateConfig>;
-  stateView!: StateView<TStateViewForStateConfig<TStateConfig>>;
+  stateController!: GetStateControllerFor<TStateConfig>;
+  stateView!: GetStateViewFor<TStateConfig>;
+  formBinding: GetInjectedFormBinding<TStateFor<TStateConfig>>;
 
   constructor(public stateConfig: TStateConfig, public allowMutationDecorators = true, public onCreate?: (module: StatefulModule<TStateConfig>) => unknown) {
 
     const moduleName = this.moduleName;
     const sectionName = this.provider.id;
     this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
-
+    this.formBinding = injectFormBinding(() => this.stateController.getters, patch => this.stateController.update(patch));
     // TODO find better solution for injecting the provider
     defineGetter(this.stateController, '__provider', () => this.provider, { enumerable: false });
 
@@ -61,7 +63,16 @@ export class StatefulModule<TStateConfig> {
 
     }
 
-    this.stateView = this.stateController.createView() as StateView<TStateViewForStateConfig<TStateConfig>>;
+    this.stateView = this.stateController.createView() as any;
+    this.stateView.defineProp({
+      type: 'StateFormBinding',
+      name: 'bind',
+      reactive: true,
+      stateView: this.formBinding.formBinding,
+      getValue: () => {
+        return this.formBinding.formBinding;
+      },
+    })
     this.onCreate && this.onCreate(this);
   }
 
@@ -96,3 +107,5 @@ export function mutation() {
     target.__mutations.push(methodName);
   };
 }
+
+export type GetStateViewFor<TStateConfig> = StateView<TStateViewForStateConfig<TStateConfig> & { bind: TFormBindings<TStateFor<TStateConfig>>}>;
