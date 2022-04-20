@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   createStateViewForModule, useComponentView, useModuleInstance, useModule, inject, QueryModule,
-} from '../../../../dist/lib';
+} from '../../../../dist';
 // import { UsersModule } from './UsersPage';
 // import { createStateViewForModule, useComponentView, useModuleInstance } from '../../../../lib';
 // import { useModule } from '../../../../lib';
