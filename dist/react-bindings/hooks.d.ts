@@ -14,6 +14,11 @@ export declare function useOnDestroy(cb: () => void): void;
  */
 export declare function useComponentId(): string;
 /**
+ * Get component name from the callstack
+ * Use for debugging only
+ */
+export declare function getComponentName(): string;
+/**
  * Returns a function for force updating of the component
  * Use it only for frequently used components for optimization purposes
  *

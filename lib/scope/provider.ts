@@ -17,6 +17,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   factory: (args: TInitParams) => TInstance;
 
   isInited = false; // true if instance is added to the Scope
+  isDestroyed = false;
   // private resolveInit!: Function;
   // waitForInit = new Promise(resolve => { this.resolveInit = resolve });
 
@@ -140,10 +141,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   // destroy provider
   destroy() {
-
-    if (this.childScope) {
-      this.childScope.dispose();
-    }
     this.destroyInstance();
     // unsubscribe events
     this.events.events = {};
@@ -160,64 +157,65 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     // destroy child modules
     this.childScope?.dispose();
     this.childModules = {};
+    this.isDestroyed = true;
 
     this.instance = null;
     this.isInited = false;
   }
 
-  handleInjectorStatusChange(
-    injector: Injector<unknown, unknown, unknown>,
-    currentStatus: TLoadingStatus,
-    prevStatus: TLoadingStatus,
-  ) {
-    this.events.emit('onInjectorStatusChange', injector, currentStatus, prevStatus);
-    this.checkInjectionIsCompleted();
-  }
+  // handleInjectorStatusChange(
+  //   injector: Injector<unknown, unknown, unknown>,
+  //   currentStatus: TLoadingStatus,
+  //   prevStatus: TLoadingStatus,
+  // ) {
+  //   this.events.emit('onInjectorStatusChange', injector, currentStatus, prevStatus);
+  //   this.checkInjectionIsCompleted();
+  // }
 
-  protected checkInjectionIsCompleted() {
-    if (!this.injectionCompleted) {
-      const injectors = Object.values(this.injectors);
-      for (const injector of injectors) {
-        if (injector.loadingStatus !== 'done') return;
-      }
-    }
-    this.handleInjectionsCompleted();
-  }
+  // protected checkInjectionIsCompleted() {
+  //   if (!this.injectionCompleted) {
+  //     const injectors = Object.values(this.injectors);
+  //     for (const injector of injectors) {
+  //       if (injector.loadingStatus !== 'done') return;
+  //     }
+  //   }
+  //   this.handleInjectionsCompleted();
+  // }
 
-  protected handleInjectionsCompleted() {
-    this.injectionCompleted = true;
+  // protected handleInjectionsCompleted() {
+  //   this.injectionCompleted = true;
+  //
+  //   if (this.options.shouldCallHooks) {
+  //     const instance = this.instance as any;
+  //     const loadResult = instance.load && instance.load();
+  //     if (loadResult?.then) {
+  //       this.isAsync = true;
+  //       loadResult.then(() => {
+  //         this.loadMethodCompleted = true;
+  //         this.checkModuleIsLoaded();
+  //       });
+  //       return;
+  //     }
+  //   }
+  //
+  //   this.loadMethodCompleted = true;
+  //   this.checkModuleIsLoaded();
+  // }
 
-    if (this.options.shouldCallHooks) {
-      const instance = this.instance as any;
-      const loadResult = instance.load && instance.load();
-      if (loadResult?.then) {
-        this.isAsync = true;
-        loadResult.then(() => {
-          this.loadMethodCompleted = true;
-          this.checkModuleIsLoaded();
-        });
-        return;
-      }
-    }
-
-    this.loadMethodCompleted = true;
-    this.checkModuleIsLoaded();
-  }
-
-  protected checkModuleIsLoaded() {
-    if (!this.isInited) return;
-    if (!this.injectionCompleted) return;
-    if (!this.loadMethodCompleted) return;
-
-    if (this.options.shouldCallHooks) {
-      const instance = this.instance as any;
-      instance.onLoad && instance.onLoad();
-    }
-
-    this.isLoaded = true;
-    this.resolveLoad();
-    this.events.emit('onModuleLoaded');
-  }
+  // protected checkModuleIsLoaded() {
+  //   if (!this.isInited) return;
+  //   if (!this.injectionCompleted) return;
+  //   if (!this.loadMethodCompleted) return;
+  //
+  //   if (this.options.shouldCallHooks) {
+  //     const instance = this.instance as any;
+  //     instance.onLoad && instance.onLoad();
+  //   }
+  //
+  //   this.isLoaded = true;
+  //   this.resolveLoad();
+  //   this.events.emit('onModuleLoaded');
+  // }
 
   get instanceId() {
     return getInstanceMetadata(this.instance).id;
@@ -244,10 +242,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     this.childModules[name] = childModule;
     const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
     return returnValue;
-  }
-
-  get injector() {
-    return this.options.injector;
   }
 
   events = createNanoEvents<ProviderEvents>();
@@ -291,10 +285,10 @@ export type ProviderOptions = {
    */
   shouldCallHooks: boolean;
 
-  /**
-   * Keeps injector if the module has been injected as a child module
-   */
-  injector: Injector<any, any, any>;
+  // /**
+  //  * Keeps injector if the module has been injected as a child module
+  //  */
+  // injector: Injector<any, any, any>;
 
   parentProvider: Provider<any>;
 }

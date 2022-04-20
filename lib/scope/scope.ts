@@ -103,8 +103,8 @@ export class Scope {
   unregister<T extends TModuleLocatorType>(locator: T) {
     const provider = this.getProvider(locator);
     if (!provider) return;
-    provider.destroyInstance();
-    delete this.providers[provider.id];
+    provider.destroy();
+    delete this.providers[provider.name];
   }
 
   // helper methods

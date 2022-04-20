@@ -5,11 +5,11 @@ import { StateView } from './StateView';
  * Framework agnostic store
  */
 export declare class Store {
-    rootState: Dict<Dict<any>>;
-    modulesMetadata: Dict<Dict<StatefulModuleMetadata>>;
+    rootState: Dict<any>;
+    modulesMetadata: Dict<StatefulModuleMetadata>;
     currentMutation: Mutation | null;
     moduleRevisions: Dict<number>;
-    createState<TConfigCreator>(moduleName: string, sectionName: string, configCreator: TConfigCreator): GetStateControllerFor<TConfigCreator>;
+    createState<TConfigCreator>(moduleName: string, configCreator: TConfigCreator): GetStateControllerFor<TConfigCreator>;
     dispatchMutation(mutation: Mutation): void;
     toJSON(): void;
     destroyModule(moduleName: string): void;
@@ -19,8 +19,8 @@ export declare class Store {
     currentContext: Record<string, Scope>;
     setModuleContext(moduleName: string, scope: Scope): void;
     resetModuleContext(moduleName: string): void;
-    getMetadata(moduleName: string, sectionName: string): StatefulModuleMetadata;
-    getController(moduleName: string, sectionName: string): StateController<any>;
+    getMetadata(moduleName: string): StatefulModuleMetadata;
+    getController(moduleName: string): StateController<any>;
     events: import("nanoevents").Emitter<StoreEvents>;
 }
 export interface StoreEvents {
@@ -30,9 +30,8 @@ export interface StoreEvents {
 export declare class StateController<TConfig = any> {
     store: Store;
     moduleName: string;
-    sectionName: string;
     draftState: any;
-    constructor(store: Store, moduleName: string, sectionName: string, config: TStateConfig);
+    constructor(store: Store, moduleName: string, config: TStateConfig);
     registerMutation(mutationName: string, mutationMethod: Function, silent?: boolean): void;
     applyMutation(mutation: Mutation): void;
     private registerDefaultMutations;
@@ -45,7 +44,6 @@ export declare class StateController<TConfig = any> {
 export interface Mutation {
     id: number;
     moduleName: string;
-    sectionName: string;
     mutationName: string;
     payload: any;
     silent?: boolean;

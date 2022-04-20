@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Scope, TModuleConstructorMap } from '../scope';
 export declare type TAppContext = {
-    rootScope: Scope;
+    servicesScope: Scope;
     modulesScope: Scope;
 };
 export declare const SlapContext: React.Context<TAppContext | null>;

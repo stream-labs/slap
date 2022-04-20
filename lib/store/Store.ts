@@ -20,24 +20,24 @@ import { StateView } from './StateView';
 export class Store {
 
   // keeps the state for all modules here as a map of immutable objects
-  rootState = { } as Dict<Dict<any>>;
+  rootState = { } as Dict<any>;
 
   // keeps additional metadata
-  modulesMetadata = { } as Dict<Dict<StatefulModuleMetadata>>;
+  modulesMetadata = { } as Dict<StatefulModuleMetadata>;
 
   currentMutation: Mutation | null = null;
   moduleRevisions: Dict<number> = {};
 
-  createState<TConfigCreator>(moduleName: string, sectionName: string, configCreator: TConfigCreator): GetStateControllerFor<TConfigCreator> {
+  createState<TConfigCreator>(moduleName: string, configCreator: TConfigCreator): GetStateControllerFor<TConfigCreator> {
 
-    if (this.modulesMetadata[moduleName] && this.modulesMetadata[sectionName]) {
+    if (this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName]) {
       throw new Error(`State with a name "${moduleName}" is already created`);
     }
 
     const config = parseStateConfig(configCreator);
 
-    console.log('REGISTER STORE', moduleName, sectionName);
-    const controller = new StateController(this, moduleName, sectionName, config);
+    console.log('REGISTER STORE', moduleName);
+    const controller = new StateController(this, moduleName, config);
 
     return controller as GetStateControllerFor<TConfigCreator>;
   }
@@ -45,11 +45,10 @@ export class Store {
   dispatchMutation(mutation: Mutation) {
     console.log('RUN MUTATION', mutation);
     const moduleName = mutation.moduleName;
-    const sectionName = mutation.sectionName;
     const metadata = this.modulesMetadata[moduleName];
     if (!metadata) return; // state is destroyed
 
-    const stateController = this.modulesMetadata[moduleName][sectionName].controller;
+    const stateController = this.modulesMetadata[moduleName].controller;
 
     if (this.currentMutation) {
       throw new Error('Can not run mutation while previous mutation is not completed');
@@ -76,7 +75,7 @@ export class Store {
   destroyModule(moduleName: string) {
     delete this.rootState[moduleName];
     delete this.modulesMetadata[moduleName];
-    console.log('UNREGISTER STORE', moduleName);
+    console.log('UNREGISTER MODULE', moduleName);
   }
 
   recordingAccessors = 0;
@@ -104,12 +103,12 @@ export class Store {
     delete this.currentContext[moduleName];
   }
 
-  getMetadata(moduleName: string, sectionName: string) {
-    return this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName][sectionName];
+  getMetadata(moduleName: string) {
+    return this.modulesMetadata[moduleName];
   }
 
-  getController(moduleName: string, sectionName: string) {
-    return this.getMetadata(moduleName, sectionName)?.controller;
+  getController(moduleName: string) {
+    return this.getMetadata(moduleName)?.controller;
   }
 
   events = createNanoEvents<StoreEvents>();
@@ -127,14 +126,12 @@ export class StateController<TConfig = any> {
   constructor(
     public store: Store,
     public moduleName: string,
-    public sectionName: string,
     config: TStateConfig,
   ) {
     const defaultState = config.state;
 
     // use immer to create an immutable state
-    if (!store.rootState[moduleName]) store.rootState[moduleName] = {};
-    store.rootState[moduleName][sectionName] = produce(defaultState, () => {});
+    store.rootState[moduleName] = produce(defaultState, () => {});
 
     // create metadata
     const controller = this;
@@ -145,8 +142,7 @@ export class StateController<TConfig = any> {
       getters,
       rev: 0,
     };
-    if (!store.modulesMetadata[moduleName]) store.modulesMetadata[moduleName] = {};
-    store.modulesMetadata[moduleName][sectionName] = metadata;
+    store.modulesMetadata[moduleName] = metadata;
 
     // generate getters
     Object.keys(defaultState).forEach(propName => {
@@ -190,7 +186,7 @@ export class StateController<TConfig = any> {
 
   registerMutation(mutationName: string, mutationMethod: Function, silent = false) {
     const controller = this;
-    const { store, moduleName, sectionName } = controller;
+    const { store, moduleName } = controller;
 
     if (!controller.metadata.config.mutations[mutationName]) {
       controller.metadata.config.mutations[mutationName] = mutationMethod;
@@ -217,7 +213,6 @@ export class StateController<TConfig = any> {
         id: Number(generateId()),
         payload: args,
         moduleName,
-        sectionName,
         mutationName,
         silent,
       };
@@ -227,11 +222,10 @@ export class StateController<TConfig = any> {
 
   applyMutation(mutation: Mutation) {
     const moduleName = mutation.moduleName;
-    const sectionName = mutation.sectionName;
     const mutationName = mutation.mutationName;
-    const state = this.store.rootState[moduleName][sectionName];
+    const state = this.store.rootState[moduleName];
 
-    this.store.rootState[moduleName][sectionName] = produce(state, (draft: unknown) => {
+    this.store.rootState[moduleName] = produce(state, (draft: unknown) => {
       this.draftState = draft;
       const controller = this as StateController;
       controller.metadata.config.mutations[mutationName].apply(controller, mutation.payload);
@@ -254,13 +248,12 @@ export class StateController<TConfig = any> {
 
     const store = this.store;
     const moduleName = this.moduleName;
-    const sectionName = this.sectionName;
 
     if (store.recordingAccessors) {
-      store.affectedModules[moduleName + '__' + sectionName] = this.metadata.rev;
+      store.affectedModules[moduleName] = this.metadata.rev;
     }
 
-    return store.rootState[moduleName][sectionName];
+    return store.rootState[moduleName];
   }
 
   // TODO remove
@@ -270,7 +263,7 @@ export class StateController<TConfig = any> {
   }
 
   get metadata() {
-    return this.store.modulesMetadata[this.moduleName][this.sectionName];
+    return this.store.modulesMetadata[this.moduleName];
   }
 
   get getters(): TStateFor<TConfig> {
@@ -338,7 +331,6 @@ export class StateController<TConfig = any> {
 export interface Mutation {
   id: number;
   moduleName: string;
-  sectionName: string;
   mutationName: string;
   payload: any;
   silent?: boolean;

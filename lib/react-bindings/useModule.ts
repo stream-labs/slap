@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { Simulate } from 'react-dom/test-utils';
-import { useForceUpdate, useOnCreate, useOnDestroy } from './hooks';
+import { getComponentName, useForceUpdate, useOnCreate, useOnDestroy } from './hooks';
 import { useModuleInstance } from './useModuleInstance';
 import {
   generateId,
@@ -11,25 +11,23 @@ import {
 } from '../scope';
 import {
   createStateViewForModule,
-  StateView,
   GetModuleStateView, ExtendView,
 } from '../store/StateView';
-import { useAppContext } from './ReactModules';
 import { Store } from '../store';
 import { ComponentView, ReactStoreAdapter } from './react-store-adapter';
 import { isSimilar } from '../utils';
-import mouseDown = Simulate.mouseDown;
 
 export function useComponentView<TModule, TResult = GetUseComponentViewResult<TModule>>
 (module: TModule): TResult {
   const forceUpdate = useForceUpdate();
 
-  const { componentId, reactStore, component } = useOnCreate(() => {
+  const { componentId, reactStore, component, provider } = useOnCreate(() => {
 
     const provider = getInstanceMetadata(module).provider;
     const reactStore = provider.scope.resolve(ReactStoreAdapter);
     const store = provider.scope.resolve(Store);
-    const componentId = `${provider.instanceId}__component__${generateId()}`;
+    const componentName = getComponentName();
+    const componentId = `${componentName}__${generateId()}`;
     let moduleView = createStateViewForModule(module);
     const parentModuleView = provider.getMetadata('parentModuleView');
     if (parentModuleView) {
@@ -46,8 +44,6 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
       const result = useModule(componentId) as any;
       store.resetModuleContext(componentId);
       return result;
-      // const extendedView = moduleView.extend(newPropsFactory, componentId);
-      // return useComponentView(extendedView, moduleId, componentId) as any;
     }
 
     moduleView.defineProp({
@@ -85,6 +81,9 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
     // TODO do not run watchers for non-observable component views
 
     const watcherId = reactStore.createWatcher(component.id, () => {
+
+      if (provider.isDestroyed) return;
+
       const prevSnapshot = component.lastSnapshot;
 
       // console.log('START SNAPSHOT FOR', componentId);
@@ -96,10 +95,10 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
       //   return;
       // }
 
+      // console.log('compare ', componentId);
       if (!isSimilar(prevSnapshot.props, newSnapshot.props)) {
 
         // console.log('should render ', componentId);
-        // reactStore.updateUI();
         component.setInvalidated(true);
       }
     });

@@ -18,13 +18,13 @@ export class WatchModule<T> {
     public isEqual = isSimilar,
   ) {}
 
-  load() {
-    const injector = getInstanceMetadata(this).provider.options.injector;
-    if (!injector) {
+  init() {
+    const parentProvider = getInstanceMetadata(this).provider.options.parentProvider;
+    if (!parentProvider) {
       throw new Error('This module should have a parent module');
     }
 
-    const context = injector.provider.instance;
+    const context = parentProvider.instance;
     this.current = this.watchExpr.call(context);
     this.unwatch = this.store.events.on('onMutation', () => {
       const prev = this.current!;

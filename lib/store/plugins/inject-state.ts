@@ -38,8 +38,7 @@ export class StatefulModule<TStateConfig> {
   constructor(public stateConfig: TStateConfig, public allowMutationDecorators = true, public onCreate?: (module: StatefulModule<TStateConfig>) => unknown) {
 
     const moduleName = this.moduleName;
-    const sectionName = this.provider.id;
-    this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
+    this.stateController = this.store.createState(moduleName, this.stateConfig);
     this.formBinding = injectFormBinding(() => this.stateController.getters, patch => this.stateController.update(patch));
     // TODO find better solution for injecting the provider
     defineGetter(this.stateController, '__provider', () => this.provider, { enumerable: false });
@@ -72,12 +71,12 @@ export class StatefulModule<TStateConfig> {
       getValue: () => {
         return this.formBinding.formBinding;
       },
-    })
+    });
     this.onCreate && this.onCreate(this);
   }
 
   get moduleName() {
-    return this.provider.options.parentProvider!.id;
+    return this.provider.id;
   }
 
   onDestroy() {

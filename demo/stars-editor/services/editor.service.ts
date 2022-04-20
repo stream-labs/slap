@@ -132,7 +132,7 @@ const initalItems: TSceneItem[] = [
   {
     id: 'item3',
     sceneId: 'scene1',
-    name: 'Item 2',
+    name: 'Item 3',
     color: 'yellow',
     position: { x: 100, y: 100 },
   },
@@ -140,14 +140,14 @@ const initalItems: TSceneItem[] = [
   {
     id: 'item4',
     sceneId: 'scene2',
-    name: 'Item 2',
+    name: 'Item 4',
     color: 'yellow',
     position: { x: 150, y: 50 },
   },
   {
     id: 'item5',
     sceneId: 'scene2',
-    name: 'Item 2',
+    name: 'Item 5',
     color: 'yellow',
     position: { x: 10, y: 80 },
   },

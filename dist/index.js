@@ -277,14 +277,14 @@ function useAppContext() {
 }
 exports.useAppContext = useAppContext;
 function useScope() {
-    return useAppContext().rootScope;
+    return useAppContext().servicesScope;
 }
 exports.useScope = useScope;
 function createApp(Services = {}) {
     const rootScope = new scope_1.Scope(Object.assign(Object.assign({}, Services), { Store: store_1.Store, ReactStoreAdapter: react_store_adapter_1.ReactStoreAdapter }));
     const modulesScope = rootScope.createChildScope({}, { autoregister: true });
     rootScope.init(react_store_adapter_1.ReactStoreAdapter);
-    return { rootScope, modulesScope };
+    return { servicesScope: rootScope, modulesScope };
 }
 exports.createApp = createApp;
 function ReactModules(p) {
@@ -320,7 +320,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useForceUpdate = exports.useComponentId = exports.useOnDestroy = exports.useOnCreate = void 0;
+exports.useForceUpdate = exports.getComponentName = exports.useComponentId = exports.useOnDestroy = exports.useOnCreate = void 0;
 const react_1 = __importStar(__webpack_require__(156));
 /**
  * onCreate shortcut
@@ -357,9 +357,12 @@ function getComponentName() {
     }
     catch (e) {
         const error = e;
-        return error.stack.split('\n')[10].split('at ')[1].split('(')[0].trim();
+        const regex = / at ([A-Z]\w+) /;
+        const componentName = error.stack.split('\n').find(message => message.match(regex)).match(regex)[1];
+        return componentName;
     }
 }
+exports.getComponentName = getComponentName;
 /**
  * Returns a function for force updating of the component
  * Use it only for frequently used components for optimization purposes
@@ -533,11 +536,12 @@ const react_store_adapter_1 = __webpack_require__(160);
 const utils_1 = __webpack_require__(225);
 function useComponentView(module) {
     const forceUpdate = (0, hooks_1.useForceUpdate)();
-    const { componentId, reactStore, component } = (0, hooks_1.useOnCreate)(() => {
+    const { componentId, reactStore, component, provider } = (0, hooks_1.useOnCreate)(() => {
         const provider = (0, scope_1.getInstanceMetadata)(module).provider;
         const reactStore = provider.scope.resolve(react_store_adapter_1.ReactStoreAdapter);
         const store = provider.scope.resolve(store_1.Store);
-        const componentId = `${provider.instanceId}__component__${(0, scope_1.generateId)()}`;
+        const componentName = (0, hooks_1.getComponentName)();
+        const componentId = `${componentName}__${(0, scope_1.generateId)()}`;
         let moduleView = (0, StateView_1.createStateViewForModule)(module);
         const parentModuleView = provider.getMetadata('parentModuleView');
         if (parentModuleView) {
@@ -551,8 +555,6 @@ function useComponentView(module) {
             const result = useModule(componentId);
             store.resetModuleContext(componentId);
             return result;
-            // const extendedView = moduleView.extend(newPropsFactory, componentId);
-            // return useComponentView(extendedView, moduleId, componentId) as any;
         }
         moduleView.defineProp({
             type: 'extend',
@@ -581,6 +583,8 @@ function useComponentView(module) {
         component.makeSnapshot();
         // TODO do not run watchers for non-observable component views
         const watcherId = reactStore.createWatcher(component.id, () => {
+            if (provider.isDestroyed)
+                return;
             const prevSnapshot = component.lastSnapshot;
             // console.log('START SNAPSHOT FOR', componentId);
             const newSnapshot = component.makeSnapshot();
@@ -589,9 +593,9 @@ function useComponentView(module) {
             //   // no modules changed, do not call compare props
             //   return;
             // }
+            // console.log('compare ', componentId);
             if (!(0, utils_1.isSimilar)(prevSnapshot.props, newSnapshot.props)) {
                 // console.log('should render ', componentId);
-                // reactStore.updateUI();
                 component.setInvalidated(true);
             }
         });
@@ -626,46 +630,32 @@ const hooks_1 = __webpack_require__(985);
 const ReactModules_1 = __webpack_require__(686);
 const Store_1 = __webpack_require__(607);
 function useModuleInstance(locator, initProps = null, name = '') {
-    const rootScope = (0, ReactModules_1.useAppContext)().modulesScope;
-    const { instance, moduleName, scope, isRoot, store, } = (0, hooks_1.useOnCreate)(() => {
+    const { modulesScope, servicesScope } = (0, ReactModules_1.useAppContext)();
+    const { instance, moduleName, scope, isRoot, shouldInitInNewScope, isService, store, } = (0, hooks_1.useOnCreate)(() => {
         var _a;
         let moduleName = name || typeof locator === 'string' ? locator : locator.name;
-        const store = rootScope.resolve(Store_1.Store);
+        const store = modulesScope.resolve(Store_1.Store);
         const shouldInitInNewScope = !!initProps;
         let scope;
         let isRoot = false;
+        let isService = false;
         if (shouldInitInNewScope) {
-            scope = rootScope.registerScope();
+            scope = modulesScope.registerScope();
             isRoot = true;
             const provider = scope.register(locator);
             moduleName = provider.name;
             const constructorArgs = Array.isArray(initProps) ? initProps : [];
             const instance = scope.init(moduleName, ...constructorArgs);
-            // if (initProps && typeof initProps === 'object') {
-            //   instance.state['nonReactiveUpdate'](initProps);
-            // }
         }
         else {
-            scope = (_a = store.currentContext[moduleName]) !== null && _a !== void 0 ? _a : rootScope;
+            scope = (_a = store.currentContext[moduleName]) !== null && _a !== void 0 ? _a : modulesScope;
             const provider = scope.isRegistered(moduleName) ? scope.resolveProvider(moduleName) : scope.register(locator);
+            isService = servicesScope.id === provider.scope.id;
             moduleName = provider.name;
+            if (!isService && !provider.instance)
+                isRoot = true;
         }
-        //
-        // let scope: Scope = isRoot ? rootScope : store.currentContext[moduleName];
-        //
-        // if (!scope) {
-        //   if (rootScope.isRegistered(locator)) {
-        //     scope = rootScope;
-        //   } else {
-        //     isRoot = true;
-        //     scope = rootScope.registerScope();
-        //   }
-        // }
-        //
-        // if (!scope.isRegistered(locator)) {
-        //   const provider = scope.register(locator as any);
-        //   moduleName = provider.name;
-        // }
+        const provider = scope.resolveProvider(moduleName);
         const instance = scope.resolve(moduleName);
         return {
             instance,
@@ -673,6 +663,9 @@ function useModuleInstance(locator, initProps = null, name = '') {
             isRoot,
             scope,
             moduleName,
+            provider,
+            shouldInitInNewScope,
+            isService,
         };
     });
     isRoot && store.setModuleContext(moduleName, scope);
@@ -681,9 +674,15 @@ function useModuleInstance(locator, initProps = null, name = '') {
     }, []);
     // unregister the component from the module onDestroy
     (0, hooks_1.useOnDestroy)(() => {
-        isRoot && store.resetModuleContext(moduleName);
-        if (isRoot)
+        if (isService || !isRoot)
+            return;
+        store.resetModuleContext(moduleName);
+        if (shouldInitInNewScope) {
             scope.dispose();
+        }
+        else {
+            scope.unregister(moduleName);
+        }
     });
     return instance;
 }
@@ -927,6 +926,7 @@ class Provider {
         this.metadata = {};
         this.injectors = {}; // dict of injectors by id
         this.isInited = false; // true if instance is added to the Scope
+        this.isDestroyed = false;
         // private resolveInit!: Function;
         // waitForInit = new Promise(resolve => { this.resolveInit = resolve });
         this.injectionCompleted = false;
@@ -1024,9 +1024,6 @@ class Provider {
     }
     // destroy provider
     destroy() {
-        if (this.childScope) {
-            this.childScope.dispose();
-        }
         this.destroyInstance();
         // unsubscribe events
         this.events.events = {};
@@ -1042,55 +1039,60 @@ class Provider {
         // destroy child modules
         (_a = this.childScope) === null || _a === void 0 ? void 0 : _a.dispose();
         this.childModules = {};
+        this.isDestroyed = true;
         this.instance = null;
         this.isInited = false;
     }
-    handleInjectorStatusChange(injector, currentStatus, prevStatus) {
-        this.events.emit('onInjectorStatusChange', injector, currentStatus, prevStatus);
-        this.checkInjectionIsCompleted();
-    }
-    checkInjectionIsCompleted() {
-        if (!this.injectionCompleted) {
-            const injectors = Object.values(this.injectors);
-            for (const injector of injectors) {
-                if (injector.loadingStatus !== 'done')
-                    return;
-            }
-        }
-        this.handleInjectionsCompleted();
-    }
-    handleInjectionsCompleted() {
-        this.injectionCompleted = true;
-        if (this.options.shouldCallHooks) {
-            const instance = this.instance;
-            const loadResult = instance.load && instance.load();
-            if (loadResult === null || loadResult === void 0 ? void 0 : loadResult.then) {
-                this.isAsync = true;
-                loadResult.then(() => {
-                    this.loadMethodCompleted = true;
-                    this.checkModuleIsLoaded();
-                });
-                return;
-            }
-        }
-        this.loadMethodCompleted = true;
-        this.checkModuleIsLoaded();
-    }
-    checkModuleIsLoaded() {
-        if (!this.isInited)
-            return;
-        if (!this.injectionCompleted)
-            return;
-        if (!this.loadMethodCompleted)
-            return;
-        if (this.options.shouldCallHooks) {
-            const instance = this.instance;
-            instance.onLoad && instance.onLoad();
-        }
-        this.isLoaded = true;
-        this.resolveLoad();
-        this.events.emit('onModuleLoaded');
-    }
+    // handleInjectorStatusChange(
+    //   injector: Injector<unknown, unknown, unknown>,
+    //   currentStatus: TLoadingStatus,
+    //   prevStatus: TLoadingStatus,
+    // ) {
+    //   this.events.emit('onInjectorStatusChange', injector, currentStatus, prevStatus);
+    //   this.checkInjectionIsCompleted();
+    // }
+    // protected checkInjectionIsCompleted() {
+    //   if (!this.injectionCompleted) {
+    //     const injectors = Object.values(this.injectors);
+    //     for (const injector of injectors) {
+    //       if (injector.loadingStatus !== 'done') return;
+    //     }
+    //   }
+    //   this.handleInjectionsCompleted();
+    // }
+    // protected handleInjectionsCompleted() {
+    //   this.injectionCompleted = true;
+    //
+    //   if (this.options.shouldCallHooks) {
+    //     const instance = this.instance as any;
+    //     const loadResult = instance.load && instance.load();
+    //     if (loadResult?.then) {
+    //       this.isAsync = true;
+    //       loadResult.then(() => {
+    //         this.loadMethodCompleted = true;
+    //         this.checkModuleIsLoaded();
+    //       });
+    //       return;
+    //     }
+    //   }
+    //
+    //   this.loadMethodCompleted = true;
+    //   this.checkModuleIsLoaded();
+    // }
+    // protected checkModuleIsLoaded() {
+    //   if (!this.isInited) return;
+    //   if (!this.injectionCompleted) return;
+    //   if (!this.loadMethodCompleted) return;
+    //
+    //   if (this.options.shouldCallHooks) {
+    //     const instance = this.instance as any;
+    //     instance.onLoad && instance.onLoad();
+    //   }
+    //
+    //   this.isLoaded = true;
+    //   this.resolveLoad();
+    //   this.events.emit('onModuleLoaded');
+    // }
     get instanceId() {
         return getInstanceMetadata(this.instance).id;
     }
@@ -1114,9 +1116,6 @@ class Provider {
         this.childModules[name] = childModule;
         const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
         return returnValue;
-    }
-    get injector() {
-        return this.options.injector;
     }
 }
 exports.Provider = Provider;
@@ -1220,8 +1219,8 @@ class Scope {
         const provider = this.getProvider(locator);
         if (!provider)
             return;
-        provider.destroyInstance();
-        delete this.providers[provider.id];
+        provider.destroy();
+        delete this.providers[provider.name];
     }
     // helper methods
     isRegistered(moduleLocator) {
@@ -1638,23 +1637,22 @@ class Store {
         this.currentContext = {};
         this.events = (0, nanoevents_1.createNanoEvents)();
     }
-    createState(moduleName, sectionName, configCreator) {
-        if (this.modulesMetadata[moduleName] && this.modulesMetadata[sectionName]) {
+    createState(moduleName, configCreator) {
+        if (this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName]) {
             throw new Error(`State with a name "${moduleName}" is already created`);
         }
         const config = (0, parse_config_1.parseStateConfig)(configCreator);
-        console.log('REGISTER STORE', moduleName, sectionName);
-        const controller = new StateController(this, moduleName, sectionName, config);
+        console.log('REGISTER STORE', moduleName);
+        const controller = new StateController(this, moduleName, config);
         return controller;
     }
     dispatchMutation(mutation) {
         console.log('RUN MUTATION', mutation);
         const moduleName = mutation.moduleName;
-        const sectionName = mutation.sectionName;
         const metadata = this.modulesMetadata[moduleName];
         if (!metadata)
             return; // state is destroyed
-        const stateController = this.modulesMetadata[moduleName][sectionName].controller;
+        const stateController = this.modulesMetadata[moduleName].controller;
         if (this.currentMutation) {
             throw new Error('Can not run mutation while previous mutation is not completed');
         }
@@ -1678,7 +1676,7 @@ class Store {
     destroyModule(moduleName) {
         delete this.rootState[moduleName];
         delete this.modulesMetadata[moduleName];
-        console.log('UNREGISTER STORE', moduleName);
+        console.log('UNREGISTER MODULE', moduleName);
     }
     listenAffectedModules(cb) {
         this.recordingAccessors++;
@@ -1696,26 +1694,23 @@ class Store {
     resetModuleContext(moduleName) {
         delete this.currentContext[moduleName];
     }
-    getMetadata(moduleName, sectionName) {
-        return this.modulesMetadata[moduleName] && this.modulesMetadata[moduleName][sectionName];
+    getMetadata(moduleName) {
+        return this.modulesMetadata[moduleName];
     }
-    getController(moduleName, sectionName) {
+    getController(moduleName) {
         var _a;
-        return (_a = this.getMetadata(moduleName, sectionName)) === null || _a === void 0 ? void 0 : _a.controller;
+        return (_a = this.getMetadata(moduleName)) === null || _a === void 0 ? void 0 : _a.controller;
     }
 }
 exports.Store = Store;
 class StateController {
-    constructor(store, moduleName, sectionName, config) {
+    constructor(store, moduleName, config) {
         this.store = store;
         this.moduleName = moduleName;
-        this.sectionName = sectionName;
         this.draftState = null;
         const defaultState = config.state;
         // use immer to create an immutable state
-        if (!store.rootState[moduleName])
-            store.rootState[moduleName] = {};
-        store.rootState[moduleName][sectionName] = (0, immer_1.default)(defaultState, () => { });
+        store.rootState[moduleName] = (0, immer_1.default)(defaultState, () => { });
         // create metadata
         const controller = this;
         const getters = {};
@@ -1725,9 +1720,7 @@ class StateController {
             getters,
             rev: 0,
         };
-        if (!store.modulesMetadata[moduleName])
-            store.modulesMetadata[moduleName] = {};
-        store.modulesMetadata[moduleName][sectionName] = metadata;
+        store.modulesMetadata[moduleName] = metadata;
         // generate getters
         Object.keys(defaultState).forEach(propName => {
             const getter = () => controller.state[propName];
@@ -1764,7 +1757,7 @@ class StateController {
     }
     registerMutation(mutationName, mutationMethod, silent = false) {
         const controller = this;
-        const { store, moduleName, sectionName } = controller;
+        const { store, moduleName } = controller;
         if (!controller.metadata.config.mutations[mutationName]) {
             controller.metadata.config.mutations[mutationName] = mutationMethod;
         }
@@ -1787,7 +1780,6 @@ class StateController {
                 id: Number((0, scope_1.generateId)()),
                 payload: args,
                 moduleName,
-                sectionName,
                 mutationName,
                 silent,
             };
@@ -1796,10 +1788,9 @@ class StateController {
     }
     applyMutation(mutation) {
         const moduleName = mutation.moduleName;
-        const sectionName = mutation.sectionName;
         const mutationName = mutation.mutationName;
-        const state = this.store.rootState[moduleName][sectionName];
-        this.store.rootState[moduleName][sectionName] = (0, immer_1.default)(state, (draft) => {
+        const state = this.store.rootState[moduleName];
+        this.store.rootState[moduleName] = (0, immer_1.default)(state, (draft) => {
             this.draftState = draft;
             const controller = this;
             controller.metadata.config.mutations[mutationName].apply(controller, mutation.payload);
@@ -1819,11 +1810,10 @@ class StateController {
             return this.draftState;
         const store = this.store;
         const moduleName = this.moduleName;
-        const sectionName = this.sectionName;
         if (store.recordingAccessors) {
-            store.affectedModules[moduleName + '__' + sectionName] = this.metadata.rev;
+            store.affectedModules[moduleName] = this.metadata.rev;
         }
-        return store.rootState[moduleName][sectionName];
+        return store.rootState[moduleName];
     }
     // TODO remove
     set state(val) {
@@ -1831,7 +1821,7 @@ class StateController {
         throw new Error('Trying to set state');
     }
     get metadata() {
-        return this.store.modulesMetadata[this.moduleName][this.sectionName];
+        return this.store.modulesMetadata[this.moduleName];
     }
     get getters() {
         return this.metadata.getters;
@@ -2388,8 +2378,7 @@ class StatefulModule {
         this.store = (0, scope_1.inject)(Store_1.Store);
         this.provider = (0, scope_1.injectProvider)();
         const moduleName = this.moduleName;
-        const sectionName = this.provider.id;
-        this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
+        this.stateController = this.store.createState(moduleName, this.stateConfig);
         this.formBinding = (0, inject_form_1.injectFormBinding)(() => this.stateController.getters, patch => this.stateController.update(patch));
         // TODO find better solution for injecting the provider
         (0, scope_1.defineGetter)(this.stateController, '__provider', () => this.provider, { enumerable: false });
@@ -2423,7 +2412,7 @@ class StatefulModule {
         this.onCreate && this.onCreate(this);
     }
     get moduleName() {
-        return this.provider.options.parentProvider.id;
+        return this.provider.id;
     }
     onDestroy() {
         this.store.destroyModule(this.moduleName);
@@ -2473,12 +2462,12 @@ class WatchModule {
         this.unwatch = null;
         this.current = null;
     }
-    load() {
-        const injector = (0, scope_1.getInstanceMetadata)(this).provider.options.injector;
-        if (!injector) {
+    init() {
+        const parentProvider = (0, scope_1.getInstanceMetadata)(this).provider.options.parentProvider;
+        if (!parentProvider) {
             throw new Error('This module should have a parent module');
         }
-        const context = injector.provider.instance;
+        const context = parentProvider.instance;
         this.current = this.watchExpr.call(context);
         this.unwatch = this.store.events.on('onMutation', () => {
             const prev = this.current;

@@ -7,7 +7,7 @@ import { ReactStoreAdapter } from './react-store-adapter';
 import { Store } from '../store';
 
 export type TAppContext = {
-  rootScope: Scope; // keeps singleton services in the root scope
+  servicesScope: Scope; // keeps singleton services in the root scope
   modulesScope: Scope; // keeps non-singleton modules
 }
 
@@ -19,7 +19,7 @@ export function useAppContext() {
 }
 
 export function useScope() {
-  return useAppContext().rootScope;
+  return useAppContext().servicesScope;
 }
 
 
@@ -29,7 +29,7 @@ export function createApp(Services: TModuleConstructorMap = {}): TAppContext {
 
   rootScope.init(ReactStoreAdapter);
 
-  return { rootScope, modulesScope };
+  return { servicesScope: rootScope, modulesScope };
 }
 
 export function ReactModules(p: {children: ReactNode | ReactNode[], app?: TAppContext}) {

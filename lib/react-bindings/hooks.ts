@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { message } from 'antd';
 
 /**
  * onCreate shortcut
@@ -30,12 +31,14 @@ export function useComponentId() {
  * Get component name from the callstack
  * Use for debugging only
  */
-function getComponentName(): string {
+export function getComponentName(): string {
   try {
     throw new Error();
   } catch (e: unknown) {
     const error = e as Error;
-    return error.stack!.split('\n')[10].split('at ')[1].split('(')[0].trim();
+    const regex = / at ([A-Z]\w+) /;
+    const componentName = error.stack!.split('\n').find(message => message.match(regex))!.match(regex)![1];
+    return componentName;
   }
 }
 

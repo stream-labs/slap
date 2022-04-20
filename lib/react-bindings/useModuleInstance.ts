@@ -7,62 +7,47 @@ import {
   Scope,
   GetModuleInstanceFor,
   TModuleLocatorType,
-  GetModuleConstructorArgs
+  GetModuleConstructorArgs,
 } from '../scope';
 import { createStateViewForModule } from '../store';
 
 export function useModuleInstance<T extends TModuleLocatorType, TInitProps extends boolean | GetModuleConstructorArgs<T>>(locator: T, initProps: TInitProps|null = null, name = ''): GetModuleInstanceFor<T> {
-  const rootScope = useAppContext().modulesScope;
+  const { modulesScope, servicesScope } = useAppContext();
 
   const {
     instance,
     moduleName,
     scope,
     isRoot,
+    shouldInitInNewScope,
+    isService,
     store,
   } = useOnCreate(() => {
 
     let moduleName = name || typeof locator === 'string' ? locator : (locator as any).name;
-    const store = rootScope.resolve(Store);
+    const store = modulesScope.resolve(Store);
     const shouldInitInNewScope = !!initProps;
     let scope: Scope;
     let isRoot = false;
+    let isService = false;
 
     if (shouldInitInNewScope) {
-      scope = rootScope.registerScope();
+      scope = modulesScope.registerScope();
       isRoot = true;
       const provider = scope.register(locator as any);
       moduleName = provider.name;
       const constructorArgs = Array.isArray(initProps) ? initProps as unknown[] : [];
       const instance = scope.init(moduleName, ...constructorArgs);
-      // if (initProps && typeof initProps === 'object') {
-      //   instance.state['nonReactiveUpdate'](initProps);
-      // }
     } else {
-      scope = store.currentContext[moduleName] ?? rootScope;
+      scope = store.currentContext[moduleName] ?? modulesScope;
       const provider = scope.isRegistered(moduleName) ? scope.resolveProvider(moduleName) : scope.register(locator as any);
+      isService = servicesScope.id === provider.scope.id;
       moduleName = provider.name;
+      if (!isService && !provider.instance) isRoot = true;
     }
-    //
-    // let scope: Scope = isRoot ? rootScope : store.currentContext[moduleName];
-    //
-    // if (!scope) {
-    //   if (rootScope.isRegistered(locator)) {
-    //     scope = rootScope;
-    //   } else {
-    //     isRoot = true;
-    //     scope = rootScope.registerScope();
-    //   }
-    // }
-    //
-    // if (!scope.isRegistered(locator)) {
-    //   const provider = scope.register(locator as any);
-    //   moduleName = provider.name;
-    // }
 
+    const provider = scope.resolveProvider(moduleName);
     const instance = scope.resolve(moduleName);
-
-
 
     return {
       instance,
@@ -70,6 +55,9 @@ export function useModuleInstance<T extends TModuleLocatorType, TInitProps exten
       isRoot,
       scope,
       moduleName,
+      provider,
+      shouldInitInNewScope,
+      isService,
     };
   });
 
@@ -80,8 +68,15 @@ export function useModuleInstance<T extends TModuleLocatorType, TInitProps exten
 
   // unregister the component from the module onDestroy
   useOnDestroy(() => {
-    isRoot && store.resetModuleContext(moduleName);
-    if (isRoot) scope.dispose();
+    if (isService || !isRoot) return;
+    store.resetModuleContext(moduleName);
+
+    if (shouldInitInNewScope) {
+      scope.dispose();
+    } else {
+      scope.unregister(moduleName);
+    }
+
   });
 
   return instance;

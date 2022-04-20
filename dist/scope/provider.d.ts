@@ -13,6 +13,7 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     injectors: Dict<Injector<unknown, unknown, unknown>>;
     factory: (args: TInitParams) => TInstance;
     isInited: boolean;
+    isDestroyed: boolean;
     injectionCompleted: boolean;
     loadMethodCompleted: boolean;
     isAsync: boolean;
@@ -30,15 +31,10 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     setMetadata(pluginName: string, data: any): any;
     destroy(): void;
     destroyInstance(): void;
-    handleInjectorStatusChange(injector: Injector<unknown, unknown, unknown>, currentStatus: TLoadingStatus, prevStatus: TLoadingStatus): void;
-    protected checkInjectionIsCompleted(): void;
-    protected handleInjectionsCompleted(): void;
-    protected checkModuleIsLoaded(): void;
     get instanceId(): string;
     resolveChildScope(): Scope;
     resolveChildProvider<T extends TModuleCreator>(ModuleCreator: T, name: string): TProviderFor<T>;
     injectChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any): any;
-    get injector(): Injector<any, any, any> | undefined;
     events: import("nanoevents").Emitter<ProviderEvents>;
 }
 export declare function createInstanceMetadata(instance: any, provider: Provider<any, any>): void;
@@ -56,9 +52,5 @@ export declare type ProviderOptions = {
      * Should call lifecycle hooks: init, load, onLoad
      */
     shouldCallHooks: boolean;
-    /**
-     * Keeps injector if the module has been injected as a child module
-     */
-    injector: Injector<any, any, any>;
     parentProvider: Provider<any>;
 };

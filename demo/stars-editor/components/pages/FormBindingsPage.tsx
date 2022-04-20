@@ -75,7 +75,7 @@ function BindFormFromExtendedState() {
 
     const bindOrder = injectFormBinding(() => orderState.getters, patch => orderState.update(patch));
 
-    // orderState.setItemName('Balloon');
+    orderState.setItemName('Balloon');
 
     return { orderState, bindOrder };
   });

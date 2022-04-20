@@ -112,7 +112,7 @@ export function MultipleIndependentCountersV2() {
 export class CounterService extends CounterModule {}
 
 export function PersistentCounter() {
-  const mm = useAppContext().rootScope;
+  const mm = useAppContext().servicesScope;
   if (!mm.isRegistered(CounterService)) mm.register(CounterService);
   const { counter, decrement, increment } = useModule(CounterService);
   return (

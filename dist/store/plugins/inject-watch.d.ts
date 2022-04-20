@@ -8,7 +8,7 @@ export declare class WatchModule<T> {
     unwatch: Function | null;
     current: T | null;
     constructor(watchExpr: () => T, onChange: (newVal: T, prevVal: T) => unknown, isEqual?: typeof isSimilar);
-    load(): void;
+    init(): void;
     onDestroy(): void;
 }
 export declare function injectWatch<T>(expression: () => T, onChange: (newVal: T, prevVal: T) => unknown, isEqual?: (newVal: T, prevVal: T) => boolean): import("../../scope").InjectedProp<WatchModule<unknown>, import("..").GetModuleStateView<typeof WatchModule>, {}>;
