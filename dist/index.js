@@ -431,7 +431,7 @@ class ReactStoreAdapter {
         componentView.setDestroyed();
         delete this.components[componentId];
     }
-    load() {
+    init() {
         this.store.events.on('onAfterMutations', () => this.onMutation());
     }
     // TODO: rename to mount-component ?
@@ -628,24 +628,45 @@ const Store_1 = __webpack_require__(607);
 function useModuleInstance(locator, initProps = null, name = '') {
     const rootScope = (0, ReactModules_1.useAppContext)().modulesScope;
     const { instance, moduleName, scope, isRoot, store, } = (0, hooks_1.useOnCreate)(() => {
-        const moduleName = name || typeof locator === 'string' ? locator : locator.name;
+        var _a;
+        let moduleName = name || typeof locator === 'string' ? locator : locator.name;
         const store = rootScope.resolve(Store_1.Store);
-        let isRoot = !!initProps;
-        let scope = isRoot ? rootScope : store.currentContext[moduleName];
-        if (!scope) {
-            if (rootScope.isRegistered(locator)) {
-                scope = rootScope;
-            }
-            else {
-                isRoot = true;
-            }
+        const shouldInitInNewScope = !!initProps;
+        let scope;
+        let isRoot = false;
+        if (shouldInitInNewScope) {
+            scope = rootScope.registerScope();
+            isRoot = true;
+            const provider = scope.register(locator);
+            moduleName = provider.name;
+            const constructorArgs = Array.isArray(initProps) ? initProps : [];
+            const instance = scope.init(moduleName, ...constructorArgs);
+            // if (initProps && typeof initProps === 'object') {
+            //   instance.state['nonReactiveUpdate'](initProps);
+            // }
         }
-        if (isRoot)
-            scope = rootScope.registerScope({}, { autoregister: true });
-        const instance = scope.resolve(locator);
-        if (initProps && typeof initProps === 'object') {
-            instance.state['nonReactiveUpdate'](initProps);
+        else {
+            scope = (_a = store.currentContext[moduleName]) !== null && _a !== void 0 ? _a : rootScope;
+            const provider = scope.isRegistered(moduleName) ? scope.resolveProvider(moduleName) : scope.register(locator);
+            moduleName = provider.name;
         }
+        //
+        // let scope: Scope = isRoot ? rootScope : store.currentContext[moduleName];
+        //
+        // if (!scope) {
+        //   if (rootScope.isRegistered(locator)) {
+        //     scope = rootScope;
+        //   } else {
+        //     isRoot = true;
+        //     scope = rootScope.registerScope();
+        //   }
+        // }
+        //
+        // if (!scope.isRegistered(locator)) {
+        //   const provider = scope.register(locator as any);
+        //   moduleName = provider.name;
+        // }
+        const instance = scope.resolve(moduleName);
         return {
             instance,
             store,
@@ -772,7 +793,7 @@ __exportStar(__webpack_require__(158), exports);
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectProvider = exports.ProviderInjectorType = exports.injectScope = exports.ScopeInjectorType = exports.inject = exports.ModuleInjectorType = exports.createInjector = exports.Injector = void 0;
+exports.injectProvider = exports.injectScope = exports.inject = exports.ModuleInjectorType = exports.createInjector = exports.Injector = void 0;
 const utils_1 = __webpack_require__(986);
 const scope_1 = __webpack_require__(521);
 class Injector {
@@ -782,41 +803,42 @@ class Injector {
         this.loadingStatus = 'not-started';
         this.propertyName = '';
         this.isDestroyed = false;
+        provider.registerInjector(this);
     }
     init() {
         this.params.init && this.params.init();
-        const getValue = this.params.getValue;
-        if (getValue) {
-            (0, utils_1.defineGetter)(this.provider.instance, this.propertyName, getValue);
-        }
-        const load = this.params.load;
-        const loadResult = load && load();
-        if (loadResult && loadResult.then) {
-            this.setLoadingStatus('loading');
-            loadResult.then(() => {
-                this.setLoadingStatus('done');
-            });
-        }
-        else {
-            this.loadingStatus = 'done';
-        }
+    }
+    load() {
+        // const load = this.params.load;
+        // const loadResult = load && load() as any;
+        // if (loadResult && loadResult.then) {
+        //   this.setLoadingStatus('loading');
+        //   loadResult.then(() => {
+        //     this.setLoadingStatus('done');
+        //   });
+        // } else {
+        //   this.loadingStatus = 'done';
+        // }
     }
     setPropertyName(propertyName) {
         this.propertyName = propertyName;
+        const getValue = this.params.getValue;
+        if (getValue) {
+            (0, utils_1.defineGetter)(this.provider.instance, propertyName, getValue);
+        }
     }
     setLoadingStatus(loadingStatus) {
-        if (this.isDestroyed)
-            return;
-        const prevStatus = this.loadingStatus;
-        this.loadingStatus = loadingStatus;
-        this.provider.handleInjectorStatusChange(this, this.loadingStatus, prevStatus);
+        // if (this.isDestroyed) return;
+        // const prevStatus = this.loadingStatus;
+        // this.loadingStatus = loadingStatus;
+        // this.provider.handleInjectorStatusChange(this, this.loadingStatus, prevStatus);
     }
-    onDestroy() {
-        this.params.onDestroy && this.params.onDestroy();
-        this.isDestroyed = true;
-    }
+    // onDestroy() {
+    //   this.params.onDestroy && this.params.onDestroy();
+    //   this.isDestroyed = true;
+    // }
     resolveValue() {
-        return this.provider.instance[this.propertyName];
+        return this.params.getValue();
     }
     getComponentData() {
         const componentData = this.params.exportComponentData && this.params.exportComponentData();
@@ -840,32 +862,37 @@ function createInjector(paramsCreator) {
     }
     const injector = new Injector(provider);
     injector.params = paramsCreator(injector);
-    return injector;
+    injector.init();
+    const value = injector.resolveValue();
+    const returnValue = value instanceof Object ? value : {};
+    const injectorProxy = new Proxy(returnValue, {
+        get(target, p) {
+            return p === '__injector' ? injector : target[p];
+        },
+    });
+    return injectorProxy;
 }
 exports.createInjector = createInjector;
 // DEFINE BUILT-IN INJECTORS
 exports.ModuleInjectorType = Symbol('moduleInjector');
+// export function inject<T extends TModuleClass>(ModuleClass: T) {
+//   return createInjector(injector => ({
+//     type: ModuleInjectorType,
+//     getValue: () => injector.provider.scope.resolve(ModuleClass),
+//   }));
+// }
 function inject(ModuleClass) {
-    return createInjector(injector => ({
-        type: exports.ModuleInjectorType,
-        getValue: () => injector.provider.scope.resolve(ModuleClass),
-    }));
+    const provider = injectProvider();
+    const module = provider.scope.resolve(ModuleClass);
+    return module;
 }
 exports.inject = inject;
-exports.ScopeInjectorType = Symbol('providerInjector');
 function injectScope() {
-    return createInjector(injector => ({
-        type: exports.ScopeInjectorType,
-        getValue: () => injector.provider.scope,
-    }));
+    return (0, scope_1.getCurrentScope)();
 }
 exports.injectScope = injectScope;
-exports.ProviderInjectorType = Symbol('providerInjector');
 function injectProvider() {
-    return createInjector(injector => ({
-        type: exports.ProviderInjectorType,
-        getValue: () => injector.provider,
-    }));
+    return (0, scope_1.getCurrentProvider)();
 }
 exports.injectProvider = injectProvider;
 
@@ -890,10 +917,10 @@ exports.getInstanceMetadata = exports.createInstanceMetadata = exports.Provider 
 const nanoevents_1 = __webpack_require__(111);
 const is_plain_object_1 = __webpack_require__(57);
 const utils_1 = __webpack_require__(986);
-const injector_1 = __webpack_require__(869);
 class Provider {
     constructor(scope, creator, name = '', options = {}) {
         this.scope = scope;
+        this.creator = creator;
         this.name = name;
         this.options = options;
         this.instance = null;
@@ -908,6 +935,7 @@ class Provider {
         this.isLoaded = false;
         this.waitForLoad = new Promise(resolve => { this.resolveLoad = resolve; });
         this.childScope = null;
+        this.childModules = {};
         this.events = (0, nanoevents_1.createNanoEvents)();
         if (!this.name)
             this.name = `AnonymousProvider__${(0, utils_1.generateId)()}`;
@@ -935,54 +963,58 @@ class Provider {
         this.instance = instance;
         this.initParams = args;
         createInstanceMetadata(instance, this);
-        if (this.options.shouldCallHooks) {
-            instance.init && instance.init();
-        }
-        this.resolveInjectors();
         return instance;
     }
-    setInited() {
+    mountModule() {
+        Object.keys(this.childModules).forEach(childName => {
+            const childModuleProvider = getInstanceMetadata(this.childModules[childName]).provider;
+            childModuleProvider.mountModule();
+        });
+        if (this.options.shouldCallHooks) {
+            const instance = this.instance;
+            instance.init && instance.init();
+        }
         this.isInited = true;
-        this.events.emit('onModuleInit');
-        this.checkModuleIsLoaded();
     }
-    /**
-     * Resolve injectors for just created object
-     *
-     *  WARNING!
-     *  this code is executed for every object creation
-     *  and should care about performance
-     */
-    resolveInjectors() {
-        const provider = this;
-        const instance = provider.instance;
-        const descriptors = Object.getOwnPropertyDescriptors(instance);
-        let hasAsyncInjectors = false;
-        // register injectors
-        Object.keys(descriptors).forEach(propName => {
-            const descriptor = descriptors[propName];
-            if (descriptor.get)
-                return; // don't execute getters
-            const propValue = descriptor.value;
-            if (!(propValue instanceof injector_1.Injector))
-                return;
-            const injector = propValue;
-            provider.injectors[injector.id] = injector;
-            injector.setPropertyName(propName);
-        });
-        // call init() for injectors
-        Object.values(this.injectors).forEach(injector => {
-            injector.init();
-            if (injector.loadingStatus !== 'done')
-                hasAsyncInjectors = true;
-        });
-        if (hasAsyncInjectors) {
-            this.isAsync = true;
-        }
-        else {
-            this.handleInjectionsCompleted();
-        }
+    //
+    // setInited() {
+    //   this.isInited = true;
+    //   // this.events.emit('onModuleInit');
+    //   // this.checkModuleIsLoaded();
+    // }
+    registerInjector(injector) {
+        this.injectors[injector.id] = injector;
     }
+    // private resolveInjectedProps() {
+    //   const provider = this;
+    //   const instance = provider.instance;
+    //   const descriptors = Object.getOwnPropertyDescriptors(instance);
+    //
+    //   // set propetyNames for injectors
+    //   Object.keys(descriptors).forEach(propName => {
+    //     const descriptor = descriptors[propName];
+    //     if (descriptor.get) return; // don't execute getters
+    //     const propValue = descriptor.value;
+    //     if (!(propValue?.__injector)) return;
+    //     const injector = propValue.__injector as Injector<unknown, unknown, unknown>;
+    //     injector.setPropertyName(propName);
+    //   });
+    // }
+    //
+    // private loadInjectors() {
+    //   let hasAsyncInjectors = false;
+    //   // call load() for injectors
+    //   Object.values(this.injectors).forEach(injector => {
+    //     injector.load();
+    //     if (injector.loadingStatus !== 'done') hasAsyncInjectors = true;
+    //   });
+    //
+    //   if (hasAsyncInjectors) {
+    //     this.isAsync = true;
+    //   } else {
+    //     this.handleInjectionsCompleted();
+    //   }
+    // }
     getMetadata(pluginName) {
         return this.metadata[pluginName];
     }
@@ -1000,16 +1032,16 @@ class Provider {
         this.events.events = {};
     }
     destroyInstance() {
+        var _a;
         const instance = this.instance;
         if (!instance)
             return;
         // destroy instance
         instance.onDestroy && instance.onDestroy();
         this.initParams = [];
-        // destroy injectors
-        Object.keys(this.injectors).forEach(injectorName => {
-            this.injectors[injectorName].onDestroy();
-        });
+        // destroy child modules
+        (_a = this.childScope) === null || _a === void 0 ? void 0 : _a.dispose();
+        this.childModules = {};
         this.instance = null;
         this.isInited = false;
     }
@@ -1074,6 +1106,15 @@ class Provider {
         }
         return childScope.resolveProvider(name);
     }
+    injectChildModule(ModuleCreator, ...args) {
+        const childScope = this.resolveChildScope();
+        const name = `${this.id}__child_${ModuleCreator.name || ''}_${(0, utils_1.generateId)()}`;
+        childScope.register(ModuleCreator, name, { parentProvider: this });
+        const childModule = childScope.init(name, ...args);
+        this.childModules[name] = childModule;
+        const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
+        return returnValue;
+    }
     get injector() {
         return this.options.injector;
     }
@@ -1112,6 +1153,7 @@ const utils_1 = __webpack_require__(986);
 const provider_1 = __webpack_require__(370);
 let currentScope = null;
 let currentProvider = null;
+let unmountedModulesCount = 0;
 const defaultScopeSettings = {
     parentScope: null,
     autoregister: false,
@@ -1198,17 +1240,22 @@ class Scope {
         if (provider.instance) {
             throw new Error(`The module ${provider.name} is already inited in the given scope`);
         }
-        return this.create(locator, ...args);
-    }
-    /**
-     * Register and instantiate a module
-     * TODO add type for args
-     */
-    start(creator, ...args) {
-        this.register(creator);
-        const instance = this.init(creator, ...args);
+        unmountedModulesCount++;
+        const instance = this.create(locator, ...args);
+        unmountedModulesCount--;
+        if (!unmountedModulesCount)
+            provider.mountModule();
         return instance;
     }
+    // /**
+    //  * Register and instantiate a module
+    //  * TODO add type for args
+    //  */
+    // start<T extends TModuleCreator>(creator: T, ...args: any[]): TModuleInstanceFor<T> {
+    //   this.register(creator);
+    //   const instance = this.init(creator, ...args as any);
+    //   return instance;
+    // }
     /**
      * create the instance and resolve injections
      * every time returns a new instance
@@ -1230,13 +1277,13 @@ class Scope {
         const instance = provider.createInstance(args);
         currentScope = prevScope;
         currentProvider = prevProvider;
-        if (isRegistered) {
-            provider.events.on('onModuleLoaded', () => {
-                this.events.emit('onModuleLoad', provider);
-            });
-            this.events.emit('onModuleInit', provider);
-            provider.setInited();
-        }
+        // if (isRegistered) {
+        //   provider.events.on('onModuleLoaded', () => {
+        //     this.events.emit('onModuleLoad', provider);
+        //   });
+        //   this.events.emit('onModuleInit', provider);
+        //   provider.setInited();
+        // }
         return instance;
     }
     createChildScope(dependencies, settings) {
@@ -1631,6 +1678,7 @@ class Store {
     destroyModule(moduleName) {
         delete this.rootState[moduleName];
         delete this.modulesMetadata[moduleName];
+        console.log('UNREGISTER STORE', moduleName);
     }
     listenAffectedModules(cb) {
         this.recordingAccessors++;
@@ -2012,32 +2060,34 @@ exports.injectChild = exports.ChildModuleInjectorType = void 0;
 const injector_1 = __webpack_require__(869);
 exports.ChildModuleInjectorType = Symbol('childModuleInjector');
 function injectChild(Module, ...args) {
-    return (0, injector_1.createInjector)(injector => {
-        const scope = injector.provider.resolveChildScope();
-        let moduleName = '';
-        return {
-            type: exports.ChildModuleInjectorType,
-            load() {
-                moduleName = injector.propertyName;
-                scope.register(Module, moduleName, { injector });
-                scope.init(moduleName, ...args);
-            },
-            getValue: () => {
-                const module = scope.resolve(moduleName);
-                if (module.exportInjectorValue) {
-                    return module.exportInjectorValue();
-                }
-                return module;
-            },
-            exportComponentData: () => {
-                const module = scope.resolve(moduleName);
-                return module.exportComponentData && module.exportComponentData();
-            },
-            destroy() {
-                scope.unregister(moduleName);
-            },
-        };
-    });
+    const provider = (0, injector_1.injectProvider)();
+    const injectedValue = provider.injectChildModule(Module, ...args);
+    return injectedValue;
+    // return createInjector(injector => {
+    //
+    //   const scope = injector.provider.resolveChildScope();
+    //   const moduleName = `${injector.provider.id}__injected_module_${generateId()}`;
+    //   scope.register(Module, moduleName, { injector });
+    //   scope.init(moduleName, ...args);
+    //
+    //   return {
+    //     type: ChildModuleInjectorType,
+    //     getValue: () => {
+    //       const module = scope.resolve(moduleName) as InjectableModule;
+    //       if (module.exportInjectorValue) {
+    //         return module.exportInjectorValue();
+    //       }
+    //       return module;
+    //     },
+    //     exportComponentData: () => {
+    //       const module = scope.resolve(moduleName) as InjectableModule;
+    //       return module.exportComponentData && module.exportComponentData() as any;
+    //     },
+    //     destroy() {
+    //       scope.unregister(moduleName);
+    //     },
+    //   };
+    // });
 }
 exports.injectChild = injectChild;
 
@@ -2049,9 +2099,9 @@ exports.injectChild = injectChild;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectFormBinding = exports.FormInjectorType = exports.createFormBinding = void 0;
+exports.injectFormBinding = exports.FormBindingModule = exports.createFormBinding = void 0;
 const StateView_1 = __webpack_require__(32);
-const scope_1 = __webpack_require__(527);
+const inject_child_1 = __webpack_require__(835);
 function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     function getState() {
         if (typeof stateGetter === 'function')
@@ -2077,23 +2127,21 @@ function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     return stateView;
 }
 exports.createFormBinding = createFormBinding;
-exports.FormInjectorType = Symbol('formInjector');
-function injectFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
-    return (0, scope_1.createInjector)(injector => {
-        const binding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
+// TODO fix styles
+class FormBindingModule {
+    constructor(stateGetter, stateSetter, extraPropsGenerator) {
+        this.formBinding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
+    }
+    exportComponentData() {
         return {
-            type: exports.FormInjectorType,
-            getValue() {
-                return binding;
-            },
-            exportComponentData() {
-                return {
-                    self: binding,
-                    extra: null,
-                };
-            }
+            self: this.formBinding,
+            extra: null,
         };
-    });
+    }
+}
+exports.FormBindingModule = FormBindingModule;
+function injectFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
+    return (0, inject_child_1.injectChild)(FormBindingModule, stateGetter, stateSetter, extraPropsGenerator);
 }
 exports.injectFormBinding = injectFormBinding;
 
@@ -2121,17 +2169,21 @@ class LoadingState {
 exports.LoadingState = LoadingState;
 function injectLoading() {
     return (0, __1.injectState)(LoadingState, false, statefulModule => {
-        const parentProvider = (0, __1.getInstanceMetadata)(statefulModule).provider.injector.provider;
-        parentProvider.events.on('onModuleInit', () => {
-            if (!parentProvider.isAsync) {
-                statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'done' });
-                return;
-            }
-            statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
-            parentProvider.waitForLoad.then(() => {
-                statefulModule.stateController.setLoadingStatus('done');
-            });
-        });
+        // const parentProvider = getInstanceMetadata(statefulModule).provider.injector!.provider;
+        //
+        // parentProvider.events.on('onModuleInit', () => {
+        //
+        //   if (!parentProvider.isAsync) {
+        //     statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'done' });
+        //     return;
+        //   }
+        //
+        //   statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
+        //
+        //   parentProvider.waitForLoad.then(() => {
+        //     statefulModule.stateController.setLoadingStatus('done');
+        //   });
+        // });
     });
 }
 exports.injectLoading = injectLoading;
@@ -2190,7 +2242,7 @@ class QueryModule {
         this.options = options;
         this.enabled = !!options.enabled;
     }
-    load() {
+    init() {
         const queryMethods = new StateView_1.StateView();
         queryMethods.defineProp({
             type: 'QueryMethod',
@@ -2327,47 +2379,6 @@ function injectState(configCreator, allowMutationDecorators = true, onCreate) {
     return (0, inject_child_1.injectChild)(StatefulModule, configCreator, allowMutationDecorators, onCreate);
 }
 exports.injectState = injectState;
-// export function injectState<
-//   TConfigCreator extends TStateConfigCreator,
-//   TValue = TStateControllerFor<TConfigCreator>,
-//   TViewValue = StateView<TStateViewForStateConfig<TConfigCreator>>,
-//   >(configCreator: TConfigCreator, onCreate?: (stateController: TValue, injector: Injector<TValue, TViewValue, TViewValue>) => unknown): InjectedProp<TValue, TViewValue, TViewValue> {
-//   return createInjector(injector => {
-//
-//     const store = injector.provider.scope.resolve(Store);
-//     let state: TValue = null as any;
-//     let stateView: TViewValue = null as any;
-//
-//     function createState(propName: string) {
-//       const moduleName = injector.provider.instanceId;
-//       const moduleState = store.createState(moduleName, propName, configCreator);
-//       return moduleState;
-//     }
-//
-//     return {
-//       type: StateInjectorType,
-//       load: () => {
-//         state = createState(injector.propertyName) as TValue;
-//         stateView = (state as any as ModuleStateController).createView() as any as TViewValue;
-//         onCreate && onCreate(state, injector);
-//       },
-//       getValue() {
-//         return state;
-//       },
-//
-//       exportComponentData() {
-//         return {
-//           self: stateView,
-//           extra: stateView,
-//         };
-//       },
-//       onDestroy() {
-//         const moduleName = injector.provider.instanceId;
-//         store.destroyModule(moduleName);
-//       },
-//     };
-//   });
-// }
 class StatefulModule {
     constructor(stateConfig, allowMutationDecorators = true, onCreate) {
         this.stateConfig = stateConfig;
@@ -2375,27 +2386,22 @@ class StatefulModule {
         this.onCreate = onCreate;
         this.store = (0, scope_1.inject)(Store_1.Store);
         this.provider = (0, scope_1.injectProvider)();
-    }
-    get injector() {
-        const injector = this.provider.options.injector;
-        if (!injector) {
-            throw new Error('This module should be injected');
-        }
-        return injector;
-    }
-    get moduleName() {
-        return this.injector.provider.id;
-    }
-    load() {
-        const injector = this.injector;
-        const parentProvider = injector.provider;
-        const sectionName = injector.propertyName;
         const moduleName = this.moduleName;
+        const sectionName = this.provider.id;
         this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
+        // TODO find better solution for injecting the provider
+        (0, scope_1.defineGetter)(this.stateController, '__provider', () => this.provider, { enumerable: false });
+    }
+    init() {
+        var _a, _b;
+        const parentProvider = this.provider.options.parentProvider;
+        if (!parentProvider) {
+            throw new Error('this module should be injected');
+        }
         // register methods marked with the @mutation() decorators
-        if (this.allowMutationDecorators) {
+        if (this.allowMutationDecorators && parentProvider) {
             const parentModule = parentProvider.instance;
-            const mutations = parentModule.__mutations || [];
+            const mutations = ((_b = (_a = parentProvider.creator) === null || _a === void 0 ? void 0 : _a.prototype) === null || _b === void 0 ? void 0 : _b.__mutations) || [];
             mutations.forEach(mutationName => {
                 const mutation = parentModule[mutationName];
                 this.stateController.registerMutation(mutationName, mutation);
@@ -2404,6 +2410,9 @@ class StatefulModule {
         }
         this.stateView = this.stateController.createView();
         this.onCreate && this.onCreate(this);
+    }
+    get moduleName() {
+        return this.provider.options.parentProvider.id;
     }
     onDestroy() {
         this.store.destroyModule(this.moduleName);
@@ -2488,13 +2497,20 @@ exports.injectWatch = injectWatch;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.pickInjectors = void 0;
 const scope_1 = __webpack_require__(527);
+const utils_1 = __webpack_require__(225);
 function pickInjectors(module) {
     return function (props, view) {
-        const provider = (0, scope_1.getInstanceMetadata)(module).provider;
         let newView = view;
-        (0, scope_1.forEach)(provider.injectors, injector => {
-            const componentData = injector.getComponentData();
-            const extraProps = componentData.extra;
+        (0, utils_1.traverse)(module, (propName, descr) => {
+            if (descr.get)
+                return;
+            const provider = descr.value.__provider;
+            if (!provider)
+                return;
+            const module = provider.instance;
+            const componentData = module.exportComponentData && module.exportComponentData();
+            const injectedValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
+            const extraProps = componentData && componentData.extra;
             if (extraProps) {
                 const extraPropsView = extraProps;
                 (0, scope_1.forEach)(extraPropsView.descriptors, (descriptor, p) => {
@@ -2503,19 +2519,48 @@ function pickInjectors(module) {
                 });
                 newView = newView.mergeView(extraProps);
             }
-            const selfProps = componentData.self;
+            const selfProps = componentData && componentData.self;
             if (selfProps) {
                 newView.defineProp({
                     type: 'InjectorView',
-                    name: injector.propertyName,
+                    name: propName,
                     reactive: true,
                     stateView: selfProps,
                     getValue() {
-                        return injector.resolveValue();
+                        return injectedValue;
                     },
                 });
             }
         });
+        // const provider = getInstanceMetadata(module).provider;
+        // let newView = view;
+        //
+        // forEach(provider.injectors, injector => {
+        //   const componentData = injector.getComponentData();
+        //
+        //   const extraProps = componentData.extra;
+        //   if (extraProps) {
+        //     const extraPropsView = extraProps as StateView<any>;
+        //     forEach(extraPropsView.descriptors, (descriptor, p) => {
+        //       if (!(descriptor.name in module)) newView.defineProp(descriptor);
+        //     });
+        //     newView = newView.mergeView(extraProps as any);
+        //   }
+        //
+        //   const selfProps = componentData.self;
+        //   if (selfProps) {
+        //     newView.defineProp({
+        //       type: 'InjectorView',
+        //       name: injector.propertyName,
+        //       reactive: true,
+        //       stateView: selfProps as any,
+        //       getValue() {
+        //         return injector.resolveValue();
+        //       },
+        //     });
+        //   }
+        //
+        // });
         return newView;
     };
 }

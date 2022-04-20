@@ -3,7 +3,11 @@ import { Simulate } from 'react-dom/test-utils';
 import { useForceUpdate, useOnCreate, useOnDestroy } from './hooks';
 import { useModuleInstance } from './useModuleInstance';
 import {
-  generateId, getInstanceMetadata, TModuleInstanceFor, TModuleLocatorType,
+  generateId,
+  getInstanceMetadata,
+  GetModuleConstructorArgs,
+  GetModuleInstanceFor,
+  TModuleLocatorType,
 } from '../scope';
 import {
   createStateViewForModule,
@@ -111,7 +115,7 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
   return component.stateView.proxy as TResult;
 }
 
-export function useModule<T extends TModuleLocatorType, TInitState extends boolean | Partial<TModuleInstanceFor<T>['state']>>(locator: T, initProps: TInitState|null = null, moduleName = ''): GetUseComponentViewResult<TModuleInstanceFor<T>> {
+export function useModule<T extends TModuleLocatorType, TInitState extends boolean | GetModuleConstructorArgs<T>>(locator: T, initProps: TInitState|null = null, moduleName = ''): GetUseComponentViewResult<GetModuleInstanceFor<T>> {
   const module = useModuleInstance(locator, initProps, moduleName);
   // const moduleView = useModuleView(module);
   return useComponentView(module);

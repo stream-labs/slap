@@ -1,5 +1,5 @@
 import {
-  createInjector, inject,
+  createInjector, defineGetter, inject,
   InjectedProp,
   Injector, injectProvider,
 } from '../../scope';
@@ -34,29 +34,23 @@ export class StatefulModule<TStateConfig> {
   stateView!: StateView<TStateViewForStateConfig<TStateConfig>>;
 
   constructor(public stateConfig: TStateConfig, public allowMutationDecorators = true, public onCreate?: (module: StatefulModule<TStateConfig>) => unknown) {
-  }
 
-  get injector() {
-    const injector = this.provider.options.injector;
-    if (!injector) {
-      throw new Error('This module should be injected');
-    }
-    return injector;
-  }
+    const moduleName = this.moduleName;
+    const sectionName = this.provider.id;
+    this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
 
-  get moduleName() {
-    return this.injector.provider.id;
+    // TODO find better solution for injecting the provider
+    defineGetter(this.stateController, '__provider', () => this.provider, { enumerable: false });
+
   }
 
   init() {
-    const injector = this.injector;
-    const parentProvider = injector.provider;
-    const sectionName = this.provider.name;
-    const moduleName = this.moduleName;
-    this.stateController = this.store.createState(moduleName, sectionName, this.stateConfig);
-
+    const parentProvider = this.provider.options.parentProvider;
+    if (!parentProvider) {
+      throw new Error('this module should be injected');
+    }
     // register methods marked with the @mutation() decorators
-    if (this.allowMutationDecorators) {
+    if (this.allowMutationDecorators && parentProvider) {
       const parentModule = parentProvider.instance;
       const mutations: string[] = parentProvider.creator?.prototype?.__mutations || [];
       mutations.forEach(mutationName => {
@@ -69,6 +63,10 @@ export class StatefulModule<TStateConfig> {
 
     this.stateView = this.stateController.createView() as StateView<TStateViewForStateConfig<TStateConfig>>;
     this.onCreate && this.onCreate(this);
+  }
+
+  get moduleName() {
+    return this.provider.options.parentProvider!.id;
   }
 
   onDestroy() {

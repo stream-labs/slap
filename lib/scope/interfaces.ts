@@ -6,15 +6,6 @@ export type PickFunctionPropertyNames<T> = {
 }[keyof T];
 export type PickFunctionProperties<T> = Pick<T, PickFunctionPropertyNames<T>>;
 
-export type TInstances<T extends { [key: string]: new (...args: any) => any }> = {
-  [P in keyof T]: InstanceType<T[P]>;
-};
-
-export type GetInjectReturnType<Type> = Type extends new (...args: any) => any
-  ? InstanceType<Type>
-  : Type extends { [key: string]: new (...args: any) => any } ? TInstances<Type> :
-    never;
-
 export type TModuleConstructor = new (...args: any[]) => any;
 export type TModuleConstructorMap = { [key: string]: TModuleConstructor }
 
@@ -23,7 +14,7 @@ export type TModuleClass = new (...args: any) => any;
 export type TModuleCreator = TModuleClass | Dict<any> | ((...args: any) => any)
 export type TModuleLocatorType = TModuleCreator | string;
 
-export type TModuleInstanceFor<TModuleLocator> =
+export type GetModuleInstanceFor<TModuleLocator> =
   TModuleLocator extends new (...args: any[]) => infer TInstanceFromConstructor ?
     TInstanceFromConstructor :
       TModuleLocator extends (...args: any[]) => infer TInstanceFromFunction ?
@@ -32,7 +23,14 @@ export type TModuleInstanceFor<TModuleLocator> =
             unknown:
               TModuleLocator
 
-export type TProviderFor<TModuleLocator extends TModuleLocatorType> = Provider<TModuleInstanceFor<TModuleLocator>>
+export type GetModuleConstructorArgs<TModuleLocator> =
+  TModuleLocator extends new (...args: infer ConstructorArgs) => any ?
+    ConstructorArgs :
+    TModuleLocator extends (...args: infer ConstructorArgs) => any ?
+      ConstructorArgs:
+        unknown[]
+
+export type TProviderFor<TModuleLocator extends TModuleLocatorType> = Provider<GetModuleInstanceFor<TModuleLocator>>
 export type TLoadingStatus = 'not-started' | 'loading' | 'done' | 'error';
 
 export interface InjectableModule {

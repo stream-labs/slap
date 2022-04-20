@@ -1,6 +1,7 @@
 import { StateView } from '../StateView';
 import { createInjector, InjectedProp } from '../../scope';
 import { Store } from '../Store';
+import { injectChild } from './inject-child';
 
 export type TFormBindings<TState, TExtraProps = {}> = {
   [K in keyof TState]: {
@@ -16,12 +17,10 @@ export function createFormBinding<TState, TExtraProps = {}>(
   extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps,
 ): StateView<TFormBindings<TState, TExtraProps>> {
 
-
   function getState(): TState {
     if (typeof stateGetter === 'function') return (stateGetter as Function)();
     return stateGetter;
   }
-
 
   const stateView = new StateView<TFormBindings<TState, TExtraProps>>();
 
@@ -50,28 +49,28 @@ export function createFormBinding<TState, TExtraProps = {}>(
   return stateView;
 }
 
-export const FormInjectorType = Symbol('formInjector');
+// TODO fix styles
+export class FormBindingModule {
+
+  formBinding: any;
+
+  constructor(stateGetter: any, stateSetter: any, extraPropsGenerator: any) {
+    this.formBinding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
+  }
+
+  exportComponentData() {
+    return {
+      self: this.formBinding,
+      extra: null,
+    };
+  }
+
+}
 
 export function injectFormBinding<TState, TExtraProps = {}>(
   stateGetter: TState | (() => TState),
   stateSetter: (statePatch: Partial<TState>) => unknown,
   extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps,
 ): InjectedProp< StateView<TFormBindings<TState, TExtraProps>>, StateView<TFormBindings<TState, TExtraProps>>, null> {
-  return createInjector(injector => {
-
-    const binding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
-
-    return {
-      type: FormInjectorType,
-      getValue() {
-        return binding;
-      },
-      exportComponentData() {
-        return {
-          self: binding,
-          extra: null,
-        };
-      }
-    };
-  });
+  return injectChild(FormBindingModule, stateGetter, stateSetter, extraPropsGenerator) as any;
 }

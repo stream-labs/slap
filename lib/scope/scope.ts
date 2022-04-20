@@ -1,7 +1,7 @@
 import { createNanoEvents } from 'nanoevents';
 import {
   TModuleClass,
-  TModuleConstructorMap, TModuleCreator, TModuleInstanceFor,
+  TModuleConstructorMap, TModuleCreator, GetModuleInstanceFor,
   TModuleLocatorType,
   TProviderFor,
 } from './interfaces';
@@ -10,6 +10,7 @@ import { Provider, ProviderOptions } from './provider';
 
 let currentScope: Scope | null = null;
 let currentProvider: Provider<any> | null = null;
+let unmountedModulesCount = 0;
 
 interface ScopeSettings {
   parentScope: Scope | null,
@@ -93,7 +94,7 @@ export class Scope {
     return provider ? provider.instance : null;
   }
 
-  resolve<T extends TModuleLocatorType>(locator: T): TModuleInstanceFor<T> {
+  resolve<T extends TModuleLocatorType>(locator: T): GetModuleInstanceFor<T> {
     const provider = this.resolveProvider(locator);
     if (provider.instance) return provider.instance;
     return this.init(locator, ...[] as any);
@@ -121,14 +122,19 @@ export class Scope {
    * Instantiate a registered module
    * TODO type for args
    */
-  init<T extends TModuleLocatorType>(locator: T, ...args: any[]): TModuleInstanceFor<T> {
+  init<T extends TModuleLocatorType>(locator: T, ...args: any[]): GetModuleInstanceFor<T> {
     const provider = this.resolveProvider(locator);
 
     if (provider.instance) {
       throw new Error(`The module ${provider.name} is already inited in the given scope`);
     }
 
-    return this.create(locator, ...args);
+    unmountedModulesCount++;
+    const instance = this.create(locator, ...args);
+    unmountedModulesCount--;
+    if (!unmountedModulesCount) provider.mountModule();
+
+    return instance;
   }
 
   // /**
@@ -146,7 +152,7 @@ export class Scope {
    * every time returns a new instance
    */
   // TODO add type for args
-  create<TLocator extends TModuleLocatorType>(locator: TLocator, ...args: any): TModuleInstanceFor<TLocator> {
+  create<TLocator extends TModuleLocatorType>(locator: TLocator, ...args: any): GetModuleInstanceFor<TLocator> {
     const prevScope = currentScope;
     currentScope = this;
 
@@ -166,13 +172,13 @@ export class Scope {
     currentScope = prevScope;
     currentProvider = prevProvider;
 
-    if (isRegistered) {
-      provider.events.on('onModuleLoaded', () => {
-        this.events.emit('onModuleLoad', provider);
-      });
-      this.events.emit('onModuleInit', provider);
-      provider.setInited();
-    }
+    // if (isRegistered) {
+    //   provider.events.on('onModuleLoaded', () => {
+    //     this.events.emit('onModuleLoad', provider);
+    //   });
+    //   this.events.emit('onModuleInit', provider);
+    //   provider.setInited();
+    // }
 
     return instance;
   }

@@ -11,6 +11,9 @@ ReactDOM.render(
     <a href="./twoapps.html">Two Apps</a>
     <br />
 
+    <a href="./shopapp.html">Shop App</a>
+    <br />
+
     <a href="./starseditor.html">Complex production style app</a>
     <br />
   </div>,

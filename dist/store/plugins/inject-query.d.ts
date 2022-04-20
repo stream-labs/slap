@@ -22,7 +22,7 @@ export declare class QueryModule<TConstructorArgs extends Array<any>, TData = Ge
         refetch: () => Promise<TData>;
     }>;
     constructor(...args: TConstructorArgs);
-    load(): void;
+    init(): void;
     exec(): Promise<TData>;
     fetch(): Promise<TData>;
     refetch(): Promise<TData> | undefined;

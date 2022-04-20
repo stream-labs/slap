@@ -29,7 +29,7 @@ export class EditorState {
 export class EditorService {
 
   state = injectState(EditorState);
-  loading = injectLoading();
+  // loading = injectLoading();
 
   // scenesCollection = injectCollection(sceneSchema);
   //
@@ -41,7 +41,7 @@ export class EditorService {
 
   scope = injectScope();
 
-  async load() {
+  async init() {
     await Promise.all([
       ...initialScenes.map(scene => this.state.addScene(scene)),
       ...initalItems.map(scene => this.state.addSceneItem(scene)),

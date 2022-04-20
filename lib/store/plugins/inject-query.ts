@@ -71,7 +71,7 @@ export class QueryModule<
     this.enabled = !!options.enabled;
   }
 
-  load() {
+  init() {
     const queryMethods = new StateView();
     queryMethods.defineProp({
       type: 'QueryMethod',

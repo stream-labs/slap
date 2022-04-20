@@ -1,9 +1,10 @@
 import { Scope } from './scope';
 import { Dict } from './utils';
 import { Injector } from './injector';
-import { TLoadingStatus, TModuleCreator, TProviderFor } from './interfaces';
+import { InjectableModule, TLoadingStatus, TModuleCreator, TProviderFor } from './interfaces';
 export declare class Provider<TInstance, TInitParams extends [] = []> {
     scope: Scope;
+    creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance;
     name: string;
     options: Partial<ProviderOptions>;
     id: string;
@@ -20,17 +21,11 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     waitForLoad: Promise<unknown>;
     initParams?: TInitParams;
     childScope: Scope | null;
+    childModules: Dict<InjectableModule>;
     constructor(scope: Scope, creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance, name?: string, options?: Partial<ProviderOptions>);
     createInstance(args: TInitParams): TInstance;
-    setInited(): void;
-    /**
-     * Resolve injectors for just created object
-     *
-     *  WARNING!
-     *  this code is executed for every object creation
-     *  and should care about performance
-     */
-    private resolveInjectors;
+    mountModule(): void;
+    registerInjector(injector: Injector<unknown, unknown, unknown>): void;
     getMetadata(pluginName: string): any;
     setMetadata(pluginName: string, data: any): any;
     destroy(): void;
@@ -42,6 +37,7 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     get instanceId(): string;
     resolveChildScope(): Scope;
     resolveChildProvider<T extends TModuleCreator>(ModuleCreator: T, name: string): TProviderFor<T>;
+    injectChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any): any;
     get injector(): Injector<any, any, any> | undefined;
     events: import("nanoevents").Emitter<ProviderEvents>;
 }
@@ -64,4 +60,5 @@ export declare type ProviderOptions = {
      * Keeps injector if the module has been injected as a child module
      */
     injector: Injector<any, any, any>;
+    parentProvider: Provider<any>;
 };

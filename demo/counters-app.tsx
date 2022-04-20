@@ -13,14 +13,18 @@ function CountersApp() {
       {/* <MultipleIndependentCounters /> */}
       <MultipleIndependentCountersV2 />
       TODO
-      <MultiplePersistentCounters />
+      {/* <MultiplePersistentCounters /> */}
     </ReactModules>
   );
 }
 
 class CounterModule {
+
+  constructor(public initialValue = 0) {
+  }
+
   state = injectState({
-    counter: 1,
+    counter: this.initialValue,
 
     increment() {
       this.counter++;
@@ -80,7 +84,7 @@ export function MultipleCounters() {
 // }
 
 export function IndependentCounterV2() {
-  useModule(CounterModule, { counter: 33 });
+  useModule(CounterModule, [33]);
   return <Counter />;
 }
 

@@ -1,4 +1,4 @@
-import { Dict, Scope, TModuleInstanceFor } from '../scope';
+import { Dict, Scope, GetModuleInstanceFor } from '../scope';
 import { GetAllInjectedProps, GetInjectedProps } from './plugins';
 export declare class StateView<TProps = {}> {
     scope?: Scope | undefined;
@@ -30,17 +30,17 @@ export declare class StateView<TProps = {}> {
     mergeView<TExtension extends StateView<any>, TResult = ExtendView<TProps, TExtension>>(extension: TExtension): TResult;
 }
 export declare function createStateViewForModule<T>(module: T): GetModuleStateView<T>;
-export declare type GetModuleSelfView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = TModule extends {
+export declare type GetModuleSelfView<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>> = TModule extends {
     exportComponentData: () => ({
         self: StateView<infer TView>;
     });
 } ? TView : {};
-export declare type GetModuleExtraView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> = TModule extends {
+export declare type GetModuleExtraView<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>> = TModule extends {
     exportComponentData: () => ({
         extra: StateView<infer TView>;
     });
 } ? TView : {};
-export declare type GetComponentDataForModule<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>, TSelfExport = GetModuleSelfView<TModuleConfig>, TExtraExport = GetModuleExtraView<TModuleConfig>, TInjectedProps = TModule extends {
+export declare type GetComponentDataForModule<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>, TSelfExport = GetModuleSelfView<TModuleConfig>, TExtraExport = GetModuleExtraView<TModuleConfig>, TInjectedProps = TModule extends {
     exportComponentData: () => any;
 } ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>> = TSelfExport & TExtraExport & TInjectedProps;
 export declare type GetModuleStateView<TModuleConfig> = StateView<GetComponentDataForModule<TModuleConfig>>;

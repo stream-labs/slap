@@ -1,4 +1,4 @@
-import { TModuleConstructorMap, TModuleCreator, TModuleInstanceFor, TModuleLocatorType, TProviderFor } from './interfaces';
+import { TModuleConstructorMap, TModuleCreator, GetModuleInstanceFor, TModuleLocatorType, TProviderFor } from './interfaces';
 import { Provider, ProviderOptions } from './provider';
 interface ScopeSettings {
     parentScope: Scope | null;
@@ -18,8 +18,8 @@ export declare class Scope {
     register<T extends TModuleCreator>(ModuleCreator: T, name?: string, options?: Partial<ProviderOptions>): TProviderFor<T>;
     getProvider<T extends TModuleLocatorType>(moduleLocator: T): TProviderFor<T> | null;
     resolveProvider<T extends TModuleLocatorType>(moduleLocator: T): TProviderFor<T>;
-    getInstance<T extends TModuleLocatorType>(locator: T): TModuleInstanceFor<T> | null;
-    resolve<T extends TModuleLocatorType>(locator: T): TModuleInstanceFor<T>;
+    getInstance<T extends TModuleLocatorType>(locator: T): GetModuleInstanceFor<T> | null;
+    resolve<T extends TModuleLocatorType>(locator: T): GetModuleInstanceFor<T>;
     unregister<T extends TModuleLocatorType>(locator: T): void;
     isRegistered(moduleLocator: TModuleLocatorType): boolean;
     hasInstance(moduleLocator: TModuleLocatorType): boolean;
@@ -27,17 +27,12 @@ export declare class Scope {
      * Instantiate a registered module
      * TODO type for args
      */
-    init<T extends TModuleLocatorType>(locator: T, ...args: any[]): TModuleInstanceFor<T>;
-    /**
-     * Register and instantiate a module
-     * TODO add type for args
-     */
-    start<T extends TModuleCreator>(creator: T, ...args: any[]): TModuleInstanceFor<T>;
+    init<T extends TModuleLocatorType>(locator: T, ...args: any[]): GetModuleInstanceFor<T>;
     /**
      * create the instance and resolve injections
      * every time returns a new instance
      */
-    create<TLocator extends TModuleLocatorType>(locator: TLocator, ...args: any): TModuleInstanceFor<TLocator>;
+    create<TLocator extends TModuleLocatorType>(locator: TLocator, ...args: any): GetModuleInstanceFor<TLocator>;
     createChildScope(dependencies?: TModuleConstructorMap, settings?: Omit<Partial<ScopeSettings>, 'parentScope'>): Scope;
     registerScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>): Scope;
     unregisterScope(scopeId: string): void;

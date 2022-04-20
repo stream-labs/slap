@@ -2,14 +2,11 @@ import { Dict } from '../scope';
 import { Store } from '../store/Store';
 import { StateView } from '../store';
 export declare class ReactStoreAdapter {
-    store: import("../scope").GetInjectedProp<{
-        type: symbol;
-        getValue: () => Store;
-    }, Store, unknown, unknown>;
+    store: Store;
     components: Dict<ComponentView>;
     registerComponent(moduleView: StateView, componentId: string, forceUpdate: Function): ComponentView;
     destroyComponent(componentId: string): void;
-    load(): void;
+    init(): void;
     watchers: Record<string, Function>;
     watchersOrder: string[];
     createWatcher(watcherId: string, cb: Function): string;

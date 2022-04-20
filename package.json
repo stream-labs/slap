@@ -1,7 +1,7 @@
 {
   "name": "slap",
-  "version": "0.1.52",
-  "description": "Simple and Scalable Redux Configuration",
+  "version": "0.1.53",
+  "description": "Streamlabs Application modules",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack serve --config webpack.config.demo.js --progress  --mode development",

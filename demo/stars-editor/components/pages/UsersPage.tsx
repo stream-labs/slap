@@ -2,7 +2,7 @@ import React from 'react';
 import {
   useModule,
   injectState,
-  TModuleInstanceFor,
+  GetModuleInstanceFor,
   inject,
   useModuleInstance, injectLoading, injectQuery, generateId
 } from '../../../../lib';

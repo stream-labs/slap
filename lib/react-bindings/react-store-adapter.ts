@@ -22,7 +22,7 @@ export class ReactStoreAdapter {
     delete this.components[componentId];
   }
 
-  load() {
+  init() {
     this.store.events.on('onAfterMutations', () => this.onMutation());
   }
 

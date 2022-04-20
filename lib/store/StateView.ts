@@ -2,7 +2,7 @@
 // construct a ReactiveObject based on given presets
 // has module,stateSelector and allow extending
 import {
-  defineGetter, Dict, forEach, Scope, TModuleInstanceFor,
+  defineGetter, Dict, forEach, Scope, GetModuleInstanceFor,
 } from '../scope';
 import { getInstanceMetadata } from '../scope/provider';
 import { pickProps } from './plugins/pickProps';
@@ -182,16 +182,16 @@ export function createStateViewForModule<T>(module: T) {
 }
 
 export type GetModuleSelfView<
-  TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>
+  TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>
   > = TModule extends { exportComponentData: () => ({ self: StateView<infer TView> })} ? TView : {}
 
 export type GetModuleExtraView<
-  TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>
+  TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>
   > = TModule extends { exportComponentData: () => ({ extra: StateView<infer TView> })} ? TView : {}
 
 export type GetComponentDataForModule<
   TModuleConfig,
-  TModule = TModuleInstanceFor<TModuleConfig>,
+  TModule = GetModuleInstanceFor<TModuleConfig>,
   TSelfExport = GetModuleSelfView<TModuleConfig>,
   TExtraExport = GetModuleExtraView<TModuleConfig>,
   TInjectedProps = TModule extends { exportComponentData: () => any } ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>

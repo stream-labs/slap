@@ -4,10 +4,7 @@ export declare class WatchModule<T> {
     watchExpr: () => T;
     onChange: (newVal: T, prevVal: T) => unknown;
     isEqual: typeof isSimilar;
-    store: import("../../scope").GetInjectedProp<{
-        type: symbol;
-        getValue: () => Store;
-    }, Store, unknown, unknown>;
+    store: Store;
     unwatch: Function | null;
     current: T | null;
     constructor(watchExpr: () => T, onChange: (newVal: T, prevVal: T) => unknown, isEqual?: typeof isSimilar);

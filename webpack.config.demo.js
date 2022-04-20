@@ -9,6 +9,7 @@ const entry = {
   todolistapp: './demo/todo-list-app.tsx',
   countersapp: './demo/counters-app.tsx',
   twoapps: './demo/twoapps.tsx',
+  shopapp: './demo/shop-app.tsx',
   starseditor: './demo/stars-editor/index.tsx',
 };
 

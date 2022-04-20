@@ -4,10 +4,9 @@ import { Scope } from './scope';
 import { defineGetter, Dict, generateId, isClass } from './utils';
 import { Injector } from './injector';
 import {
+  InjectableModule,
   TLoadingStatus,
-  TModuleCreator,
-  TModuleInstanceFor,
-  TModuleLocatorType, TProviderFor
+  TModuleCreator,TProviderFor
 } from './interfaces';
 
 export class Provider<TInstance, TInitParams extends [] = []> {
@@ -32,6 +31,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   initParams?: TInitParams; // TODO
 
   childScope: Scope | null = null;
+  childModules: Dict<InjectableModule> = {};
 
   constructor(
     public scope: Scope,
@@ -72,56 +72,62 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     this.instance = instance;
     this.initParams = args;
     createInstanceMetadata(instance, this);
-
-    if (this.options.shouldCallHooks) {
-      instance.init && instance.init();
-    }
-
-    this.resolveInjectedProps();
-    this.loadInjectors();
     return instance;
   }
 
-  setInited() {
+  mountModule() {
+    Object.keys(this.childModules).forEach(childName => {
+      const childModuleProvider = getInstanceMetadata(this.childModules[childName]).provider;
+      childModuleProvider.mountModule();
+    });
+    if (this.options.shouldCallHooks) {
+      const instance = this.instance as InjectableModule;
+      instance.init && instance.init();
+    }
     this.isInited = true;
-    this.events.emit('onModuleInit');
-    this.checkModuleIsLoaded();
   }
+
+  //
+  // setInited() {
+  //   this.isInited = true;
+  //   // this.events.emit('onModuleInit');
+  //   // this.checkModuleIsLoaded();
+  // }
 
   registerInjector(injector: Injector<unknown, unknown, unknown>) {
     this.injectors[injector.id] = injector;
   }
 
-  private resolveInjectedProps() {
-    const provider = this;
-    const instance = provider.instance;
-    const descriptors = Object.getOwnPropertyDescriptors(instance);
-
-    // set propetyNames for injectors
-    Object.keys(descriptors).forEach(propName => {
-      const descriptor = descriptors[propName];
-      if (descriptor.get) return; // don't execute getters
-      const propValue = descriptor.value;
-      if (!(propValue?.__injector)) return;
-      const injector = propValue.__injector as Injector<unknown, unknown, unknown>;
-      injector.setPropertyName(propName);
-    });
-  }
-
-  private loadInjectors() {
-    let hasAsyncInjectors = false;
-    // call load() for injectors
-    Object.values(this.injectors).forEach(injector => {
-      injector.load();
-      if (injector.loadingStatus !== 'done') hasAsyncInjectors = true;
-    });
-
-    if (hasAsyncInjectors) {
-      this.isAsync = true;
-    } else {
-      this.handleInjectionsCompleted();
-    }
-  }
+  // private resolveInjectedProps() {
+  //   const provider = this;
+  //   const instance = provider.instance;
+  //   const descriptors = Object.getOwnPropertyDescriptors(instance);
+  //
+  //   // set propetyNames for injectors
+  //   Object.keys(descriptors).forEach(propName => {
+  //     const descriptor = descriptors[propName];
+  //     if (descriptor.get) return; // don't execute getters
+  //     const propValue = descriptor.value;
+  //     if (!(propValue?.__injector)) return;
+  //     const injector = propValue.__injector as Injector<unknown, unknown, unknown>;
+  //     injector.setPropertyName(propName);
+  //   });
+  // }
+  //
+  // private loadInjectors() {
+  //   let hasAsyncInjectors = false;
+  //   // call load() for injectors
+  //   Object.values(this.injectors).forEach(injector => {
+  //     injector.load();
+  //     if (injector.loadingStatus !== 'done') hasAsyncInjectors = true;
+  //   });
+  //
+  //   if (hasAsyncInjectors) {
+  //     this.isAsync = true;
+  //   } else {
+  //     this.handleInjectionsCompleted();
+  //   }
+  // }
 
   getMetadata(pluginName: string) {
     return this.metadata[pluginName];
@@ -151,10 +157,9 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     instance.onDestroy && instance.onDestroy();
     this.initParams = [] as any;
 
-    // destroy injectors
-    Object.keys(this.injectors).forEach(injectorName => {
-      this.injectors[injectorName].onDestroy();
-    });
+    // destroy child modules
+    this.childScope?.dispose();
+    this.childModules = {};
 
     this.instance = null;
     this.isInited = false;
@@ -231,6 +236,16 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     return childScope.resolveProvider(name) as TProviderFor<T>;
   }
 
+  injectChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any) {
+    const childScope = this.resolveChildScope();
+    const name = `${this.id}__child_${ModuleCreator.name || ''}_${generateId()}`;
+    childScope.register(ModuleCreator, name, { parentProvider: this as Provider<any, any>});
+    const childModule = childScope.init(name, ...args) as InjectableModule;
+    this.childModules[name] = childModule;
+    const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
+    return returnValue;
+  }
+
   get injector() {
     return this.options.injector;
   }
@@ -280,4 +295,6 @@ export type ProviderOptions = {
    * Keeps injector if the module has been injected as a child module
    */
   injector: Injector<any, any, any>;
+
+  parentProvider: Provider<any>;
 }
