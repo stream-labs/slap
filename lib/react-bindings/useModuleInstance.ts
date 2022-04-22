@@ -34,15 +34,15 @@ export function useModuleInstance<T extends TModuleLocatorType, TInitProps exten
     if (shouldInitInNewScope) {
       scope = modulesScope.registerScope();
       isRoot = true;
-      const provider = scope.register(locator as any);
+      const provider = scope.register(locator as any, moduleName);
       moduleName = provider.name;
       const constructorArgs = Array.isArray(initProps) ? initProps as unknown[] : [];
       const instance = scope.init(moduleName, ...constructorArgs);
     } else {
       scope = store.currentContext[moduleName] ?? modulesScope;
-      const provider = scope.isRegistered(moduleName) ? scope.resolveProvider(moduleName) : scope.register(locator as any);
+      const provider = scope.isRegistered(moduleName) ? scope.resolveProvider(moduleName) : scope.register(locator as any, moduleName);
       isService = servicesScope.id === provider.scope.id;
-      moduleName = provider.name;
+      moduleName = name || provider.name;
       if (!isService && !provider.instance) isRoot = true;
     }
 
