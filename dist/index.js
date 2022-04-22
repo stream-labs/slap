@@ -641,16 +641,16 @@ function useModuleInstance(locator, initProps = null, name = '') {
         if (shouldInitInNewScope) {
             scope = modulesScope.registerScope();
             isRoot = true;
-            const provider = scope.register(locator);
+            const provider = scope.register(locator, moduleName);
             moduleName = provider.name;
             const constructorArgs = Array.isArray(initProps) ? initProps : [];
             const instance = scope.init(moduleName, ...constructorArgs);
         }
         else {
             scope = (_a = store.currentContext[moduleName]) !== null && _a !== void 0 ? _a : modulesScope;
-            const provider = scope.isRegistered(moduleName) ? scope.resolveProvider(moduleName) : scope.register(locator);
+            const provider = scope.isRegistered(moduleName) ? scope.resolveProvider(moduleName) : scope.register(locator, moduleName);
             isService = servicesScope.id === provider.scope.id;
-            moduleName = provider.name;
+            moduleName = name || provider.name;
             if (!isService && !provider.instance)
                 isRoot = true;
         }
