@@ -83,7 +83,10 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     });
     if (this.options.shouldCallHooks) {
       const instance = this.instance as InjectableModule;
+      const provider = this as Provider<any, any>;
+      this.events.emit('onBeforeInit', provider);
       instance.init && instance.init();
+      this.events.emit('onAfterInit', provider);
     }
     this.isInited = true;
   }
@@ -274,8 +277,9 @@ export interface ProviderEvents {
     current: TLoadingStatus,
     prev: TLoadingStatus
   ) => unknown;
-  onModuleInit: () => unknown,
-  onModuleLoaded: () => unknown,
+  onBeforeInit: (provider: Provider<any>) => unknown,
+  onAfterInit: (provider: Provider<any>) => unknown,
+  // onModuleLoaded: () => unknown,
 }
 
 export type ProviderOptions = {
@@ -285,10 +289,8 @@ export type ProviderOptions = {
    */
   shouldCallHooks: boolean;
 
-  // /**
-  //  * Keeps injector if the module has been injected as a child module
-  //  */
-  // injector: Injector<any, any, any>;
-
+  /**
+   * Keeps parentProvider if the module has been injected as a child module
+   */
   parentProvider: Provider<any>;
 }

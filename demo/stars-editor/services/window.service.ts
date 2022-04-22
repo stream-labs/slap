@@ -11,7 +11,7 @@ export class WindowState {
     { title: 'Watchers', id: 'watchers' },
     { title: 'Queries', id: 'queries' },
     { title: 'Extended State', id: 'extended' },
-    { title: 'Mutation decorator', id: 'mutation' },
+    { title: 'Mutations', id: 'mutation' },
     { title: 'Form Binding', id: 'form-bindings' },
   ];
 

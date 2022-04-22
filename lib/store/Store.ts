@@ -25,7 +25,7 @@ export class Store {
   // keeps additional metadata
   modulesMetadata = { } as Dict<StatefulModuleMetadata>;
 
-  currentMutation: Mutation | null = null;
+  pendingMutations = 0;
   moduleRevisions: Dict<number> = {};
 
   createState<TConfigCreator>(moduleName: string, configCreator: TConfigCreator): GetStateControllerFor<TConfigCreator> {
@@ -50,26 +50,16 @@ export class Store {
 
     const stateController = this.modulesMetadata[moduleName].controller;
 
-    if (this.currentMutation) {
+    if (this.pendingMutations) {
       throw new Error('Can not run mutation while previous mutation is not completed');
     }
 
-    this.currentMutation = mutation;
-    try {
-      stateController.applyMutation(mutation);
-    } finally {
-      this.currentMutation = null;
-    }
-    this.events.emit('onMutation', mutation);
-
-    if (!mutation.silent) {
-      // trigger subscribed components to re-render
-      if (!mutation.silent) this.events.emit('onAfterMutations');
-    }
+    stateController.mutate(mutation);
   }
 
   toJSON() {
     // TODO use for debugging
+    JSON.stringify(this.rootState);
   }
 
   destroyModule(moduleName: string) {
@@ -115,8 +105,8 @@ export class Store {
 }
 
 export interface StoreEvents {
-  onMutation: (mutation: Mutation) => void
-  onAfterMutations: () => void
+  onMutation: (mutation: Mutation | Function) => void
+  onReadyToRender: () => void
 }
 
 export class StateController<TConfig = any> {
@@ -130,8 +120,7 @@ export class StateController<TConfig = any> {
   ) {
     const defaultState = config.state;
 
-    // use immer to create an immutable state
-    store.rootState[moduleName] = produce(defaultState, () => {});
+    store.rootState[moduleName] = { ...defaultState };
 
     // create metadata
     const controller = this;
@@ -140,6 +129,7 @@ export class StateController<TConfig = any> {
       config,
       controller,
       getters,
+      isInitialized: false,
       rev: 0,
     };
     store.modulesMetadata[moduleName] = metadata;
@@ -150,6 +140,11 @@ export class StateController<TConfig = any> {
       defineGetter(controller, propName, getter);
       defineGetter(getters, propName, getter);
       defineSetter(controller, propName, val => {
+        const changeIsAllowed = !metadata.isInitialized || controller.draftState;
+        if (!changeIsAllowed) {
+          console.error(`Failed to set "${propName}" with value`, val);
+          throw new Error('Changing state outside of mutation');
+        }
         (controller.state as any)[propName] = val;
         return true;
       });
@@ -184,12 +179,18 @@ export class StateController<TConfig = any> {
 
   }
 
-  registerMutation(mutationName: string, mutationMethod: Function, silent = false) {
+  finishInitialization() {
+    // use immer to lock an immutable state
+    this.getMetadata().isInitialized = true;
+    this.store.rootState[this.moduleName] = produce(this.store.rootState[this.moduleName], () => {});
+  }
+
+  registerMutation(mutationName: string, mutationMethod: Function) {
     const controller = this;
     const { store, moduleName } = controller;
 
-    if (!controller.metadata.config.mutations[mutationName]) {
-      controller.metadata.config.mutations[mutationName] = mutationMethod;
+    if (!controller.getMetadata().config.mutations[mutationName]) {
+      controller.getMetadata().config.mutations[mutationName] = mutationMethod;
     }
 
     // override the original Module method to dispatch mutations
@@ -197,15 +198,7 @@ export class StateController<TConfig = any> {
       // if this method was called from another mutation
       // we don't need to dispatch a new mutation again
       // just call the original method
-      if (store.currentMutation) {
-        if (store.currentMutation.moduleName !== moduleName) {
-          const parentMutation = store.currentMutation;
-          const parentMutationName = `${parentMutation.moduleName}_${parentMutation.mutationName}`;
-          const childMutationName = `${moduleName}_${mutationName}`;
-
-          // TODO should we really prevent that?
-          console.warn(`Can not run a mutation of another module. Call ${parentMutationName} from ${childMutationName}`);
-        }
+      if (controller.draftState) {
         return mutationMethod.apply(controller, args);
       }
 
@@ -214,33 +207,58 @@ export class StateController<TConfig = any> {
         payload: args,
         moduleName,
         mutationName,
-        silent,
       };
       store.dispatchMutation(mutation);
     };
   }
 
-  applyMutation(mutation: Mutation) {
-    const moduleName = mutation.moduleName;
-    const mutationName = mutation.mutationName;
+  mutate(mutation: ((draft: this) => unknown) | Mutation) {
+    const moduleName = this.moduleName;
     const state = this.store.rootState[moduleName];
+    const mutationIsFunction = typeof mutation === 'function';
+    const metadata = this.getMetadata();
 
-    this.store.rootState[moduleName] = produce(state, (draft: unknown) => {
-      this.draftState = draft;
-      const controller = this as StateController;
-      controller.metadata.config.mutations[mutationName].apply(controller, mutation.payload);
-    });
+    if (!metadata.isInitialized) {
+      if (mutationIsFunction) {
+        mutation(this);
+      } else {
+        const mutationObj = mutation as Mutation;
+        metadata.config.mutations[mutationObj.mutationName].apply(this, mutationObj.payload);
+      }
+      return;
+    }
 
-    this.metadata.rev++;
-    // console.log(`New revision for module ${moduleName}.${sectionName}`, this.metadata.rev);
-    this.draftState = null;
+    this.store.pendingMutations++;
+
+    try {
+      this.store.rootState[moduleName] = produce(state, (draft: unknown) => {
+        this.draftState = draft;
+        if (mutationIsFunction) {
+          mutation(this);
+          return;
+        }
+        const mutationObj = mutation as Mutation;
+        metadata.config.mutations[mutationObj.mutationName].apply(this, mutationObj.payload);
+      });
+    } catch (e) {
+      console.error('mutation failed');
+    } finally {
+      this.store.pendingMutations--;
+      this.getMetadata().rev++;
+      this.draftState = null;
+    }
+
+    this.store.events.emit('onMutation', mutation);
+
+    if (!this.store.pendingMutations) {
+      this.store.events.emit('onReadyToRender');
+    }
   }
 
   private registerDefaultMutations() {
     const controller = this;
     const updateStateMutation = (statePatch: object) => Object.assign(controller, statePatch);
     controller.registerMutation('update', updateStateMutation);
-    controller.registerMutation('nonReactiveUpdate', updateStateMutation, true);
   }
 
   get state(): TStateFor<TConfig> {
@@ -250,7 +268,7 @@ export class StateController<TConfig = any> {
     const moduleName = this.moduleName;
 
     if (store.recordingAccessors) {
-      store.affectedModules[moduleName] = this.metadata.rev;
+      store.affectedModules[moduleName] = this.getMetadata().rev;
     }
 
     return store.rootState[moduleName];
@@ -262,18 +280,18 @@ export class StateController<TConfig = any> {
     throw new Error('Trying to set state');
   }
 
-  get metadata() {
+  getMetadata() {
     return this.store.modulesMetadata[this.moduleName];
   }
 
   get getters(): TStateFor<TConfig> {
-    return this.metadata.getters as TStateFor<TConfig>;
+    return this.getMetadata().getters as TStateFor<TConfig>;
   }
 
   createView() {
-    const config = this.metadata.config;
+    const config = this.getMetadata().config;
     const view = new StateView();
-    const controller = this as any;
+    const controller = this;
 
     view.defineProp({
       type: 'StateRev',
@@ -283,7 +301,7 @@ export class StateController<TConfig = any> {
         // eslint-disable-next-line no-unused-expressions
         controller.state; // read as reactive
         // console.log(`read REV for ${controller.moduleName}.${controller.sectionName}`, controller.metadata.rev);
-        return controller.metadata.rev;
+        return controller.getMetadata().rev;
       },
     });
 
@@ -292,7 +310,7 @@ export class StateController<TConfig = any> {
         type: 'StateProp',
         name: stateKey,
         reactive: true,
-        getValue: () => controller[stateKey],
+        getValue: () => (controller as any)[stateKey],
       });
     });
 
@@ -301,7 +319,7 @@ export class StateController<TConfig = any> {
         type: 'StateMutation',
         name: stateKey,
         reactive: false,
-        getValue: () => controller[stateKey],
+        getValue: () => (controller as any)[stateKey],
       });
     });
 
@@ -310,7 +328,7 @@ export class StateController<TConfig = any> {
         type: 'StateGetter',
         name: propName,
         reactive: true,
-        getValue: () => controller[propName],
+        getValue: () => (controller as any)[propName],
       });
     });
 
@@ -319,7 +337,7 @@ export class StateController<TConfig = any> {
         type: 'StateGetterMethod',
         name: propName,
         reactive: false,
-        getValue: () => controller[propName],
+        getValue: () => (controller as any)[propName],
       });
     });
 
@@ -333,7 +351,6 @@ export interface Mutation {
   moduleName: string;
   mutationName: string;
   payload: any;
-  silent?: boolean;
 }
 //
 // /**
@@ -367,6 +384,7 @@ export interface StatefulModuleMetadata {
   rev: number;
   config: TStateConfig;
   controller: StateController;
+  isInitialized: boolean;
   getters: Dict<() => any>;
 }
 
@@ -425,7 +443,6 @@ export type PickAutogeneratedMutations<TState> = {
 }
 
 export type PickDefaultMutations<TState> = {
-  nonReactiveUpdate(patch: Partial<TState>): unknown;
   update(patch: Partial<TState>): unknown;
 }
 

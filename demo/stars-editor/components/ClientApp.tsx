@@ -10,7 +10,7 @@ import { UsersPage } from './pages/UsersPage';
 import { WatchersPage } from './pages/WatchersPage';
 import { QueriesPage } from './pages/QueriesPage';
 import { ExtendedStatePage } from './pages/ExtendedState';
-import { MutationDecoratorPage } from './pages/MutationDecorator';
+import { MutationsPage } from './pages/MutationDecorator';
 import { FormBindingsPage } from './pages/FormBindingsPage';
 
 export function ClientApp() {
@@ -28,7 +28,7 @@ export function ClientApp() {
       {activePage === 'watchers' && <WatchersPage /> }
       {activePage === 'queries' && <QueriesPage /> }
       {activePage === 'extended' && <ExtendedStatePage /> }
-      {activePage === 'mutation' && <MutationDecoratorPage /> }
+      {activePage === 'mutation' && <MutationsPage /> }
       {activePage === 'form-bindings' && <FormBindingsPage /> }
     </Layout>
   );

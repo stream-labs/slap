@@ -23,7 +23,7 @@ export class ReactStoreAdapter {
   }
 
   init() {
-    this.store.events.on('onAfterMutations', () => this.onMutation());
+    this.store.events.on('onReadyToRender', () => this.onMutation());
   }
 
   watchers = {} as Record<string, Function>;

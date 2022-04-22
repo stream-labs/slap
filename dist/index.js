@@ -435,7 +435,7 @@ class ReactStoreAdapter {
         delete this.components[componentId];
     }
     init() {
-        this.store.events.on('onAfterMutations', () => this.onMutation());
+        this.store.events.on('onReadyToRender', () => this.onMutation());
     }
     // TODO: rename to mount-component ?
     createWatcher(watcherId, cb) {
@@ -971,7 +971,10 @@ class Provider {
         });
         if (this.options.shouldCallHooks) {
             const instance = this.instance;
+            const provider = this;
+            this.events.emit('onBeforeInit', provider);
             instance.init && instance.init();
+            this.events.emit('onAfterInit', provider);
         }
         this.isInited = true;
     }
@@ -1629,7 +1632,7 @@ class Store {
         this.rootState = {};
         // keeps additional metadata
         this.modulesMetadata = {};
-        this.currentMutation = null;
+        this.pendingMutations = 0;
         this.moduleRevisions = {};
         this.recordingAccessors = 0;
         this.affectedModules = {};
@@ -1652,25 +1655,14 @@ class Store {
         if (!metadata)
             return; // state is destroyed
         const stateController = this.modulesMetadata[moduleName].controller;
-        if (this.currentMutation) {
+        if (this.pendingMutations) {
             throw new Error('Can not run mutation while previous mutation is not completed');
         }
-        this.currentMutation = mutation;
-        try {
-            stateController.applyMutation(mutation);
-        }
-        finally {
-            this.currentMutation = null;
-        }
-        this.events.emit('onMutation', mutation);
-        if (!mutation.silent) {
-            // trigger subscribed components to re-render
-            if (!mutation.silent)
-                this.events.emit('onAfterMutations');
-        }
+        stateController.mutate(mutation);
     }
     toJSON() {
         // TODO use for debugging
+        JSON.stringify(this.rootState);
     }
     destroyModule(moduleName) {
         delete this.rootState[moduleName];
@@ -1708,8 +1700,7 @@ class StateController {
         this.moduleName = moduleName;
         this.draftState = null;
         const defaultState = config.state;
-        // use immer to create an immutable state
-        store.rootState[moduleName] = (0, immer_1.default)(defaultState, () => { });
+        store.rootState[moduleName] = Object.assign({}, defaultState);
         // create metadata
         const controller = this;
         const getters = {};
@@ -1717,6 +1708,7 @@ class StateController {
             config,
             controller,
             getters,
+            isInitialized: false,
             rev: 0,
         };
         store.modulesMetadata[moduleName] = metadata;
@@ -1726,6 +1718,11 @@ class StateController {
             (0, scope_1.defineGetter)(controller, propName, getter);
             (0, scope_1.defineGetter)(getters, propName, getter);
             (0, scope_1.defineSetter)(controller, propName, val => {
+                const changeIsAllowed = !metadata.isInitialized || controller.draftState;
+                if (!changeIsAllowed) {
+                    console.error(`Failed to set "${propName}" with value`, val);
+                    throw new Error('Changing state outside of mutation');
+                }
                 controller.state[propName] = val;
                 return true;
             });
@@ -1754,25 +1751,23 @@ class StateController {
             this.registerMutation(propName, config.mutations[propName]);
         });
     }
-    registerMutation(mutationName, mutationMethod, silent = false) {
+    finishInitialization() {
+        // use immer to lock an immutable state
+        this.getMetadata().isInitialized = true;
+        this.store.rootState[this.moduleName] = (0, immer_1.default)(this.store.rootState[this.moduleName], () => { });
+    }
+    registerMutation(mutationName, mutationMethod) {
         const controller = this;
         const { store, moduleName } = controller;
-        if (!controller.metadata.config.mutations[mutationName]) {
-            controller.metadata.config.mutations[mutationName] = mutationMethod;
+        if (!controller.getMetadata().config.mutations[mutationName]) {
+            controller.getMetadata().config.mutations[mutationName] = mutationMethod;
         }
         // override the original Module method to dispatch mutations
         controller[mutationName] = function (...args) {
             // if this method was called from another mutation
             // we don't need to dispatch a new mutation again
             // just call the original method
-            if (store.currentMutation) {
-                if (store.currentMutation.moduleName !== moduleName) {
-                    const parentMutation = store.currentMutation;
-                    const parentMutationName = `${parentMutation.moduleName}_${parentMutation.mutationName}`;
-                    const childMutationName = `${moduleName}_${mutationName}`;
-                    // TODO should we really prevent that?
-                    console.warn(`Can not run a mutation of another module. Call ${parentMutationName} from ${childMutationName}`);
-                }
+            if (controller.draftState) {
                 return mutationMethod.apply(controller, args);
             }
             const mutation = {
@@ -1780,29 +1775,54 @@ class StateController {
                 payload: args,
                 moduleName,
                 mutationName,
-                silent,
             };
             store.dispatchMutation(mutation);
         };
     }
-    applyMutation(mutation) {
-        const moduleName = mutation.moduleName;
-        const mutationName = mutation.mutationName;
+    mutate(mutation) {
+        const moduleName = this.moduleName;
         const state = this.store.rootState[moduleName];
-        this.store.rootState[moduleName] = (0, immer_1.default)(state, (draft) => {
-            this.draftState = draft;
-            const controller = this;
-            controller.metadata.config.mutations[mutationName].apply(controller, mutation.payload);
-        });
-        this.metadata.rev++;
-        // console.log(`New revision for module ${moduleName}.${sectionName}`, this.metadata.rev);
-        this.draftState = null;
+        const mutationIsFunction = typeof mutation === 'function';
+        const metadata = this.getMetadata();
+        if (!metadata.isInitialized) {
+            if (mutationIsFunction) {
+                mutation(this);
+            }
+            else {
+                const mutationObj = mutation;
+                metadata.config.mutations[mutationObj.mutationName].apply(this, mutationObj.payload);
+            }
+            return;
+        }
+        this.store.pendingMutations++;
+        try {
+            this.store.rootState[moduleName] = (0, immer_1.default)(state, (draft) => {
+                this.draftState = draft;
+                if (mutationIsFunction) {
+                    mutation(this);
+                    return;
+                }
+                const mutationObj = mutation;
+                metadata.config.mutations[mutationObj.mutationName].apply(this, mutationObj.payload);
+            });
+        }
+        catch (e) {
+            console.error('mutation failed');
+        }
+        finally {
+            this.store.pendingMutations--;
+            this.getMetadata().rev++;
+            this.draftState = null;
+        }
+        this.store.events.emit('onMutation', mutation);
+        if (!this.store.pendingMutations) {
+            this.store.events.emit('onReadyToRender');
+        }
     }
     registerDefaultMutations() {
         const controller = this;
         const updateStateMutation = (statePatch) => Object.assign(controller, statePatch);
         controller.registerMutation('update', updateStateMutation);
-        controller.registerMutation('nonReactiveUpdate', updateStateMutation, true);
     }
     get state() {
         if (this.draftState)
@@ -1810,7 +1830,7 @@ class StateController {
         const store = this.store;
         const moduleName = this.moduleName;
         if (store.recordingAccessors) {
-            store.affectedModules[moduleName] = this.metadata.rev;
+            store.affectedModules[moduleName] = this.getMetadata().rev;
         }
         return store.rootState[moduleName];
     }
@@ -1819,14 +1839,14 @@ class StateController {
         console.log('set state ', val);
         throw new Error('Trying to set state');
     }
-    get metadata() {
+    getMetadata() {
         return this.store.modulesMetadata[this.moduleName];
     }
     get getters() {
-        return this.metadata.getters;
+        return this.getMetadata().getters;
     }
     createView() {
-        const config = this.metadata.config;
+        const config = this.getMetadata().config;
         const view = new StateView_1.StateView();
         const controller = this;
         view.defineProp({
@@ -1837,7 +1857,7 @@ class StateController {
                 // eslint-disable-next-line no-unused-expressions
                 controller.state; // read as reactive
                 // console.log(`read REV for ${controller.moduleName}.${controller.sectionName}`, controller.metadata.rev);
-                return controller.metadata.rev;
+                return controller.getMetadata().rev;
             },
         });
         (0, traverse_1.traverse)(config.state, stateKey => {
@@ -2244,7 +2264,7 @@ class QueryModule {
         this.stateView = this.state.createView();
         this.queryView = this.stateView.mergeView(queryMethods);
         const data = this.options.initialData;
-        this.state.nonReactiveUpdate({
+        this.state.update({
             params: this.getParams(),
             data,
         });
@@ -2259,9 +2279,7 @@ class QueryModule {
         const fetchResult = this.options.fetch();
         if (fetchResult === null || fetchResult === void 0 ? void 0 : fetchResult.then) {
             if (this.isInitialFetch) {
-                this.state.nonReactiveUpdate({
-                    status: 'loading',
-                });
+                this.state.status = 'loading';
                 this.isInitialFetch = false;
             }
             else {
@@ -2396,6 +2414,10 @@ class StatefulModule {
                 const mutation = parentModule[mutationName];
                 this.stateController.registerMutation(mutationName, mutation);
                 parentModule[mutationName] = (...args) => this.stateController[mutationName](...args);
+            });
+            parentProvider.events.on('onAfterInit', () => {
+                this.stateController.finishInitialization();
+                console.log('state init finished', this.stateController.moduleName);
             });
         }
         this.stateView = this.stateController.createView();

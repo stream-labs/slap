@@ -44,13 +44,16 @@ export declare function getInstanceMetadata(instance: any): {
 };
 export interface ProviderEvents {
     onInjectorStatusChange: (injector: Injector<unknown, unknown, unknown>, current: TLoadingStatus, prev: TLoadingStatus) => unknown;
-    onModuleInit: () => unknown;
-    onModuleLoaded: () => unknown;
+    onBeforeInit: (provider: Provider<any>) => unknown;
+    onAfterInit: (provider: Provider<any>) => unknown;
 }
 export declare type ProviderOptions = {
     /**
      * Should call lifecycle hooks: init, load, onLoad
      */
     shouldCallHooks: boolean;
+    /**
+     * Keeps parentProvider if the module has been injected as a child module
+     */
     parentProvider: Provider<any>;
 };

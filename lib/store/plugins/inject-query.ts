@@ -84,7 +84,7 @@ export class QueryModule<
     this.stateView = this.state.createView() as any;
     this.queryView = this.stateView.mergeView(queryMethods);
     const data = this.options.initialData;
-    this.state.nonReactiveUpdate({
+    this.state.update({
       params: this.getParams(),
       data,
     });
@@ -100,9 +100,7 @@ export class QueryModule<
     const fetchResult = this.options.fetch();
     if (fetchResult?.then) {
       if (this.isInitialFetch) {
-        this.state.nonReactiveUpdate({
-          status: 'loading',
-        });
+        this.state.status = 'loading';
         this.isInitialFetch = false;
       } else {
         this.state.setStatus('loading');

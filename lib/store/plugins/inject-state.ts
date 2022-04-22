@@ -60,6 +60,10 @@ export class StatefulModule<TStateConfig> {
         parentModule[mutationName] = (...args: any) => (this.stateController as any)[mutationName](...args);
       });
 
+      parentProvider.events.on('onAfterInit',() => {
+        this.stateController.finishInitialization();
+        console.log('state init finished', this.stateController.moduleName);
+      });
     }
 
     this.stateView = this.stateController.createView() as any;
