@@ -9,3 +9,4 @@ export declare type GetUseComponentViewResult<TModuleInstance> = GetModuleStateV
         componentView: ComponentView;
     };
 };
+export declare type GetUseModuleResult<T> = GetUseComponentViewResult<GetModuleInstanceFor<T>>;

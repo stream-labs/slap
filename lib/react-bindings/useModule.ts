@@ -116,7 +116,6 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
 
 export function useModule<T extends TModuleLocatorType, TInitState extends boolean | GetModuleConstructorArgs<T>>(locator: T, initProps: TInitState|null = null, moduleName = ''): GetUseComponentViewResult<GetModuleInstanceFor<T>> {
   const module = useModuleInstance(locator, initProps, moduleName);
-  // const moduleView = useModuleView(module);
   return useComponentView(module);
 }
 
@@ -126,3 +125,5 @@ export type GetUseComponentViewResult<TModuleInstance> =
     componentView: ComponentView,
     extend: <TNewProps>(newPropsFactory: (props: GetModuleStateView<TModuleInstance>['props']) => TNewProps) => ExtendView<GetModuleStateView<TModuleInstance>['props'], TNewProps>['props'] & {componentView: ComponentView }
   }
+
+export type GetUseModuleResult<T> = GetUseComponentViewResult<GetModuleInstanceFor<T>>;

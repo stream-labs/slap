@@ -11,6 +11,7 @@ import {
   GetInjectedProps,
   pickInjectors,
 } from './plugins';
+import { GetMerge } from '../utils';
 
 export class StateView<TProps = {}> {
 
@@ -195,7 +196,7 @@ export type GetComponentDataForModule<
   TSelfExport = GetModuleSelfView<TModuleConfig>,
   TExtraExport = GetModuleExtraView<TModuleConfig>,
   TInjectedProps = TModule extends { exportComponentData: () => any } ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
-  > = TSelfExport & TExtraExport & TInjectedProps;
+  > = GetMerge<TExtraExport, TSelfExport & TInjectedProps>;
 
 // export type GetModuleView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> =
 //   TModule extends { getView: () => StateView<infer TView>} ? TView : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>

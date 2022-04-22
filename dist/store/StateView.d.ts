@@ -1,5 +1,6 @@
 import { Dict, Scope, GetModuleInstanceFor } from '../scope';
 import { GetAllInjectedProps, GetInjectedProps } from './plugins';
+import { GetMerge } from '../utils';
 export declare class StateView<TProps = {}> {
     scope?: Scope | undefined;
     props: TProps;
@@ -42,7 +43,7 @@ export declare type GetModuleExtraView<TModuleConfig, TModule = GetModuleInstanc
 } ? TView : {};
 export declare type GetComponentDataForModule<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>, TSelfExport = GetModuleSelfView<TModuleConfig>, TExtraExport = GetModuleExtraView<TModuleConfig>, TInjectedProps = TModule extends {
     exportComponentData: () => any;
-} ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>> = TSelfExport & TExtraExport & TInjectedProps;
+} ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>> = GetMerge<TExtraExport, TSelfExport & TInjectedProps>;
 export declare type GetModuleStateView<TModuleConfig> = StateView<GetComponentDataForModule<TModuleConfig>>;
 export declare type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetComponentDataForModule<TExtendedModule>>;
 export declare type TModulePropDescriptor<TValue> = {

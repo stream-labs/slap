@@ -611,7 +611,6 @@ function useComponentView(module) {
 exports.useComponentView = useComponentView;
 function useModule(locator, initProps = null, moduleName = '') {
     const module = (0, useModuleInstance_1.useModuleInstance)(locator, initProps, moduleName);
-    // const moduleView = useModuleView(module);
     return useComponentView(module);
 }
 exports.useModule = useModule;

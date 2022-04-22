@@ -1,6 +1,7 @@
 import { GetProps, StateView } from '../StateView';
 import { Injector } from '../../scope';
 import { Flatten } from '../../scope/flatten';
+import { GetMerge } from '../../utils';
 export declare function pickInjectors<TView extends StateView<any>, TModule>(module: TModule): (props: GetProps<TView>, view: TView) => PickInjectedViews<TView, TModule>;
 export declare type GetInjectedPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends {
     __injector: Injector<any, any, any>;
@@ -19,5 +20,5 @@ export declare type GetExtraInjectedProps<TModule> = {
     } ? TExtraProps : never;
 };
 export declare type GetFlattenExtraProps<TModule> = keyof GetExtraInjectedProps<TModule> extends never ? {} : Flatten<GetExtraInjectedProps<TModule>>;
-export declare type GetAllInjectedProps<TModule> = GetFlattenExtraProps<TModule> & GetInjectedProps<TModule>;
+export declare type GetAllInjectedProps<TModule> = GetMerge<GetFlattenExtraProps<TModule>, GetInjectedProps<TModule>>;
 export declare type PickInjectedViews<TView, TModule> = StateView<GetProps<TView> & GetAllInjectedProps<TModule>>;

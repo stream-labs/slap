@@ -1,6 +1,13 @@
 import React from 'react';
 import {
-  createFormBinding, injectFormBinding, injectState, merge, mutation, useModule,
+  createFormBinding, GetAllInjectedProps,
+  GetModuleExtraView,
+  GetModuleSelfView,
+  injectFormBinding,
+  injectState,
+  merge,
+  mutation,
+  useModule,
 } from '../../../../lib';
 import { TextInput } from './editor/ItemProps';
 

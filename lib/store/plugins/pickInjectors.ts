@@ -3,7 +3,7 @@ import {
   forEach, getInstanceMetadata, InjectableModule, Injector, Provider,
 } from '../../scope';
 import { Flatten } from '../../scope/flatten';
-import { traverse } from '../../utils';
+import { GetMerge, traverse } from '../../utils';
 
 export function pickInjectors<
   TView extends StateView<any>,
@@ -87,7 +87,7 @@ export type GetInjectedExtraPropName<TModule, TProp extends keyof TModule> = TMo
 export type GetInjectedProps<TModule> = {[K in keyof TModule as GetInjectedPropName<TModule, K>]: TModule[K] extends { __injector: Injector<any, StateView<infer TInjectorView>, any>} ? TInjectorView: never }
 export type GetExtraInjectedProps<TModule> = {[K in keyof TModule as GetInjectedExtraPropName<TModule, K>]: TModule[K] extends { __injector: Injector<any, any, StateView<infer TExtraProps>>} ? TExtraProps: never }
 export type GetFlattenExtraProps<TModule> = keyof GetExtraInjectedProps<TModule> extends never ? {} : Flatten<GetExtraInjectedProps<TModule>>
-export type GetAllInjectedProps<TModule> = GetFlattenExtraProps<TModule> & GetInjectedProps<TModule>;
+export type GetAllInjectedProps<TModule> = GetMerge<GetFlattenExtraProps<TModule>, GetInjectedProps<TModule>>;
 
 export type PickInjectedViews<TView, TModule> = StateView<GetProps<TView> & GetAllInjectedProps<TModule>>;
 
