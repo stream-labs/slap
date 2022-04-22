@@ -12,6 +12,7 @@ import { QueriesPage } from './pages/QueriesPage';
 import { ExtendedStatePage } from './pages/ExtendedState';
 import { MutationsPage } from './pages/MutationDecorator';
 import { FormBindingsPage } from './pages/FormBindingsPage';
+import { FunctionalModulesPage } from './pages/FunctionalModules';
 
 export function ClientApp() {
   const { isLoading, activePage } = useModule(WindowService);
@@ -30,6 +31,7 @@ export function ClientApp() {
       {activePage === 'extended' && <ExtendedStatePage /> }
       {activePage === 'mutation' && <MutationsPage /> }
       {activePage === 'form-bindings' && <FormBindingsPage /> }
+      {activePage === 'functional-modules' && <FunctionalModulesPage /> }
     </Layout>
   );
 }

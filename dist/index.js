@@ -632,7 +632,7 @@ function useModuleInstance(locator, initProps = null, name = '') {
     const { modulesScope, servicesScope } = (0, ReactModules_1.useAppContext)();
     const { instance, moduleName, scope, isRoot, shouldInitInNewScope, isService, store, } = (0, hooks_1.useOnCreate)(() => {
         var _a;
-        let moduleName = name || typeof locator === 'string' ? locator : locator.name;
+        let moduleName = name || (typeof locator === 'string' ? locator : locator.name);
         const store = modulesScope.resolve(Store_1.Store);
         const shouldInitInNewScope = !!initProps;
         let scope;

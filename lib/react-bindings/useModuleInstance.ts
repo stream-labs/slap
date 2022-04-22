@@ -24,7 +24,7 @@ export function useModuleInstance<T extends TModuleLocatorType, TInitProps exten
     store,
   } = useOnCreate(() => {
 
-    let moduleName = name || typeof locator === 'string' ? locator : (locator as any).name;
+    let moduleName = name || (typeof locator === 'string' ? locator : (locator as any).name);
     const store = modulesScope.resolve(Store);
     const shouldInitInNewScope = !!initProps;
     let scope: Scope;

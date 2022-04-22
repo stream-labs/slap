@@ -13,6 +13,7 @@ export class WindowState {
     { title: 'Extended State', id: 'extended' },
     { title: 'Mutations', id: 'mutation' },
     { title: 'Form Binding', id: 'form-bindings' },
+    { title: 'Functional Modules', id: 'functional-modules' },
   ];
 
   setActivePage(page: string) {
