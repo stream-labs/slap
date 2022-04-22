@@ -10,7 +10,7 @@ export function FunctionalModulesPage() {
   );
 }
 
-function MyFunctionalModule(initialCount = 1) {
+function FuncModule1(initialCount = 1) {
 
   const state = injectState({
     count: initialCount,
@@ -33,7 +33,7 @@ function MyFunctionalModule(initialCount = 1) {
 
 export function FunctionalComp() {
 
-  const { count, reset, increment } = useModule(MyFunctionalModule);
+  const { count, reset, increment } = useModule(FuncModule1);
 
   return (
     <div>
@@ -47,7 +47,7 @@ export function FunctionalComp() {
 
 export function RenamedFunctionalComp() {
 
-  const { multiply } = useModule(MyFunctionalModule, [55], 'MyModuleName');
+  const { multiply } = useModule(FuncModule1, [55], 'FuncModule2');
 
   return (
     <div>
@@ -59,7 +59,7 @@ export function RenamedFunctionalComp() {
 }
 
 function Header() {
-  const { count } = useModule('MyModuleName') as GetUseModuleResult<typeof MyFunctionalModule>;
+  const { count } = useModule('FuncModule2') as GetUseModuleResult<typeof FuncModule1>;
 
   return (
     <div>
@@ -70,7 +70,7 @@ function Header() {
 }
 
 function Buttons() {
-  const { increment, reset } = useModule('MyModuleName') as GetUseModuleResult<typeof MyFunctionalModule>;
+  const { increment, reset } = useModule('FuncModule2') as GetUseModuleResult<typeof FuncModule1>;
 
   return (
     <div>

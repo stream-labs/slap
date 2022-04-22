@@ -62,7 +62,6 @@ export class StatefulModule<TStateConfig> {
 
       parentProvider.events.on('onAfterInit',() => {
         this.stateController.finishInitialization();
-        console.log('state init finished', this.stateController.moduleName);
       });
     }
 

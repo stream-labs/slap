@@ -3,13 +3,11 @@ import { useOnCreate, useOnDestroy } from './hooks';
 import { useAppContext } from './ReactModules';
 import { Store } from '../store/Store';
 import {
-  getInstanceMetadata,
   Scope,
   GetModuleInstanceFor,
   TModuleLocatorType,
   GetModuleConstructorArgs,
 } from '../scope';
-import { createStateViewForModule } from '../store';
 
 export function useModuleInstance<T extends TModuleLocatorType, TInitProps extends boolean | GetModuleConstructorArgs<T>>(locator: T, initProps: TInitProps|null = null, name = ''): GetModuleInstanceFor<T> {
   const { modulesScope, servicesScope } = useAppContext();

@@ -43,7 +43,6 @@ export class Store {
   }
 
   dispatchMutation(mutation: Mutation) {
-    console.log('RUN MUTATION', mutation);
     const moduleName = mutation.moduleName;
     const metadata = this.modulesMetadata[moduleName];
     if (!metadata) return; // state is destroyed
@@ -65,7 +64,7 @@ export class Store {
   destroyModule(moduleName: string) {
     delete this.rootState[moduleName];
     delete this.modulesMetadata[moduleName];
-    console.log('UNREGISTER MODULE', moduleName);
+    console.log('UNREGISTER STATE', moduleName);
   }
 
   recordingAccessors = 0;

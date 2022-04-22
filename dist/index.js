@@ -1649,7 +1649,6 @@ class Store {
         return controller;
     }
     dispatchMutation(mutation) {
-        console.log('RUN MUTATION', mutation);
         const moduleName = mutation.moduleName;
         const metadata = this.modulesMetadata[moduleName];
         if (!metadata)
@@ -1667,7 +1666,7 @@ class Store {
     destroyModule(moduleName) {
         delete this.rootState[moduleName];
         delete this.modulesMetadata[moduleName];
-        console.log('UNREGISTER MODULE', moduleName);
+        console.log('UNREGISTER STATE', moduleName);
     }
     listenAffectedModules(cb) {
         this.recordingAccessors++;
@@ -2417,7 +2416,6 @@ class StatefulModule {
             });
             parentProvider.events.on('onAfterInit', () => {
                 this.stateController.finishInitialization();
-                console.log('state init finished', this.stateController.moduleName);
             });
         }
         this.stateView = this.stateController.createView();
