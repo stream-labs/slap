@@ -37,8 +37,12 @@ export function getComponentName(): string {
   } catch (e: unknown) {
     const error = e as Error;
     const regex = / at ([A-Z]\w+) /;
-    const componentName = error.stack!.split('\n').find(message => message.match(regex))!.match(regex)![1];
-    return componentName;
+    try {
+      const componentName = error.stack!.split('\n').find(message => message.match(regex))!.match(regex)![1];
+      return componentName;
+    } catch (e) {
+      return 'unknown_component';
+    }
   }
 }
 
