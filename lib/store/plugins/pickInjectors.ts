@@ -4,82 +4,82 @@ import {
 } from '../../scope';
 import { Flatten } from '../../scope/flatten';
 import { GetMerge, traverse } from '../../utils';
-
-export function pickInjectors<
-  TView extends StateView<any>,
-  TModule
-  >(module: TModule): (props: GetProps<TView>, view: TView) => PickInjectedViews<TView, TModule> {
-
-  return function (props, view) {
-
-    let newView = view;
-
-    traverse(module as any as object, (propName, descr) => {
-
-      if (descr.get) return;
-      const provider = descr.value.__provider as Provider<any>;
-      if (!provider) return;
-
-      const module = provider.instance as InjectableModule;
-      const componentData = module.exportComponentData && module.exportComponentData();
-      const injectedValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
-
-      const extraProps = componentData && componentData.extra;
-      if (extraProps) {
-        const extraPropsView = extraProps as StateView<any>;
-        forEach(extraPropsView.descriptors, (descriptor, p) => {
-          if (!(descriptor.name in module)) newView.defineProp(descriptor);
-        });
-        newView = newView.mergeView(extraProps as any);
-      }
-
-      const selfProps = componentData && componentData.self;
-      if (selfProps) {
-        newView.defineProp({
-          description: 'InjectorView',
-          name: propName,
-          reactive: true,
-          stateView: selfProps as any,
-          getValue() {
-            return injectedValue;
-          },
-        });
-      }
-    });
-
-    // const provider = getInstanceMetadata(module).provider;
-    // let newView = view;
-    //
-    // forEach(provider.injectors, injector => {
-    //   const componentData = injector.getComponentData();
-    //
-    //   const extraProps = componentData.extra;
-    //   if (extraProps) {
-    //     const extraPropsView = extraProps as StateView<any>;
-    //     forEach(extraPropsView.descriptors, (descriptor, p) => {
-    //       if (!(descriptor.name in module)) newView.defineProp(descriptor);
-    //     });
-    //     newView = newView.mergeView(extraProps as any);
-    //   }
-    //
-    //   const selfProps = componentData.self;
-    //   if (selfProps) {
-    //     newView.defineProp({
-    //       type: 'InjectorView',
-    //       name: injector.propertyName,
-    //       reactive: true,
-    //       stateView: selfProps as any,
-    //       getValue() {
-    //         return injector.resolveValue();
-    //       },
-    //     });
-    //   }
-    //
-    // });
-
-    return newView;
-  };
-}
+//
+// export function pickInjectors<
+//   TView extends StateView<any>,
+//   TModule
+//   >(module: TModule): (props: GetProps<TView>, view: TView) => PickInjectedViews<TView, TModule> {
+//
+//   return function (props, view) {
+//
+//     let newView = view;
+//
+//     traverse(module as any as object, (propName, descr) => {
+//
+//       if (descr.get) return;
+//       const provider = descr.value.__provider as Provider<any>;
+//       if (!provider) return;
+//
+//       const module = provider.instance as InjectableModule;
+//       const componentData = module.exportComponentData && module.exportComponentData();
+//       const injectedValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
+//
+//       const extraProps = componentData && componentData.extra;
+//       if (extraProps) {
+//         const extraPropsView = extraProps as StateView<any>;
+//         forEach(extraPropsView.descriptors, (descriptor, p) => {
+//           if (!(descriptor.name in module)) newView.defineProp(descriptor);
+//         });
+//         newView = newView.mergeView(extraProps as any);
+//       }
+//
+//       const selfProps = componentData && componentData.self;
+//       if (selfProps) {
+//         newView.defineProp({
+//           description: 'InjectorView',
+//           name: propName,
+//           reactive: true,
+//           stateView: selfProps as any,
+//           getValue() {
+//             return injectedValue;
+//           },
+//         });
+//       }
+//     });
+//
+//     // const provider = getInstanceMetadata(module).provider;
+//     // let newView = view;
+//     //
+//     // forEach(provider.injectors, injector => {
+//     //   const componentData = injector.getComponentData();
+//     //
+//     //   const extraProps = componentData.extra;
+//     //   if (extraProps) {
+//     //     const extraPropsView = extraProps as StateView<any>;
+//     //     forEach(extraPropsView.descriptors, (descriptor, p) => {
+//     //       if (!(descriptor.name in module)) newView.defineProp(descriptor);
+//     //     });
+//     //     newView = newView.mergeView(extraProps as any);
+//     //   }
+//     //
+//     //   const selfProps = componentData.self;
+//     //   if (selfProps) {
+//     //     newView.defineProp({
+//     //       type: 'InjectorView',
+//     //       name: injector.propertyName,
+//     //       reactive: true,
+//     //       stateView: selfProps as any,
+//     //       getValue() {
+//     //         return injector.resolveValue();
+//     //       },
+//     //     });
+//     //   }
+//     //
+//     // });
+//
+//     return newView;
+//   };
+// }
 
 export type GetInjectedPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends { __injector: Injector<any, any, any>} ? TProp : never;
 export type GetInjectedExtraPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends { __injector: Injector<any, any, infer TExtraProps>} ? TExtraProps extends StateView ? TProp : never : never;

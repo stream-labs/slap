@@ -38,7 +38,7 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
     function extend<TNewProps>(
       newPropsFactory: (props: GetModuleStateView<TModule>['props']) => TNewProps,
     ): (ExtendView<GetModuleStateView<TModule>['props'], TNewProps>)['props'] {
-      const newProvider = provider.resolveChildProvider(() => newPropsFactory(moduleView.props), componentId);
+      const newProvider = provider.resolveChildProvider(() => newPropsFactory(moduleView.props as any), componentId);
       newProvider.setMetadata('parentModuleView', moduleView);// TODO remove metadata
       store.setModuleContext(componentId, provider.childScope!);
       const result = useModule(componentId) as any;

@@ -271,6 +271,11 @@ export function getInstanceMetadata(instance: any) {
   };
 }
 
+export const moduleSystemProps: Dict<boolean> = {
+  __provider: true,
+  __instanceId: true,
+};
+
 export interface ProviderEvents {
   onInjectorStatusChange: (
     injector: Injector<unknown, unknown, unknown>,

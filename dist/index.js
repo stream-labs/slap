@@ -935,7 +935,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getInstanceMetadata = exports.createInstanceMetadata = exports.Provider = void 0;
+exports.moduleSystemProps = exports.getInstanceMetadata = exports.createInstanceMetadata = exports.Provider = void 0;
 const nanoevents_1 = __webpack_require__(111);
 const is_plain_object_1 = __webpack_require__(57);
 const utils_1 = __webpack_require__(986);
@@ -1163,6 +1163,10 @@ function getInstanceMetadata(instance) {
     };
 }
 exports.getInstanceMetadata = getInstanceMetadata;
+exports.moduleSystemProps = {
+    __provider: true,
+    __instanceId: true,
+};
 
 
 /***/ }),
@@ -1476,12 +1480,9 @@ exports.isClass = isClass;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createStateViewForModule = exports.StateView = void 0;
 const scope_1 = __webpack_require__(527);
-const provider_1 = __webpack_require__(370);
 const pickProps_1 = __webpack_require__(49);
-const plugins_1 = __webpack_require__(837);
 class StateView {
-    constructor(scope) {
-        this.scope = scope;
+    constructor() {
         this.props = {};
         this.descriptors = {};
         this.selectedDescriptors = {};
@@ -1582,7 +1583,7 @@ class StateView {
         return newViewFactory(this.props, this);
     }
     clone() {
-        const clone = new StateView(this.scope);
+        const clone = new StateView();
         (0, scope_1.forEach)(this.descriptors, descriptor => clone.defineProp(descriptor));
         return clone;
     }
@@ -1595,11 +1596,8 @@ class StateView {
 }
 exports.StateView = StateView;
 function createStateViewForModule(module) {
-    const scope = (0, provider_1.getInstanceMetadata)(module).provider.scope;
-    const stateView = new StateView(scope);
-    return stateView
-        .select((0, pickProps_1.pickProps)(module)) // expose the module props
-        .select((0, plugins_1.pickInjectors)(module)); // expose injectors
+    const stateView = new StateView();
+    return stateView.select((0, pickProps_1.pickProps)(module));
 }
 exports.createStateViewForModule = createStateViewForModule;
 
@@ -2534,80 +2532,10 @@ exports.injectWatch = injectWatch;
 /***/ }),
 
 /***/ 187:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickInjectors = void 0;
-const scope_1 = __webpack_require__(527);
-const utils_1 = __webpack_require__(225);
-function pickInjectors(module) {
-    return function (props, view) {
-        let newView = view;
-        (0, utils_1.traverse)(module, (propName, descr) => {
-            if (descr.get)
-                return;
-            const provider = descr.value.__provider;
-            if (!provider)
-                return;
-            const module = provider.instance;
-            const componentData = module.exportComponentData && module.exportComponentData();
-            const injectedValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
-            const extraProps = componentData && componentData.extra;
-            if (extraProps) {
-                const extraPropsView = extraProps;
-                (0, scope_1.forEach)(extraPropsView.descriptors, (descriptor, p) => {
-                    if (!(descriptor.name in module))
-                        newView.defineProp(descriptor);
-                });
-                newView = newView.mergeView(extraProps);
-            }
-            const selfProps = componentData && componentData.self;
-            if (selfProps) {
-                newView.defineProp({
-                    description: 'InjectorView',
-                    name: propName,
-                    reactive: true,
-                    stateView: selfProps,
-                    getValue() {
-                        return injectedValue;
-                    },
-                });
-            }
-        });
-        // const provider = getInstanceMetadata(module).provider;
-        // let newView = view;
-        //
-        // forEach(provider.injectors, injector => {
-        //   const componentData = injector.getComponentData();
-        //
-        //   const extraProps = componentData.extra;
-        //   if (extraProps) {
-        //     const extraPropsView = extraProps as StateView<any>;
-        //     forEach(extraPropsView.descriptors, (descriptor, p) => {
-        //       if (!(descriptor.name in module)) newView.defineProp(descriptor);
-        //     });
-        //     newView = newView.mergeView(extraProps as any);
-        //   }
-        //
-        //   const selfProps = componentData.self;
-        //   if (selfProps) {
-        //     newView.defineProp({
-        //       type: 'InjectorView',
-        //       name: injector.propertyName,
-        //       reactive: true,
-        //       stateView: selfProps as any,
-        //       getValue() {
-        //         return injector.resolveValue();
-        //       },
-        //     });
-        //   }
-        //
-        // });
-        return newView;
-    };
-}
-exports.pickInjectors = pickInjectors;
 // type Keytype = keyof GetExtraInjectedProps<QueriesModule>;
 // type Queryprops = keyof GetExtraInjectedProps<QueriesModule> extends never ? {} : Flatten<GetExtraInjectedProps<QueriesModule>>
 // const injProps: Queryprops;
@@ -2678,17 +2606,73 @@ exports.pickInjectors = pickInjectors;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.pickProps = void 0;
 const utils_1 = __webpack_require__(225);
+const scope_1 = __webpack_require__(527);
 function pickProps(module) {
     return function (props, view) {
+        const injectedProps = {};
         (0, utils_1.traverse)(module, (propName, descr) => {
-            const isGetter = !!descr.get;
-            const isFunction = !isGetter && typeof descr.value === 'function';
-            const getValue = isFunction ? () => descr.value.bind(module) : () => module[propName];
+            var _a;
+            if (scope_1.moduleSystemProps[propName])
+                return;
+            if (descr.get)
+                return;
+            const provider = (_a = descr.value) === null || _a === void 0 ? void 0 : _a.__provider;
+            if (provider) {
+                injectedProps[propName] = true;
+                const injectedModule = provider.instance;
+                const componentData = injectedModule.exportComponentData && injectedModule.exportComponentData();
+                const injectedValue = injectedModule.exportInjectorValue ? injectedModule.exportInjectorValue() : injectedModule;
+                const extraProps = componentData && componentData.extra;
+                if (extraProps) {
+                    const extraPropsView = extraProps;
+                    (0, scope_1.forEach)(extraPropsView.descriptors, (descriptor, p) => {
+                        if (!(descriptor.name in injectedModule))
+                            view.defineProp(descriptor);
+                    });
+                    view = view.mergeView(extraProps);
+                }
+                const selfProps = (componentData && componentData.self) || injectedValue;
+                if (selfProps) {
+                    view.defineProp({
+                        description: 'InjectorView',
+                        name: propName,
+                        reactive: true,
+                        stateView: selfProps,
+                        getValue() {
+                            return injectedValue;
+                        },
+                    });
+                }
+            }
+        });
+        (0, utils_1.traverse)(module, (propName, descr) => {
+            if (injectedProps[propName])
+                return;
+            if (scope_1.moduleSystemProps[propName])
+                return;
+            if (descr.get) {
+                view.defineProp({
+                    description: 'ModuleGetter',
+                    reactive: true,
+                    name: propName,
+                    getValue: () => module[propName],
+                });
+                return;
+            }
+            if (typeof descr.value === 'function') {
+                view.defineProp({
+                    description: 'ModuleMethod',
+                    reactive: false,
+                    name: propName,
+                    getValue: () => descr.value.bind(module),
+                });
+                return;
+            }
             view.defineProp({
-                description: 'ModuleProp',
-                reactive: isGetter,
+                description: 'ModuleVariable',
+                reactive: false,
                 name: propName,
-                getValue,
+                getValue: () => module[propName],
             });
         });
         return view;

@@ -1,8 +1,7 @@
-import { Dict, Scope, GetModuleInstanceFor } from '../scope';
+import { Dict, GetModuleInstanceFor } from '../scope';
 import { GetAllInjectedProps, GetInjectedProps } from './plugins';
 import { GetMerge } from '../utils';
 export declare class StateView<TProps = {}> {
-    scope?: Scope | undefined;
     props: TProps;
     proxy: TProps;
     descriptors: TGetDescriptorsForProps<TProps>;
@@ -11,7 +10,7 @@ export declare class StateView<TProps = {}> {
     hasSelectedProps: boolean;
     hasWildcardProps: boolean;
     wildcardPropCreator: ((propName: string) => unknown) | null;
-    constructor(scope?: Scope | undefined);
+    constructor();
     defineProp<TValue>(descriptorParams: TConstructDescriptorProps<TValue>): void;
     defineWildcardProp(cb: StateView['wildcardPropCreator']): void;
     private selectValue;
@@ -30,7 +29,7 @@ export declare class StateView<TProps = {}> {
     clone(): StateView<TProps>;
     mergeView<TExtension extends StateView<any>, TResult = ExtendView<TProps, TExtension>>(extension: TExtension): TResult;
 }
-export declare function createStateViewForModule<T>(module: T): GetModuleStateView<T>;
+export declare function createStateViewForModule<T>(module: T): StateView<{} & T>;
 export declare type GetModuleSelfView<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>> = TModule extends {
     exportComponentData: () => ({
         self: StateView<infer TView>;

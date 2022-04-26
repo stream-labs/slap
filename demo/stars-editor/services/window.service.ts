@@ -24,5 +24,4 @@ export class WindowState {
 
 export class WindowService {
   state = injectState(WindowState);
-  loading = injectLoading();
 }

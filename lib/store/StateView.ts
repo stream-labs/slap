@@ -1,13 +1,12 @@
 
 import {
-  defineGetter, Dict, forEach, Scope, GetModuleInstanceFor,
+  defineGetter, Dict, forEach, GetModuleInstanceFor,
 } from '../scope';
 import { getInstanceMetadata } from '../scope/provider';
 import { pickProps } from './plugins/pickProps';
 import {
   GetAllInjectedProps,
   GetInjectedProps,
-  pickInjectors,
 } from './plugins';
 import { GetMerge } from '../utils';
 
@@ -22,7 +21,7 @@ export class StateView<TProps = {}> {
   hasWildcardProps = false;
   wildcardPropCreator = null as null | ((propName: string) => unknown);
 
-  constructor(public scope?: Scope) {
+  constructor() {
     this.proxy = new Proxy(
       {
         __proxyName: 'StateViewProxy', // set proxy name for debugging
@@ -132,7 +131,7 @@ export class StateView<TProps = {}> {
   }
 
   clone() {
-    const clone = new StateView<TProps>(this.scope);
+    const clone = new StateView<TProps>();
     forEach(this.descriptors, descriptor => clone.defineProp(descriptor));
     return clone;
   }
@@ -150,11 +149,8 @@ export class StateView<TProps = {}> {
 }
 
 export function createStateViewForModule<T>(module: T) {
-  const scope = getInstanceMetadata(module).provider.scope;
-  const stateView = new StateView(scope);
-  return stateView
-    .select(pickProps(module)) // expose the module props
-    .select(pickInjectors(module)) as GetModuleStateView<T>; // expose injectors
+  const stateView = new StateView();
+  return stateView.select(pickProps(module));
 }
 
 export type GetModuleSelfView<

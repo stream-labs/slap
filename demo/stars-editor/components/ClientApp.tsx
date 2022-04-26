@@ -16,9 +16,9 @@ import { FunctionalModulesPage } from './pages/FunctionalModules';
 import { ShouldComponentUpdatePage } from './pages/ShouldComponentUpdate';
 
 export function ClientApp() {
-  const { isLoading, activePage } = useModule(WindowService);
-
-  if (isLoading) return <div>App loading...</div>;
+  const { activePage } = useModule(WindowService);
+  //
+  // if (isLoading) return <div>App loading...</div>;
 
   return (
     <Layout style={{ height: '100%' }}>

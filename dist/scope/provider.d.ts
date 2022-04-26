@@ -42,6 +42,7 @@ export declare function getInstanceMetadata(instance: any): {
     provider: Provider<any, []>;
     id: string;
 };
+export declare const moduleSystemProps: Dict<boolean>;
 export interface ProviderEvents {
     onInjectorStatusChange: (injector: Injector<unknown, unknown, unknown>, current: TLoadingStatus, prev: TLoadingStatus) => unknown;
     onBeforeInit: (provider: Provider<any>) => unknown;
