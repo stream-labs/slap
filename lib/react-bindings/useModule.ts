@@ -95,6 +95,7 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
       const shouldUpdate = component.shouldComponentUpdate(newSnapshot, prevSnapshot);
       if (shouldUpdate) {
         component.setInvalidated(true);
+        component.willComponentUpdate && component.willComponentUpdate(newSnapshot, prevSnapshot);
       }
     });
     return () => {

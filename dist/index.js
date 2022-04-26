@@ -495,7 +495,8 @@ class ComponentView {
             affectedModules: {},
             props: null,
         };
-        this.shouldComponentUpdate = this.defaultShouldComponentUpdate;
+        this.customShouldComponentUpdate = null;
+        this.willComponentUpdate = null;
     }
     makeSnapshot() {
         const snapshot = {
@@ -531,8 +532,17 @@ class ComponentView {
         }
         return false;
     }
+    shouldComponentUpdate(newSnapshot, prevSnapshot) {
+        if (this.customShouldComponentUpdate) {
+            return this.customShouldComponentUpdate(newSnapshot, prevSnapshot, this.defaultShouldComponentUpdate);
+        }
+        return this.defaultShouldComponentUpdate(newSnapshot, prevSnapshot);
+    }
     setShouldComponentUpdate(shouldUpdateCb) {
-        this.shouldComponentUpdate = shouldUpdateCb;
+        this.customShouldComponentUpdate = shouldUpdateCb;
+    }
+    setWillComponentUpdate(cb) {
+        this.willComponentUpdate = cb;
     }
 }
 exports.ComponentView = ComponentView;
@@ -611,6 +621,7 @@ function useComponentView(module) {
             const shouldUpdate = component.shouldComponentUpdate(newSnapshot, prevSnapshot);
             if (shouldUpdate) {
                 component.setInvalidated(true);
+                component.willComponentUpdate && component.willComponentUpdate(newSnapshot, prevSnapshot);
             }
         });
         return () => {
@@ -681,15 +692,14 @@ function useModuleInstance(locator, initProps = null, name = '') {
             isService,
         };
     });
-    isRoot && store.setModuleContext(moduleName, scope);
+    store.setModuleContext(moduleName, scope);
     (0, react_1.useEffect)(() => {
-        isRoot && store.resetModuleContext(moduleName);
-    }, []);
+        store.resetModuleContext(moduleName);
+    });
     // unregister the component from the module onDestroy
     (0, hooks_1.useOnDestroy)(() => {
         if (isService || !isRoot)
             return;
-        store.resetModuleContext(moduleName);
         if (shouldInitInNewScope) {
             scope.dispose();
         }

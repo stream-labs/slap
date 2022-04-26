@@ -138,9 +138,26 @@ export class ComponentView {
     return false;
   }
 
-  shouldComponentUpdate = this.defaultShouldComponentUpdate;
+  shouldComponentUpdate(newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot): boolean {
+    if (this.customShouldComponentUpdate) {
+      return this.customShouldComponentUpdate(newSnapshot, prevSnapshot, this.defaultShouldComponentUpdate);
+    }
+    return this.defaultShouldComponentUpdate(newSnapshot, prevSnapshot);
+  }
 
-  setShouldComponentUpdate(shouldUpdateCb: (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot) => boolean) {
-    this.shouldComponentUpdate = shouldUpdateCb;
+  customShouldComponentUpdate: ShouldComponentUpdateFN | null = null;
+
+  setShouldComponentUpdate(shouldUpdateCb: ShouldComponentUpdateFN) {
+    this.customShouldComponentUpdate = shouldUpdateCb;
+  }
+
+
+  willComponentUpdate: WillComponentUpdateFN | null = null;
+
+  setWillComponentUpdate(cb: WillComponentUpdateFN) {
+    this.willComponentUpdate = cb;
   }
 }
+
+export type ShouldComponentUpdateFN = (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot, defaultShouldComponentUpdate: ShouldComponentUpdateFN) => boolean;
+export type WillComponentUpdateFN = (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot) => boolean;

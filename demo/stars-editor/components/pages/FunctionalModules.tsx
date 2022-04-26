@@ -15,10 +15,15 @@ function FuncModule1(initialCount = 1) {
   const state = injectState({
     count: initialCount,
     shouldShowButtons: true,
+    isLoaded: false,
   });
 
   function increment() {
     state.setCount(state.count + 1);
+  }
+
+  function decrement() {
+    state.setCount(state.count - 1);
   }
 
   function multiply() {
@@ -33,7 +38,17 @@ function FuncModule1(initialCount = 1) {
     state.setShouldShowButtons(!state.shouldShowButtons);
   }
 
-  return { state, reset, increment, multiply, toggleButtons };
+  return {
+    init() {
+      setTimeout(() => this.state.setIsLoaded(true), 1000);
+    },
+    state,
+    reset,
+    increment,
+    multiply,
+    toggleButtons,
+    decrement,
+  };
 }
 
 export function FunctionalComp() {
@@ -78,12 +93,26 @@ function Header() {
 }
 
 function Buttons() {
-  const { increment, reset } = useModule('FuncModule2') as GetUseModuleResult<typeof FuncModule1>;
+  const { increment, reset, isLoaded } = useModule('FuncModule2') as GetUseModuleResult<typeof FuncModule1>;
 
   return (
     <div>
       <button onClick={increment}>Increment</button>
       <button onClick={reset}>Reset</button>
+      {!isLoaded && '...loading'}
+
+      {isLoaded && <AsyncButtons />}
+
+    </div>
+  );
+}
+
+function AsyncButtons() {
+  const { decrement } = useModule('FuncModule2') as GetUseModuleResult<typeof FuncModule1>;
+
+  return (
+    <div>
+      <button onClick={decrement}>Decrement</button>
     </div>
   );
 }

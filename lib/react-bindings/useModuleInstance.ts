@@ -59,15 +59,14 @@ export function useModuleInstance<T extends TModuleLocatorType, TInitProps exten
     };
   });
 
-  isRoot && store.setModuleContext(moduleName, scope);
+  store.setModuleContext(moduleName, scope);
   useEffect(() => {
-    isRoot && store.resetModuleContext(moduleName);
-  }, []);
+    store.resetModuleContext(moduleName);
+  });
 
   // unregister the component from the module onDestroy
   useOnDestroy(() => {
     if (isService || !isRoot) return;
-    store.resetModuleContext(moduleName);
 
     if (shouldInitInNewScope) {
       scope.dispose();
