@@ -36,7 +36,7 @@ export function pickInjectors<
       const selfProps = componentData && componentData.self;
       if (selfProps) {
         newView.defineProp({
-          type: 'InjectorView',
+          description: 'InjectorView',
           name: propName,
           reactive: true,
           stateView: selfProps as any,

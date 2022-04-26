@@ -74,7 +74,7 @@ export class QueryModule<
   init() {
     const queryMethods = new StateView();
     queryMethods.defineProp({
-      type: 'QueryMethod',
+      description: 'QueryMethod',
       name: 'refetch',
       reactive: false,
       getValue: () => {

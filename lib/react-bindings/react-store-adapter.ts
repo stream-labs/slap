@@ -3,6 +3,7 @@ import { Dict } from '../scope';
 import { Store } from '../store/Store';
 import { inject } from '../scope/injector';
 import { StateView } from '../store';
+import { isSimilar } from '../utils';
 
 export class ReactStoreAdapter {
 
@@ -75,20 +76,25 @@ export class ReactStoreAdapter {
   }
 }
 
+export type ComponentSnapshot = {
+  affectedModules: Dict<number>;
+  props: Dict<any>;
+}
+
 export class ComponentView {
   public isDestroyed = false;
   public isMounted = false;
   public isInvalidated = false;
 
-  lastSnapshot = {
+  lastSnapshot: ComponentSnapshot = {
     affectedModules: {} as Dict<number>,
-    props: null as unknown,
+    props: null as any,
   };
 
   constructor(public store: Store, public stateView: StateView, public id: string, public forceUpdate: Function) {
   }
 
-  makeSnapshot() {
+  makeSnapshot(): ComponentSnapshot {
     const snapshot = {
       affectedModules: {},
       props: {},
@@ -117,5 +123,24 @@ export class ComponentView {
   setDestroyed() {
     this.isDestroyed = true;
     this.isMounted = false;
+  }
+
+  defaultShouldComponentUpdate(newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot): boolean {
+    // if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
+    //   // no modules changed, do not call compare props
+    //   return false;
+    // }
+
+    if (!isSimilar(prevSnapshot.props, newSnapshot.props)) {
+
+      return true;
+    }
+    return false;
+  }
+
+  shouldComponentUpdate = this.defaultShouldComponentUpdate;
+
+  setShouldComponentUpdate(shouldUpdateCb: (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot) => boolean) {
+    this.shouldComponentUpdate = shouldUpdateCb;
   }
 }

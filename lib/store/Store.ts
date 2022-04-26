@@ -184,9 +184,10 @@ export class StateController<TConfig = any> {
     this.store.rootState[this.moduleName] = produce(this.store.rootState[this.moduleName], () => {});
   }
 
-  registerMutation(mutationName: string, mutationMethod: Function) {
+  registerMutation(mutationName: string, mutationMethod: Function, mutationThisContext?: any) {
     const controller = this;
     const { store, moduleName } = controller;
+    const mutationContext = mutationThisContext || controller;
 
     if (!controller.getMetadata().config.mutations[mutationName]) {
       controller.getMetadata().config.mutations[mutationName] = mutationMethod;
@@ -198,7 +199,7 @@ export class StateController<TConfig = any> {
       // we don't need to dispatch a new mutation again
       // just call the original method
       if (controller.draftState) {
-        return mutationMethod.apply(controller, args);
+        return mutationMethod.apply(mutationContext, args);
       }
 
       const mutation = {
@@ -206,6 +207,7 @@ export class StateController<TConfig = any> {
         payload: args,
         moduleName,
         mutationName,
+        mutationContext,
       };
       store.dispatchMutation(mutation);
     };
@@ -222,7 +224,8 @@ export class StateController<TConfig = any> {
         mutation(this);
       } else {
         const mutationObj = mutation as Mutation;
-        metadata.config.mutations[mutationObj.mutationName].apply(this, mutationObj.payload);
+        const thisContext = mutationObj.mutationContext || this;
+        metadata.config.mutations[mutationObj.mutationName].apply(thisContext, mutationObj.payload);
       }
       return;
     }
@@ -237,10 +240,11 @@ export class StateController<TConfig = any> {
           return;
         }
         const mutationObj = mutation as Mutation;
-        metadata.config.mutations[mutationObj.mutationName].apply(this, mutationObj.payload);
+        const thisContext = mutationObj.mutationContext || this;
+        metadata.config.mutations[mutationObj.mutationName].apply(thisContext, mutationObj.payload);
       });
     } catch (e) {
-      console.error('mutation failed');
+      console.error('mutation failed', e);
     } finally {
       this.store.pendingMutations--;
       this.getMetadata().rev++;
@@ -293,7 +297,7 @@ export class StateController<TConfig = any> {
     const controller = this;
 
     view.defineProp({
-      type: 'StateRev',
+      description: 'StateRev',
       name: 'getRev',
       reactive: true,
       getValue: () => {
@@ -306,7 +310,7 @@ export class StateController<TConfig = any> {
 
     traverse(config.state, stateKey => {
       view.defineProp({
-        type: 'StateProp',
+        description: 'StateProp',
         name: stateKey,
         reactive: true,
         getValue: () => (controller as any)[stateKey],
@@ -315,7 +319,7 @@ export class StateController<TConfig = any> {
 
     traverse(config.mutations, stateKey => {
       view.defineProp({
-        type: 'StateMutation',
+        description: 'StateMutation',
         name: stateKey,
         reactive: false,
         getValue: () => (controller as any)[stateKey],
@@ -324,7 +328,7 @@ export class StateController<TConfig = any> {
 
     traverse(config.getters, (propName) => {
       view.defineProp({
-        type: 'StateGetter',
+        description: 'StateGetter',
         name: propName,
         reactive: true,
         getValue: () => (controller as any)[propName],
@@ -333,7 +337,7 @@ export class StateController<TConfig = any> {
 
     traverse(config.getterMethods, (propName) => {
       view.defineProp({
-        type: 'StateGetterMethod',
+        description: 'StateGetterMethod',
         name: propName,
         reactive: false,
         getValue: () => (controller as any)[propName],
@@ -349,6 +353,7 @@ export interface Mutation {
   id: number;
   moduleName: string;
   mutationName: string;
+  mutationContext?: any;
   payload: any;
 }
 //

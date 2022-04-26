@@ -13,6 +13,7 @@ import { ExtendedStatePage } from './pages/ExtendedState';
 import { MutationsPage } from './pages/MutationDecorator';
 import { FormBindingsPage } from './pages/FormBindingsPage';
 import { FunctionalModulesPage } from './pages/FunctionalModules';
+import { ShouldComponentUpdatePage } from './pages/ShouldComponentUpdate';
 
 export function ClientApp() {
   const { isLoading, activePage } = useModule(WindowService);
@@ -32,6 +33,7 @@ export function ClientApp() {
       {activePage === 'mutation' && <MutationsPage /> }
       {activePage === 'form-bindings' && <FormBindingsPage /> }
       {activePage === 'functional-modules' && <FunctionalModulesPage /> }
+      {activePage === 'should-update' && <ShouldComponentUpdatePage /> }
     </Layout>
   );
 }

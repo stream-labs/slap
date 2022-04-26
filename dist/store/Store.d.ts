@@ -33,7 +33,7 @@ export declare class StateController<TConfig = any> {
     draftState: any;
     constructor(store: Store, moduleName: string, config: TStateConfig);
     finishInitialization(): void;
-    registerMutation(mutationName: string, mutationMethod: Function): void;
+    registerMutation(mutationName: string, mutationMethod: Function, mutationThisContext?: any): void;
     mutate(mutation: ((draft: this) => unknown) | Mutation): void;
     private registerDefaultMutations;
     get state(): TStateFor<TConfig>;
@@ -46,6 +46,7 @@ export interface Mutation {
     id: number;
     moduleName: string;
     mutationName: string;
+    mutationContext?: any;
     payload: any;
 }
 export declare const defaultStateConfig: Partial<TStateConfig>;

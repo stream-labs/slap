@@ -14,6 +14,7 @@ function FuncModule1(initialCount = 1) {
 
   const state = injectState({
     count: initialCount,
+    shouldShowButtons: true,
   });
 
   function increment() {
@@ -28,7 +29,11 @@ function FuncModule1(initialCount = 1) {
     state.setCount(1);
   }
 
-  return { state, reset, increment, multiply };
+  function toggleButtons() {
+    state.setShouldShowButtons(!state.shouldShowButtons);
+  }
+
+  return { state, reset, increment, multiply, toggleButtons };
 }
 
 export function FunctionalComp() {
@@ -47,12 +52,15 @@ export function FunctionalComp() {
 
 export function RenamedFunctionalComp() {
 
-  const { multiply } = useModule(FuncModule1, [55], 'FuncModule2');
+  const { multiply, toggleButtons, shouldShowButtons } = useModule(FuncModule1, [55], 'FuncModule2');
 
   return (
     <div>
       <Header />
-      <Buttons />
+      <button onClick={toggleButtons}>
+        {shouldShowButtons ? 'Hide Buttons' : 'Show Buttons'}
+      </button>
+      {shouldShowButtons && <Buttons />}
       <button onClick={multiply}>Multiply</button>
     </div>
   );

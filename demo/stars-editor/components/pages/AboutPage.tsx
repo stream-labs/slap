@@ -1,59 +1,44 @@
 import React from 'react';
-import { useModule } from '../../../../lib';
-// import { ServerApp } from '../ServerApp';
+import { TextInput } from './editor/ItemProps';
+import {
+  inject, injectChild, injectState, useModule,
+} from '../../../../lib';
 
+class MyModule {
 
-
-
-export function AboutPage () {
-
-  // type GetUseModuleResult<TModuleConfig> = TModuleConfig & {
-  //   extend: <TNewProps>(newPropsFactory: (props: TModuleConfig) => TNewProps) => TNewProps
-  // }
-  //
-  class MyModule {
-    foo = 1;
-    bar = 2;
-  }
-  //
-  // const mBase1 = null as any as GetUseModuleResult<MyModule>;
-  // let { zoom } = mBase1.extend(m => ({
-  //   zoom: 1,
-  // }));
-  //
-  // zoom = '1';
-
-  // const { zoom } = mExtended;
-  // mExtended.bar;
-  // mExtended.zoom;
-  // const zoom = mExtended.zoom;
-
-  // let {
-  //   foo, bar, zoom, log, badaboom
-  // } = useModule(MyModule).extend(m => {
-  //
-  //   class MyModuleExtended extends MyModule {
-  //     boom = 4;
-  //     badaboom = this.boom + 5;
-  //   }
-  //
-  //   return MyModuleExtended;
-  //
-  //   // const result = {
-  //   //   zoom: 3,
-  //   //   log: this.zoom,
-  //   // }
-  //   // return result;
-  //
-  // });
-
-
-
-  return <div>This is about page</div>;
-  // return <ServerApp />;
 }
 
+export function AboutPage() {
 
+  const { name, bind, resetName } = useModule(() => {
 
+    // const myModule = inject(MyModule);
+    // const myModule2 = injectChild(MyModule);
 
+    const userState = injectState({
+      name: 'Alex',
+      email: 'alex@gmail.com',
 
+      resetName() {
+        this.name = '';
+      },
+    });
+
+    function resetName() {
+      userState.mutate(state => {
+        state.name = '';
+      });
+    }
+
+    return { userState, resetName };
+  });
+
+  return (
+    <div>
+      Hello {name}
+      <TextInput {...bind.name} />
+      <TextInput {...bind.email} />
+      <button onClick={resetName}>Reset</button>
+    </div>
+  );
+}

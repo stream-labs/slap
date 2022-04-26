@@ -47,13 +47,13 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
     }
 
     moduleView.defineProp({
-      type: 'extend',
+      description: 'extend',
       name: 'extend',
       getValue: () => extend,
     });
 
     moduleView.defineProp({
-      type: 'ComponentView',
+      description: 'ComponentView',
       name: 'componentView',
       getValue: () => component,
     });
@@ -88,17 +88,12 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
 
       // console.log('START SNAPSHOT FOR', componentId);
       const newSnapshot = component.makeSnapshot();
+
       // console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
 
-      // if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
-      //   // no modules changed, do not call compare props
-      //   return;
-      // }
 
-      // console.log('compare ', componentId);
-      if (!isSimilar(prevSnapshot.props, newSnapshot.props)) {
-
-        // console.log('should render ', componentId);
+      const shouldUpdate = component.shouldComponentUpdate(newSnapshot, prevSnapshot);
+      if (shouldUpdate) {
         component.setInvalidated(true);
       }
     });

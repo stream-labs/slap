@@ -25,14 +25,14 @@ export function createFormBinding<TState, TExtraProps = {}>(
   const stateView = new StateView<TFormBindings<TState, TExtraProps>>();
 
   stateView.defineProp({
-    type: 'FormStateRev',
+    description: 'FormStateRev',
     name: 'getRev',
     getValue: () => ({ ...getState() }),
   });
 
   stateView.defineWildcardProp(propName => {
     stateView.defineProp({
-      type: 'FormInputBinding',
+      description: 'FormInputBinding',
       name: propName,
       reactive: true,
       getValue: () => ({

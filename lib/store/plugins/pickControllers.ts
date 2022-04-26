@@ -13,7 +13,7 @@ export function pickControllers<
       const shortName = propName.split('Controller')[0];
 
       view.defineProp({
-        type: 'Controller',
+        description: 'Controller',
         name: shortName,
         getValue: () => (module as any)[propName],
       });

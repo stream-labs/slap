@@ -13,7 +13,7 @@ export function pickProps<TModule, TProps>(module: TModule): (props: TProps, vie
       const getValue = isFunction ? () => descr.value.bind(module) : () => (module as any)[propName];
 
       view.defineProp({
-        type: 'ModuleProp',
+        description: 'ModuleProp',
         reactive: isGetter,
         name: propName,
         getValue,

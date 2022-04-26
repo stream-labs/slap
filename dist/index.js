@@ -419,6 +419,7 @@ exports.ComponentView = exports.ReactStoreAdapter = void 0;
 const react_dom_1 = __webpack_require__(386);
 const Store_1 = __webpack_require__(607);
 const injector_1 = __webpack_require__(869);
+const utils_1 = __webpack_require__(225);
 class ReactStoreAdapter {
     constructor() {
         this.store = (0, injector_1.inject)(Store_1.Store);
@@ -494,6 +495,7 @@ class ComponentView {
             affectedModules: {},
             props: null,
         };
+        this.shouldComponentUpdate = this.defaultShouldComponentUpdate;
     }
     makeSnapshot() {
         const snapshot = {
@@ -519,6 +521,19 @@ class ComponentView {
         this.isDestroyed = true;
         this.isMounted = false;
     }
+    defaultShouldComponentUpdate(newSnapshot, prevSnapshot) {
+        // if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
+        //   // no modules changed, do not call compare props
+        //   return false;
+        // }
+        if (!(0, utils_1.isSimilar)(prevSnapshot.props, newSnapshot.props)) {
+            return true;
+        }
+        return false;
+    }
+    setShouldComponentUpdate(shouldUpdateCb) {
+        this.shouldComponentUpdate = shouldUpdateCb;
+    }
 }
 exports.ComponentView = ComponentView;
 
@@ -538,7 +553,6 @@ const scope_1 = __webpack_require__(527);
 const StateView_1 = __webpack_require__(32);
 const store_1 = __webpack_require__(338);
 const react_store_adapter_1 = __webpack_require__(160);
-const utils_1 = __webpack_require__(225);
 function useComponentView(module) {
     const forceUpdate = (0, hooks_1.useForceUpdate)();
     const { componentId, reactStore, component, provider } = (0, hooks_1.useOnCreate)(() => {
@@ -562,12 +576,12 @@ function useComponentView(module) {
             return result;
         }
         moduleView.defineProp({
-            type: 'extend',
+            description: 'extend',
             name: 'extend',
             getValue: () => extend,
         });
         moduleView.defineProp({
-            type: 'ComponentView',
+            description: 'ComponentView',
             name: 'componentView',
             getValue: () => component,
         });
@@ -594,13 +608,8 @@ function useComponentView(module) {
             // console.log('START SNAPSHOT FOR', componentId);
             const newSnapshot = component.makeSnapshot();
             // console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
-            // if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
-            //   // no modules changed, do not call compare props
-            //   return;
-            // }
-            // console.log('compare ', componentId);
-            if (!(0, utils_1.isSimilar)(prevSnapshot.props, newSnapshot.props)) {
-                // console.log('should render ', componentId);
+            const shouldUpdate = component.shouldComponentUpdate(newSnapshot, prevSnapshot);
+            if (shouldUpdate) {
                 component.setInvalidated(true);
             }
         });
@@ -1456,9 +1465,6 @@ exports.isClass = isClass;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createStateViewForModule = exports.StateView = void 0;
-// composition layer
-// construct a ReactiveObject based on given presets
-// has module,stateSelector and allow extending
 const scope_1 = __webpack_require__(527);
 const provider_1 = __webpack_require__(370);
 const pickProps_1 = __webpack_require__(49);
@@ -1492,8 +1498,6 @@ class StateView {
         this.descriptors[descriptor.name] = descriptor;
         if (descriptor.reactive)
             this.hasReactiveProps = true;
-        // const getValue = descriptor.stateView ? () => descriptor.stateView!.props : () => descriptor.getValue;
-        // defineGetter(this.props as any, descriptor.name, getValue);
         (0, scope_1.defineGetter)(this.props, descriptor.name, () => descriptor.getValue());
     }
     defineWildcardProp(cb) {
@@ -1567,26 +1571,6 @@ class StateView {
     select(newViewFactory) {
         return newViewFactory(this.props, this);
     }
-    // eslint-disable-next-line no-dupe-class-members
-    // extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): ExtendView<TProps, TNewProps> {
-    //   if (!this.scope) {
-    //     throw new Error('You should define a Scope to use .extend()');
-    //   }
-    //
-    //   if (!this.scope.isRegistered(name)) {
-    //     const factory = () => newPropsFactory(this.props, this);
-    //     const provider = this.scope.register(factory, name);
-    //     const extendedModule = this.scope.resolve(name);
-    //     const extendedModuleView = createStateViewForModule(extendedModule);
-    //     const mergedView = this.mergeView(extendedModuleView);
-    //     provider.setMetadata('StateView', mergedView);
-    //     // TODO destroy module after component destroy, create a component scope
-    //   }
-    //
-    //   const provider = this.scope.resolveProvider(name);
-    //   const extendedView = provider.getMetadata('StateView');
-    //   return extendedView;
-    // }
     clone() {
         const clone = new StateView(this.scope);
         (0, scope_1.forEach)(this.descriptors, descriptor => clone.defineProp(descriptor));
@@ -1760,9 +1744,10 @@ class StateController {
         this.getMetadata().isInitialized = true;
         this.store.rootState[this.moduleName] = (0, immer_1.default)(this.store.rootState[this.moduleName], () => { });
     }
-    registerMutation(mutationName, mutationMethod) {
+    registerMutation(mutationName, mutationMethod, mutationThisContext) {
         const controller = this;
         const { store, moduleName } = controller;
+        const mutationContext = mutationThisContext || controller;
         if (!controller.getMetadata().config.mutations[mutationName]) {
             controller.getMetadata().config.mutations[mutationName] = mutationMethod;
         }
@@ -1772,13 +1757,14 @@ class StateController {
             // we don't need to dispatch a new mutation again
             // just call the original method
             if (controller.draftState) {
-                return mutationMethod.apply(controller, args);
+                return mutationMethod.apply(mutationContext, args);
             }
             const mutation = {
                 id: Number((0, scope_1.generateId)()),
                 payload: args,
                 moduleName,
                 mutationName,
+                mutationContext,
             };
             store.dispatchMutation(mutation);
         };
@@ -1794,7 +1780,8 @@ class StateController {
             }
             else {
                 const mutationObj = mutation;
-                metadata.config.mutations[mutationObj.mutationName].apply(this, mutationObj.payload);
+                const thisContext = mutationObj.mutationContext || this;
+                metadata.config.mutations[mutationObj.mutationName].apply(thisContext, mutationObj.payload);
             }
             return;
         }
@@ -1807,11 +1794,12 @@ class StateController {
                     return;
                 }
                 const mutationObj = mutation;
-                metadata.config.mutations[mutationObj.mutationName].apply(this, mutationObj.payload);
+                const thisContext = mutationObj.mutationContext || this;
+                metadata.config.mutations[mutationObj.mutationName].apply(thisContext, mutationObj.payload);
             });
         }
         catch (e) {
-            console.error('mutation failed');
+            console.error('mutation failed', e);
         }
         finally {
             this.store.pendingMutations--;
@@ -1854,7 +1842,7 @@ class StateController {
         const view = new StateView_1.StateView();
         const controller = this;
         view.defineProp({
-            type: 'StateRev',
+            description: 'StateRev',
             name: 'getRev',
             reactive: true,
             getValue: () => {
@@ -1866,7 +1854,7 @@ class StateController {
         });
         (0, traverse_1.traverse)(config.state, stateKey => {
             view.defineProp({
-                type: 'StateProp',
+                description: 'StateProp',
                 name: stateKey,
                 reactive: true,
                 getValue: () => controller[stateKey],
@@ -1874,7 +1862,7 @@ class StateController {
         });
         (0, traverse_1.traverse)(config.mutations, stateKey => {
             view.defineProp({
-                type: 'StateMutation',
+                description: 'StateMutation',
                 name: stateKey,
                 reactive: false,
                 getValue: () => controller[stateKey],
@@ -1882,7 +1870,7 @@ class StateController {
         });
         (0, traverse_1.traverse)(config.getters, (propName) => {
             view.defineProp({
-                type: 'StateGetter',
+                description: 'StateGetter',
                 name: propName,
                 reactive: true,
                 getValue: () => controller[propName],
@@ -1890,7 +1878,7 @@ class StateController {
         });
         (0, traverse_1.traverse)(config.getterMethods, (propName) => {
             view.defineProp({
-                type: 'StateGetterMethod',
+                description: 'StateGetterMethod',
                 name: propName,
                 reactive: false,
                 getValue: () => controller[propName],
@@ -2123,13 +2111,13 @@ function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     }
     const stateView = new StateView_1.StateView();
     stateView.defineProp({
-        type: 'FormStateRev',
+        description: 'FormStateRev',
         name: 'getRev',
         getValue: () => (Object.assign({}, getState())),
     });
     stateView.defineWildcardProp(propName => {
         stateView.defineProp({
-            type: 'FormInputBinding',
+            description: 'FormInputBinding',
             name: propName,
             reactive: true,
             getValue: () => (Object.assign({ name: propName, value: getState()[propName], onChange: (newVal) => {
@@ -2258,7 +2246,7 @@ class QueryModule {
     init() {
         const queryMethods = new StateView_1.StateView();
         queryMethods.defineProp({
-            type: 'QueryMethod',
+            description: 'QueryMethod',
             name: 'refetch',
             reactive: false,
             getValue: () => {
@@ -2408,7 +2396,7 @@ class StatefulModule {
         var _a, _b;
         const parentProvider = this.provider.options.parentProvider;
         if (!parentProvider) {
-            throw new Error('this module should be injected');
+            throw new Error('StatefulModule module should be injected');
         }
         // register methods marked with the @mutation() decorators
         if (this.allowMutationDecorators && parentProvider) {
@@ -2416,7 +2404,7 @@ class StatefulModule {
             const mutations = ((_b = (_a = parentProvider.creator) === null || _a === void 0 ? void 0 : _a.prototype) === null || _b === void 0 ? void 0 : _b.__mutations) || [];
             mutations.forEach(mutationName => {
                 const mutation = parentModule[mutationName];
-                this.stateController.registerMutation(mutationName, mutation);
+                this.stateController.registerMutation(mutationName, mutation, parentModule);
                 parentModule[mutationName] = (...args) => this.stateController[mutationName](...args);
             });
             parentProvider.events.on('onAfterInit', () => {
@@ -2425,7 +2413,7 @@ class StatefulModule {
         }
         this.stateView = this.stateController.createView();
         this.stateView.defineProp({
-            type: 'StateFormBinding',
+            description: 'StateFormBinding',
             name: 'bind',
             reactive: true,
             stateView: this.formBinding.formBinding,
@@ -2546,7 +2534,7 @@ function pickInjectors(module) {
             const selfProps = componentData && componentData.self;
             if (selfProps) {
                 newView.defineProp({
-                    type: 'InjectorView',
+                    description: 'InjectorView',
                     name: propName,
                     reactive: true,
                     stateView: selfProps,
@@ -2666,7 +2654,7 @@ function pickProps(module) {
             const isFunction = !isGetter && typeof descr.value === 'function';
             const getValue = isFunction ? () => descr.value.bind(module) : () => module[propName];
             view.defineProp({
-                type: 'ModuleProp',
+                description: 'ModuleProp',
                 reactive: isGetter,
                 name: propName,
                 getValue,

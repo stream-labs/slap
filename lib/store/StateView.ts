@@ -1,6 +1,4 @@
-// composition layer
-// construct a ReactiveObject based on given presets
-// has module,stateSelector and allow extending
+
 import {
   defineGetter, Dict, forEach, Scope, GetModuleInstanceFor,
 } from '../scope';
@@ -53,8 +51,6 @@ export class StateView<TProps = {}> {
     };
     (this.descriptors as any)[descriptor.name] = descriptor;
     if (descriptor.reactive) this.hasReactiveProps = true;
-    // const getValue = descriptor.stateView ? () => descriptor.stateView!.props : () => descriptor.getValue;
-    // defineGetter(this.props as any, descriptor.name, getValue);
     defineGetter(this.props as any, descriptor.name, () => descriptor.getValue());
   }
 
@@ -135,27 +131,6 @@ export class StateView<TProps = {}> {
     return newViewFactory(this.props, this);
   }
 
-  // eslint-disable-next-line no-dupe-class-members
-  // extend<TNewProps>(newPropsFactory: (props: TProps, view: StateView<TProps>) => TNewProps, name: string): ExtendView<TProps, TNewProps> {
-  //   if (!this.scope) {
-  //     throw new Error('You should define a Scope to use .extend()');
-  //   }
-  //
-  //   if (!this.scope.isRegistered(name)) {
-  //     const factory = () => newPropsFactory(this.props, this);
-  //     const provider = this.scope.register(factory, name);
-  //     const extendedModule = this.scope.resolve(name);
-  //     const extendedModuleView = createStateViewForModule(extendedModule);
-  //     const mergedView = this.mergeView(extendedModuleView);
-  //     provider.setMetadata('StateView', mergedView);
-  //     // TODO destroy module after component destroy, create a component scope
-  //   }
-  //
-  //   const provider = this.scope.resolveProvider(name);
-  //   const extendedView = provider.getMetadata('StateView');
-  //   return extendedView;
-  // }
-
   clone() {
     const clone = new StateView<TProps>(this.scope);
     forEach(this.descriptors, descriptor => clone.defineProp(descriptor));
@@ -206,9 +181,9 @@ export type GetModuleStateView<TModuleConfig> = StateView<GetComponentDataForMod
 export type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetComponentDataForModule<TExtendedModule>>;
 
 export type TModulePropDescriptor<TValue> = {
-  type: string,
   name: string,
   reactive: boolean,
+  description: string,
   stateView: StateView | null,
   getValue(): TValue,
   getRev(): unknown, // used for fast comparison of complex object, use getValue() as default value
@@ -218,6 +193,6 @@ export type TModulePropDescriptor<TValue> = {
   // module: unknown, // one module view can be assembled from multiple modules
 }
 
-export type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'type' | 'name' | 'getValue'>>
+export type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'description' | 'name' | 'getValue'>>
 export type TGetDescriptorsForProps<TProps extends Dict<any>> = {[P in keyof TProps]: TModulePropDescriptor<TProps[P]>}
 export type GetProps<TModuleView> = TModuleView extends StateView<infer TProps> ? TProps : never;

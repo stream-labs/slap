@@ -48,7 +48,7 @@ export class StatefulModule<TStateConfig> {
   init() {
     const parentProvider = this.provider.options.parentProvider;
     if (!parentProvider) {
-      throw new Error('this module should be injected');
+      throw new Error('StatefulModule module should be injected');
     }
     // register methods marked with the @mutation() decorators
     if (this.allowMutationDecorators && parentProvider) {
@@ -56,7 +56,7 @@ export class StatefulModule<TStateConfig> {
       const mutations: string[] = parentProvider.creator?.prototype?.__mutations || [];
       mutations.forEach(mutationName => {
         const mutation = parentModule[mutationName];
-        this.stateController.registerMutation(mutationName, mutation);
+        this.stateController.registerMutation(mutationName, mutation, parentModule);
         parentModule[mutationName] = (...args: any) => (this.stateController as any)[mutationName](...args);
       });
 
@@ -67,7 +67,7 @@ export class StatefulModule<TStateConfig> {
 
     this.stateView = this.stateController.createView() as any;
     this.stateView.defineProp({
-      type: 'StateFormBinding',
+      description: 'StateFormBinding',
       name: 'bind',
       reactive: true,
       stateView: this.formBinding.formBinding,

@@ -47,9 +47,9 @@ export declare type GetComponentDataForModule<TModuleConfig, TModule = GetModule
 export declare type GetModuleStateView<TModuleConfig> = StateView<GetComponentDataForModule<TModuleConfig>>;
 export declare type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetComponentDataForModule<TExtendedModule>>;
 export declare type TModulePropDescriptor<TValue> = {
-    type: string;
     name: string;
     reactive: boolean;
+    description: string;
     stateView: StateView | null;
     getValue(): TValue;
     getRev(): unknown;
@@ -57,7 +57,7 @@ export declare type TModulePropDescriptor<TValue> = {
     configurable: boolean;
     dynamic: boolean;
 };
-export declare type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'type' | 'name' | 'getValue'>>;
+export declare type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'description' | 'name' | 'getValue'>>;
 export declare type TGetDescriptorsForProps<TProps extends Dict<any>> = {
     [P in keyof TProps]: TModulePropDescriptor<TProps[P]>;
 };

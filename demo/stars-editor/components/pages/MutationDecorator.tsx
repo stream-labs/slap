@@ -13,13 +13,17 @@ export function MutationsPage() {
 
 class CounterModuleWithDecorators {
 
+
+  defaultResetValue = 1;
+
   state = injectState({
-    count: 1,
+    count: this.defaultResetValue,
   });
 
   // timerState = injectState({
   //   timer: 10,
   // });
+
 
   init() {
     this.reset();
@@ -28,7 +32,7 @@ class CounterModuleWithDecorators {
 
   @mutation()
   reset() {
-    this.state.count = 1;
+    this.state.count = this.defaultResetValue;
   }
 
   @mutation()

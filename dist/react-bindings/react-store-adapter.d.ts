@@ -15,6 +15,10 @@ export declare class ReactStoreAdapter {
     onMutation(): void;
     updateUI(): void;
 }
+export declare type ComponentSnapshot = {
+    affectedModules: Dict<number>;
+    props: Dict<any>;
+};
 export declare class ComponentView {
     store: Store;
     stateView: StateView;
@@ -23,17 +27,14 @@ export declare class ComponentView {
     isDestroyed: boolean;
     isMounted: boolean;
     isInvalidated: boolean;
-    lastSnapshot: {
-        affectedModules: Dict<number>;
-        props: unknown;
-    };
+    lastSnapshot: ComponentSnapshot;
     constructor(store: Store, stateView: StateView, id: string, forceUpdate: Function);
-    makeSnapshot(): {
-        affectedModules: {};
-        props: {};
-    };
+    makeSnapshot(): ComponentSnapshot;
     needUpdate(): boolean;
     setMounted(): void;
     setInvalidated(invalidated: boolean): void;
     setDestroyed(): void;
+    defaultShouldComponentUpdate(newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot): boolean;
+    shouldComponentUpdate: (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot) => boolean;
+    setShouldComponentUpdate(shouldUpdateCb: (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot) => boolean): void;
 }
