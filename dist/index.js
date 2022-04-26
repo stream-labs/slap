@@ -523,10 +523,10 @@ class ComponentView {
         this.isMounted = false;
     }
     defaultShouldComponentUpdate(newSnapshot, prevSnapshot) {
-        // if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
-        //   // no modules changed, do not call compare props
-        //   return false;
-        // }
+        if ((0, utils_1.isSimilar)(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
+            // no modules changed, do not call compare props
+            return false;
+        }
         if (!(0, utils_1.isSimilar)(prevSnapshot.props, newSnapshot.props)) {
             return true;
         }
@@ -1060,7 +1060,7 @@ class Provider {
         if (!instance)
             return;
         // destroy instance
-        instance.onDestroy && instance.onDestroy();
+        instance.destroy && instance.destroy();
         this.initParams = [];
         // destroy child modules
         (_a = this.childScope) === null || _a === void 0 ? void 0 : _a.dispose();
@@ -2243,13 +2243,14 @@ exports.QueryStateConfig = QueryStateConfig;
 class QueryModule {
     constructor(...args) {
         this.state = (0, inject_state_1.injectState)(QueryStateConfig);
-        this.watcher = (0, inject_watch_1.injectWatch)(this.getParams, this.refetch);
+        this.provider = (0, scope_1.injectProvider)();
+        this.watcher = (0, inject_watch_1.injectWatch)(() => this.getParams(), this.refetch);
         this.fetchingPromise = null;
         this.promiseId = '';
         this.enabled = true;
         this.isInitialFetch = true;
         const computedOptions = getQueryOptionsFromArgs(args);
-        const options = Object.assign({ enabled: true, params: null, initialData: null, getParams: null, fetch: () => { }, onSuccess: () => { }, onError: () => { } }, computedOptions);
+        const options = Object.assign({ enabled: true, params: null, initialData: [], getParams: null, fetch: () => { }, onSuccess: () => { }, onError: () => { } }, computedOptions);
         this.options = options;
         this.enabled = !!options.enabled;
     }
@@ -2278,7 +2279,13 @@ class QueryModule {
         return this.fetch();
     }
     fetch() {
-        const fetchResult = this.options.fetch();
+        let fetchResult;
+        if (this.thisContext) {
+            fetchResult = this.options.fetch.call(this.thisContext, this.getParams());
+        }
+        else {
+            fetchResult = this.options.fetch(this.getParams());
+        }
         if (fetchResult === null || fetchResult === void 0 ? void 0 : fetchResult.then) {
             if (this.isInitialFetch) {
                 this.state.status = 'loading';
@@ -2311,6 +2318,20 @@ class QueryModule {
         this.options.onSuccess && this.options.onSuccess();
         return Promise.resolve(fetchResult);
     }
+    get thisContext() {
+        const parentProvider = this.provider.options.parentProvider;
+        if (parentProvider) {
+            return parentProvider.instance;
+        }
+    }
+    getParams() {
+        if (!this.options.getParams)
+            return null;
+        if (this.thisContext) {
+            return this.options.getParams.call(this.thisContext);
+        }
+        return this.options.getParams();
+    }
     refetch() {
         if (!this.enabled)
             return;
@@ -2323,9 +2344,6 @@ class QueryModule {
     }
     setEnabled(enabled) {
         this.enabled = enabled;
-    }
-    getParams() {
-        return this.options.getParams ? this.options.getParams() : null;
     }
     onDestroy() {
         // prevent unfinished fetching
@@ -2358,6 +2376,12 @@ function getQueryOptionsFromArgs(args) {
         return arg;
     }
     if (args.length === 2) {
+        if (typeof args[0] === 'function') {
+            return {
+                fetch: args[0],
+                getParams: args[1],
+            };
+        }
         return {
             initialData: args[0],
             fetch: args[1],
@@ -2499,7 +2523,7 @@ class WatchModule {
             this.onChange.call(context, this.current, prev);
         });
     }
-    onDestroy() {
+    destroy() {
         this.unwatch && this.unwatch();
     }
 }

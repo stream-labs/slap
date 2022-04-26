@@ -1,6 +1,6 @@
 {
   "name": "slap",
-  "version": "0.1.68",
+  "version": "0.1.69",
   "description": "Streamlabs Application modules",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

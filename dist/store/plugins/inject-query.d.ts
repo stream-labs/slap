@@ -11,6 +11,7 @@ export declare class QueryStateConfig<TData, TParams, TError> {
  */
 export declare class QueryModule<TConstructorArgs extends Array<any>, TData = GetQueryData<TConstructorArgs>, TParams = GetQueryParams<TConstructorArgs>, TError = unknown> {
     state: import("../../scope").InjectedProp<import("../Store").GetStateControllerFor<typeof QueryStateConfig, QueryStateConfig<unknown, unknown, unknown>, QueryState<unknown, unknown, unknown>>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>>;
+    provider: import("../../scope").Provider<any, []>;
     watcher: import("../../scope").InjectedProp<import("./inject-watch").WatchModule<unknown>, import("../StateView").GetModuleStateView<typeof import("./inject-watch").WatchModule>, {}>;
     fetchingPromise: Promise<TData> | null;
     promiseId: string;
@@ -25,10 +26,11 @@ export declare class QueryModule<TConstructorArgs extends Array<any>, TData = Ge
     init(): void;
     exec(): Promise<TData>;
     fetch(): Promise<TData>;
+    get thisContext(): any;
+    getParams(): TParams;
     refetch(): Promise<TData> | undefined;
     stopFetching(): void;
     setEnabled(enabled: boolean): void;
-    getParams(): any;
     onDestroy(): void;
     exportComponentData(): {
         self: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & {
@@ -80,9 +82,12 @@ export declare type GetQueryOptionsFor3Args<TInitialData, TFetch, TGetProps> = {
     initialData: TInitialData;
     getProps: TGetProps;
 };
-export declare type GetQueryOptionsFor2Args<TInitialData, TFetch> = {
-    fetch: TFetch;
-    initialData: TInitialData;
+export declare type GetQueryOptionsFor2Args<Arg1, Arg2> = Arg1 extends (...args: any) => any ? {
+    fetch: Arg1;
+    getParams: Arg2;
+} : {
+    initialData: Arg1;
+    fetch: Arg2;
 };
 export declare type GetQueryOptionsFor1Arg<Arg> = Arg extends (...args: any) => any ? {
     fetch: Arg;
