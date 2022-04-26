@@ -85,7 +85,6 @@ export function QueriesPage() {
         </div>
       ))}
 
-
       <h2>Accounts:</h2>
       {ac && ac.map(user => (
         <div key={user.id}>
@@ -114,6 +113,56 @@ export function QueriesPage() {
       {bu && bu.map(user => (
         <div key={user.id}>
           {user.name}
+        </div>
+      ))}
+      <ShortSyntaxQueries />
+    </div>
+  );
+}
+
+class QueriesModule2 {
+
+  state = injectState({
+    maxPrice: 100,
+  });
+
+  get itemPrefix() {
+    return 'Shop Item';
+  }
+
+  getFilter() {
+    return this.state.maxPrice;
+  }
+
+  async fetchShopItems(maxPrice: number): Promise<{ id: string, name: string}[]> {
+    const prefix = this.itemPrefix;
+    const shopItems = [
+      { id: '1', name: `${prefix} Item 1`, price: 10 },
+      { id: '2', name: `${prefix} Item 2`, price: 20 },
+      { id: '3', name: `${prefix} Item 3`, price: 50 },
+      { id: '4', name: `${prefix} Item 4`, price: 90 },
+    ];
+    const filteredItems = shopItems.filter(item => item.price <= maxPrice);
+    await new Promise(r => setTimeout(r, 1000));
+    return filteredItems;
+  }
+
+  shopItemsQuery = injectQuery(this.fetchShopItems, this.getFilter);
+
+}
+
+function ShortSyntaxQueries() {
+  const { state, maxPrice, setMaxPrice, shopItemsQuery } = useModule(QueriesModule2);
+
+  return (
+    <div>
+      <h1>ShortSyntaxQueries</h1>
+      <Slider value={maxPrice} onChange={setMaxPrice} min={0} max={100} step={10} />
+      <h2>Shop Items (max price is: {state.maxPrice})</h2>
+      {shopItemsQuery.isLoading && '...loading'}
+      {shopItemsQuery.data.map(item => (
+        <div key={item.id}>
+          {item.name}
         </div>
       ))}
     </div>

@@ -34,7 +34,7 @@ export class WatchModule<T> {
     });
   }
 
-  onDestroy() {
+  destroy() {
     this.unwatch && this.unwatch();
   }
 

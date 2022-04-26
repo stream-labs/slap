@@ -1,4 +1,4 @@
-import { generateId } from '../../scope';
+import { generateId, injectProvider } from '../../scope';
 import { TStateViewForStateConfig } from '../Store';
 import { StateView } from '../StateView';
 import { injectState } from './inject-state';
@@ -43,7 +43,8 @@ export class QueryModule<
   > {
 
   state = injectState(QueryStateConfig);
-  watcher = injectWatch(this.getParams, this.refetch);
+  provider = injectProvider();
+  watcher = injectWatch(() => this.getParams(), this.refetch);
 
   fetchingPromise: Promise<TData> | null = null;
   promiseId = '';
@@ -59,7 +60,7 @@ export class QueryModule<
     const options = {
       enabled: true,
       params: null,
-      initialData: null,
+      initialData: [],
       getParams: null,
       fetch: () => {},
       onSuccess: () => {},
@@ -72,6 +73,7 @@ export class QueryModule<
   }
 
   init() {
+
     const queryMethods = new StateView();
     queryMethods.defineProp({
       description: 'QueryMethod',
@@ -97,7 +99,15 @@ export class QueryModule<
   }
 
   fetch(): Promise<TData> {
-    const fetchResult = this.options.fetch();
+    let fetchResult: any;
+
+
+    if (this.thisContext) {
+      fetchResult = this.options.fetch.call(this.thisContext, this.getParams());
+    } else {
+      fetchResult = this.options.fetch(this.getParams());
+    }
+
     if (fetchResult?.then) {
       if (this.isInitialFetch) {
         this.state.status = 'loading';
@@ -129,6 +139,22 @@ export class QueryModule<
     return Promise.resolve(fetchResult);
   }
 
+  get thisContext() {
+    const parentProvider = this.provider.options.parentProvider;
+    if (parentProvider) {
+      return parentProvider.instance;
+    }
+  }
+
+  getParams(): TParams {
+    if (!this.options.getParams) return null as any;
+    if (this.thisContext) {
+      return this.options.getParams.call(this.thisContext);
+    }
+
+    return this.options.getParams();
+  }
+
   refetch() {
     if (!this.enabled) return;
     this.stopFetching();
@@ -142,10 +168,6 @@ export class QueryModule<
 
   setEnabled(enabled: boolean) {
     this.enabled = enabled;
-  }
-
-  getParams() {
-    return this.options.getParams ? this.options.getParams() : null;
   }
 
   onDestroy() {
@@ -207,10 +229,19 @@ export function getQueryOptionsFromArgs<TQueryArgs extends Array<any>, TResult =
   }
 
   if (args.length === 2) {
+
+    if (typeof args[0] === 'function') {
+      return {
+        fetch: args[0],
+        getParams: args[1],
+      } as any as TResult;
+    }
+
     return {
       initialData: args[0],
       fetch: args[1],
     } as any as TResult;
+
   }
 
   return {
@@ -253,9 +284,12 @@ export type GetQueryOptionsFor3Args<TInitialData, TFetch, TGetProps> = {
   getProps: TGetProps
 }
 
-export type GetQueryOptionsFor2Args<TInitialData, TFetch> = {
-  fetch: TFetch,
-  initialData: TInitialData,
+export type GetQueryOptionsFor2Args<Arg1, Arg2> = Arg1 extends (...args: any) => any ? {
+  fetch: Arg1,
+  getParams: Arg2,
+} : {
+  initialData: Arg1,
+  fetch: Arg2
 }
 
 export type GetQueryOptionsFor1Arg<Arg> = Arg extends (...args: any) => any ?

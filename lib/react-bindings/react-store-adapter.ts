@@ -126,10 +126,10 @@ export class ComponentView {
   }
 
   defaultShouldComponentUpdate(newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot): boolean {
-    // if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
-    //   // no modules changed, do not call compare props
-    //   return false;
-    // }
+    if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
+      // no modules changed, do not call compare props
+      return false;
+    }
 
     if (!isSimilar(prevSnapshot.props, newSnapshot.props)) {
 

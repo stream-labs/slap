@@ -154,7 +154,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     if (!instance) return;
 
     // destroy instance
-    instance.onDestroy && instance.onDestroy();
+    instance.destroy && instance.destroy();
     this.initParams = [] as any;
 
     // destroy child modules
