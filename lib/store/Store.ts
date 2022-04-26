@@ -164,7 +164,6 @@ export class StateController<TConfig = any> {
       const mutationName = `set${capitalize(propertyName)}`;
       if (config.mutations[mutationName]) return;
       const mutationMethod = (propVal: unknown) => (controller as any)[propertyName] = propVal;
-      config.mutations[mutationName] = mutationMethod;
       controller.registerMutation(mutationName, mutationMethod);
     });
 
@@ -189,9 +188,7 @@ export class StateController<TConfig = any> {
     const { store, moduleName } = controller;
     const mutationContext = mutationThisContext || controller;
 
-    if (!controller.getMetadata().config.mutations[mutationName]) {
-      controller.getMetadata().config.mutations[mutationName] = mutationMethod;
-    }
+    controller.getMetadata().config.mutations[mutationName] = mutationMethod;
 
     // override the original Module method to dispatch mutations
     (controller as any)[mutationName] = function (...args: any[]) {

@@ -18,6 +18,7 @@ class CounterModuleWithDecorators {
 
   state = injectState({
     count: this.defaultResetValue,
+    count2: 0,
   });
 
   // timerState = injectState({
@@ -39,14 +40,19 @@ class CounterModuleWithDecorators {
   increment() {
     this.state.count++;
   }
-}
 
+  @mutation()
+  setCount2(val: number) {
+    this.state.count = 0;
+    this.state.count2 = val;
+  }
+}
 
 
 export function MutationDecorators () {
 
   const {
-    count, reset, increment, setCount,
+    count, reset, increment, setCount, count2, setCount2
   } = useModule(CounterModuleWithDecorators);
 
   function multiplyBy10() {
@@ -56,10 +62,12 @@ export function MutationDecorators () {
   return (
     <div>
       <h2>MutationDecorators </h2>
-      {count}
+      <div> count: {count} </div>
+      <div> count2: {count2} </div>
       <button onClick={increment}>Increment</button>
       <button onClick={reset}>Reset</button>
       <button onClick={multiplyBy10}>Multiply by 10</button>
+      <button onClick={() => setCount2(count2 + 1)}>Increment 2</button>
     </div>
   );
 }

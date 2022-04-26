@@ -1739,7 +1739,6 @@ class StateController {
             if (config.mutations[mutationName])
                 return;
             const mutationMethod = (propVal) => controller[propertyName] = propVal;
-            config.mutations[mutationName] = mutationMethod;
             controller.registerMutation(mutationName, mutationMethod);
         });
         // create default mutations
@@ -1758,9 +1757,7 @@ class StateController {
         const controller = this;
         const { store, moduleName } = controller;
         const mutationContext = mutationThisContext || controller;
-        if (!controller.getMetadata().config.mutations[mutationName]) {
-            controller.getMetadata().config.mutations[mutationName] = mutationMethod;
-        }
+        controller.getMetadata().config.mutations[mutationName] = mutationMethod;
         // override the original Module method to dispatch mutations
         controller[mutationName] = function (...args) {
             // if this method was called from another mutation
