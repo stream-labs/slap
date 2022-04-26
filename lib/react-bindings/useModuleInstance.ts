@@ -61,7 +61,7 @@ export function useModuleInstance<T extends TModuleLocatorType, TInitProps exten
 
   store.setModuleContext(moduleName, scope);
   useEffect(() => {
-    store.resetModuleContext(moduleName);
+    isRoot && store.resetModuleContext(moduleName);
   });
 
   // unregister the component from the module onDestroy

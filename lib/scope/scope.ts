@@ -128,10 +128,14 @@ export class Scope {
     if (provider.instance) {
       throw new Error(`The module ${provider.name} is already inited in the given scope`);
     }
+    let instance: GetModuleInstanceFor<T>;
 
     unmountedModulesCount++;
-    const instance = this.create(locator, ...args);
-    unmountedModulesCount--;
+    try {
+      instance = this.create(locator, ...args);
+    } finally {
+      unmountedModulesCount--;
+    }
     if (!unmountedModulesCount) provider.mountModule();
 
     return instance;

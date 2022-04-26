@@ -36,7 +36,7 @@ export function pickProps<TModule, TProps>(module: TModule): (props: TProps, vie
             description: 'InjectorView',
             name: propName,
             reactive: true,
-            stateView: selfProps as any,
+            stateView: selfProps instanceof StateView ? selfProps : null,
             getValue() {
               return injectedValue;
             },

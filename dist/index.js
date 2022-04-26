@@ -694,7 +694,7 @@ function useModuleInstance(locator, initProps = null, name = '') {
     });
     store.setModuleContext(moduleName, scope);
     (0, react_1.useEffect)(() => {
-        store.resetModuleContext(moduleName);
+        isRoot && store.resetModuleContext(moduleName);
     });
     // unregister the component from the module onDestroy
     (0, hooks_1.useOnDestroy)(() => {
@@ -1269,9 +1269,14 @@ class Scope {
         if (provider.instance) {
             throw new Error(`The module ${provider.name} is already inited in the given scope`);
         }
+        let instance;
         unmountedModulesCount++;
-        const instance = this.create(locator, ...args);
-        unmountedModulesCount--;
+        try {
+            instance = this.create(locator, ...args);
+        }
+        finally {
+            unmountedModulesCount--;
+        }
         if (!unmountedModulesCount)
             provider.mountModule();
         return instance;
@@ -2047,7 +2052,6 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(835), exports);
 __exportStar(__webpack_require__(334), exports);
-__exportStar(__webpack_require__(854), exports);
 __exportStar(__webpack_require__(746), exports);
 __exportStar(__webpack_require__(300), exports);
 __exportStar(__webpack_require__(668), exports);
@@ -2062,38 +2066,12 @@ __exportStar(__webpack_require__(187), exports);
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectChild = exports.ChildModuleInjectorType = void 0;
+exports.injectChild = void 0;
 const injector_1 = __webpack_require__(869);
-exports.ChildModuleInjectorType = Symbol('childModuleInjector');
 function injectChild(Module, ...args) {
     const provider = (0, injector_1.injectProvider)();
     const injectedValue = provider.injectChildModule(Module, ...args);
     return injectedValue;
-    // return createInjector(injector => {
-    //
-    //   const scope = injector.provider.resolveChildScope();
-    //   const moduleName = `${injector.provider.id}__injected_module_${generateId()}`;
-    //   scope.register(Module, moduleName, { injector });
-    //   scope.init(moduleName, ...args);
-    //
-    //   return {
-    //     type: ChildModuleInjectorType,
-    //     getValue: () => {
-    //       const module = scope.resolve(moduleName) as InjectableModule;
-    //       if (module.exportInjectorValue) {
-    //         return module.exportInjectorValue();
-    //       }
-    //       return module;
-    //     },
-    //     exportComponentData: () => {
-    //       const module = scope.resolve(moduleName) as InjectableModule;
-    //       return module.exportComponentData && module.exportComponentData() as any;
-    //     },
-    //     destroy() {
-    //       scope.unregister(moduleName);
-    //     },
-    //   };
-    // });
 }
 exports.injectChild = injectChild;
 
@@ -2150,49 +2128,6 @@ function injectFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     return (0, inject_child_1.injectChild)(FormBindingModule, stateGetter, stateSetter, extraPropsGenerator);
 }
 exports.injectFormBinding = injectFormBinding;
-
-
-/***/ }),
-
-/***/ 854:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectLoading = exports.LoadingState = void 0;
-const __1 = __webpack_require__(18);
-class LoadingState {
-    constructor() {
-        this.loadingStatus = 'not-started';
-    }
-    get isLoading() {
-        return this.loadingStatus === 'loading';
-    }
-    get isLoaded() {
-        return this.loadingStatus === 'done';
-    }
-}
-exports.LoadingState = LoadingState;
-function injectLoading() {
-    return (0, __1.injectState)(LoadingState, false, statefulModule => {
-        // const parentProvider = getInstanceMetadata(statefulModule).provider.injector!.provider;
-        //
-        // parentProvider.events.on('onModuleInit', () => {
-        //
-        //   if (!parentProvider.isAsync) {
-        //     statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'done' });
-        //     return;
-        //   }
-        //
-        //   statefulModule.stateController.nonReactiveUpdate({ loadingStatus: 'loading' });
-        //
-        //   parentProvider.waitForLoad.then(() => {
-        //     statefulModule.stateController.setLoadingStatus('done');
-        //   });
-        // });
-    });
-}
-exports.injectLoading = injectLoading;
 
 
 /***/ }),
@@ -2536,65 +2471,6 @@ exports.injectWatch = injectWatch;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-// type Keytype = keyof GetExtraInjectedProps<QueriesModule>;
-// type Queryprops = keyof GetExtraInjectedProps<QueriesModule> extends never ? {} : Flatten<GetExtraInjectedProps<QueriesModule>>
-// const injProps: Queryprops;
-// injProps.onlineUsersQuery
-// const injProps: GetAllInjectedProps<QueriesModule>;
-// injProps.onlineUsersQuery
-// injProps.onlineUsersQuery.setData;
-// injProps.setData
-// //
-// const injProps2: GetFlattenExtraProps<QueriesModule>;
-// injProps2.onlineUsersQuery.setData;
-// injProps2.setData
-//
-//
-// const injPropsExtra: GetExtraInjectedProps<QueriesModule>;
-// const injPropsExtra2: GetModuleExtraView<QueriesModule>;
-// injPropsExtra2.
-// type TSuperUser = {
-//   id: string,
-//   name: string,
-// }
-//
-// const usersModule = new UsersModule();
-//
-//
-// const userBase = {
-//
-//   loading: injectLoading(),
-//
-//   state: injectState({
-//     users: [] as TSuperUser[],
-//   }),
-// }
-//
-// const userExtention = {
-//
-//   extendedFoo: 1,
-//
-//   state: injectState({
-//     selectedUserId: 'user2',
-//   }),
-// }
-// type BaseUser = GetAllInjectedProps<typeof userBase> & typeof userBase;
-// type ExtendedUser = GetAllInjectedProps<typeof userExtention> & typeof userExtention
-// const baseUser: BaseUser;
-// baseUser.users;
-// baseUser.state;
-// baseUser.loading
-//
-// const extendedUser: ExtendedUser;
-// extendedUser.selectedUserId;
-// extendedUser.state;
-//
-//
-// const mergedUser: Omit<BaseUser, keyof ExtendedUser> & ExtendedUser;
-//
-// mergedUser.users
-// mergedUser.selectedUserId
-// mergedUser.state
 
 
 /***/ }),
@@ -2605,6 +2481,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.pickProps = void 0;
+const StateView_1 = __webpack_require__(32);
 const utils_1 = __webpack_require__(225);
 const scope_1 = __webpack_require__(527);
 function pickProps(module) {
@@ -2637,7 +2514,7 @@ function pickProps(module) {
                         description: 'InjectorView',
                         name: propName,
                         reactive: true,
-                        stateView: selfProps,
+                        stateView: selfProps instanceof StateView_1.StateView ? selfProps : null,
                         getValue() {
                             return injectedValue;
                         },

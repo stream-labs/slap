@@ -1,4 +1,4 @@
-import { inject, injectFormBinding, injectLoading, injectScope, injectState } from '../../../lib';
+import { inject, injectFormBinding, injectScope, injectState } from '../../../lib';
 
 export class EditorState {
   readonly persistent = true;

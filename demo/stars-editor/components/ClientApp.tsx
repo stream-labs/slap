@@ -14,6 +14,7 @@ import { MutationsPage } from './pages/MutationDecorator';
 import { FormBindingsPage } from './pages/FormBindingsPage';
 import { FunctionalModulesPage } from './pages/FunctionalModules';
 import { ShouldComponentUpdatePage } from './pages/ShouldComponentUpdate';
+import { ErrorsPage } from './pages/ErrorsPage';
 
 export function ClientApp() {
   const { activePage } = useModule(WindowService);
@@ -34,6 +35,7 @@ export function ClientApp() {
       {activePage === 'form-bindings' && <FormBindingsPage /> }
       {activePage === 'functional-modules' && <FunctionalModulesPage /> }
       {activePage === 'should-update' && <ShouldComponentUpdatePage /> }
+      {activePage === 'errors' && <ErrorsPage /> }
     </Layout>
   );
 }

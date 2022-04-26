@@ -1,4 +1,4 @@
-import { injectState, injectLoading } from '../../../lib';
+import { injectState } from '../../../lib';
 
 export class WindowState {
   activePage = 'about';
@@ -15,6 +15,7 @@ export class WindowState {
     { title: 'Form Binding', id: 'form-bindings' },
     { title: 'Functional Modules', id: 'functional-modules' },
     { title: 'ShouldComponentUpdate', id: 'should-update' },
+    { title: 'Errors', id: 'errors' },
   ];
 
   setActivePage(page: string) {

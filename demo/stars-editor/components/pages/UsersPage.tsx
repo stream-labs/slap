@@ -2,9 +2,7 @@ import React from 'react';
 import {
   useModule,
   injectState,
-  GetModuleInstanceFor,
-  inject,
-  useModuleInstance, injectLoading, injectQuery, generateId
+  inject,injectQuery, generateId
 } from '../../../../lib';
 import { EditorService } from '../../services/editor.service';
 
@@ -59,7 +57,6 @@ export class UsersModule {
 
   editor = inject(EditorService);
   state = injectState(UsersState);
-  loading = injectLoading();
 
   bannedUsersQuery = injectQuery({
     fetch: fetchBannedUsers,
@@ -94,8 +91,8 @@ export function UsersPage() {
       <button onClick={createUser}>Add user</button>
       <UsersQueries />
 
-      <RootLoadingState />
-      <NestedLoadingState />
+      {/* <RootLoadingState /> */}
+      {/* <NestedLoadingState /> */}
       <UsersFooter />
 
     </div>
@@ -170,45 +167,45 @@ export function UsersFooter() {
 
   return <button onClick={onButtonClick}> Inc counter {counter}</button>;
 }
-
-export function RootLoadingState() {
-  const { loadingStatus } = useModule(UsersModule);
-
-  return (
-    <div>
-      RootLoadingStatus <br />
-      LoadingStatus: {loadingStatus},
-    </div>
-  );
-}
-
-export function NestedLoadingState() {
-
-  const { loadingStatus, loadedValues, foo, componentView } = useModule(UsersModule).extend(() => ({
-
-    state: injectState({
-      loadedValues: '',
-    }),
-
-    async load() {
-      await new Promise(r => { setTimeout(r, 2000); });
-      this.state.setLoadedValues('Loaded Values');
-    },
-
-    foo() {
-      return 1;
-    }
-
-  }));
-
-  return (
-    <div>
-      NestedLoadingStatus <br />
-      LoadingStatus: {loadingStatus},
-      LoadedValues: {loadedValues}
-    </div>
-  );
-}
+//
+// export function RootLoadingState() {
+//   const { loadingStatus } = useModule(UsersModule);
+//
+//   return (
+//     <div>
+//       RootLoadingStatus <br />
+//       LoadingStatus: {loadingStatus},
+//     </div>
+//   );
+// }
+//
+// export function NestedLoadingState() {
+//
+//   const { loadingStatus, loadedValues, foo, componentView } = useModule(UsersModule).extend(() => ({
+//
+//     state: injectState({
+//       loadedValues: '',
+//     }),
+//
+//     async load() {
+//       await new Promise(r => { setTimeout(r, 2000); });
+//       this.state.setLoadedValues('Loaded Values');
+//     },
+//
+//     foo() {
+//       return 1;
+//     }
+//
+//   }));
+//
+//   return (
+//     <div>
+//       NestedLoadingStatus <br />
+//       LoadingStatus: {loadingStatus},
+//       LoadedValues: {loadedValues}
+//     </div>
+//   );
+// }
 
 // const buttonModule = () => ({
 //
