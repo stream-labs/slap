@@ -1,6 +1,8 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { Simulate } from 'react-dom/test-utils';
-import { getComponentName, useForceUpdate, useOnCreate, useOnDestroy } from './hooks';
+import {
+  getComponentName, useForceUpdate, useOnCreate, useOnDestroy,
+} from './hooks';
 import { useModuleInstance } from './useModuleInstance';
 import {
   generateId,
@@ -21,7 +23,9 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
 (module: TModule): TResult {
   const forceUpdate = useForceUpdate();
 
-  const { componentId, reactStore, component, provider } = useOnCreate(() => {
+  const {
+    componentId, reactStore, component, provider,
+  } = useOnCreate(() => {
 
     const provider = getInstanceMetadata(module).provider;
     const reactStore = provider.scope.resolve(ReactStoreAdapter);
@@ -84,18 +88,12 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
 
       if (provider.isDestroyed) return;
 
-      const prevSnapshot = component.lastSnapshot;
-
-      // console.log('START SNAPSHOT FOR', componentId);
-      const newSnapshot = component.makeSnapshot();
-
-      // console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
 
 
-      const shouldUpdate = component.shouldComponentUpdate(newSnapshot, prevSnapshot);
+      const shouldUpdate = component.shouldComponentUpdate();
       if (shouldUpdate) {
         component.setInvalidated(true);
-        component.willComponentUpdate && component.willComponentUpdate(newSnapshot, prevSnapshot);
+        // component.willComponentUpdate && component.willComponentUpdate(newSnapshot, prevSnapshot);
       }
     });
     return () => {

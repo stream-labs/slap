@@ -34,12 +34,10 @@ export declare class ComponentView {
     setMounted(): void;
     setInvalidated(invalidated: boolean): void;
     setDestroyed(): void;
-    defaultShouldComponentUpdate(newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot): boolean;
-    shouldComponentUpdate(newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot): boolean;
+    defaultShouldComponentUpdate(): boolean;
+    shouldComponentUpdate(): boolean;
     customShouldComponentUpdate: ShouldComponentUpdateFN | null;
     setShouldComponentUpdate(shouldUpdateCb: ShouldComponentUpdateFN): void;
-    willComponentUpdate: WillComponentUpdateFN | null;
-    setWillComponentUpdate(cb: WillComponentUpdateFN): void;
 }
-export declare type ShouldComponentUpdateFN = (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot, defaultShouldComponentUpdate: ShouldComponentUpdateFN) => boolean;
+export declare type ShouldComponentUpdateFN = (defaultShouldComponentUpdate: ShouldComponentUpdateFN) => boolean;
 export declare type WillComponentUpdateFN = (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot) => boolean;

@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
+import { Input } from 'antd';
 import { TextInput } from './editor/ItemProps';
 import {
   injectState, useModule,
 } from '../../../../lib';
-import { Input } from 'antd';
 
 export function ShouldComponentUpdatePage() {
 
@@ -19,9 +19,9 @@ export function ShouldComponentUpdatePage() {
     return { userState };
   });
 
-  componentView.setShouldComponentUpdate((newSnapshot, prevSnapshot) => {
-    const newName = newSnapshot.props.name;
-    const prevName = prevSnapshot.props.name;
+  componentView.setShouldComponentUpdate(() => {
+    const prevName = (componentView.lastSnapshot.props as any).name;
+    const newName = (componentView.makeSnapshot().props as any).name;
     const nameBecameValid = prevName.length < minNameLength && newName.length >= minNameLength;
     const nameBecameInvalid = prevName.length >= minNameLength && newName.length < minNameLength;
     const shouldUpdate = nameBecameValid || nameBecameInvalid;

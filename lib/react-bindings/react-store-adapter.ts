@@ -125,7 +125,20 @@ export class ComponentView {
     this.isMounted = false;
   }
 
-  defaultShouldComponentUpdate(newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot): boolean {
+  defaultShouldComponentUpdate(): boolean {
+    const prevSnapshot = this.lastSnapshot;
+    const prevAffectedModules = Object.keys(prevSnapshot.affectedModules);
+    let modulesChanged = false;
+    for (const moduleName of prevAffectedModules) {
+      if (prevSnapshot.affectedModules[moduleName] !== this.store.modulesMetadata[moduleName]?.rev) {
+        modulesChanged = true;
+        break;
+      }
+    }
+    if (!modulesChanged) return false;
+
+    const newSnapshot = this.makeSnapshot();
+
     if (isSimilar(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
       // no modules changed, do not call compare props
       return false;
@@ -138,11 +151,11 @@ export class ComponentView {
     return false;
   }
 
-  shouldComponentUpdate(newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot): boolean {
+  shouldComponentUpdate(): boolean {
     if (this.customShouldComponentUpdate) {
-      return this.customShouldComponentUpdate(newSnapshot, prevSnapshot, this.defaultShouldComponentUpdate);
+      return this.customShouldComponentUpdate(this.defaultShouldComponentUpdate);
     }
-    return this.defaultShouldComponentUpdate(newSnapshot, prevSnapshot);
+    return this.defaultShouldComponentUpdate();
   }
 
   customShouldComponentUpdate: ShouldComponentUpdateFN | null = null;
@@ -151,13 +164,12 @@ export class ComponentView {
     this.customShouldComponentUpdate = shouldUpdateCb;
   }
 
-
-  willComponentUpdate: WillComponentUpdateFN | null = null;
-
-  setWillComponentUpdate(cb: WillComponentUpdateFN) {
-    this.willComponentUpdate = cb;
-  }
+  // willComponentUpdate: WillComponentUpdateFN | null = null;
+  //
+  // setWillComponentUpdate(cb: WillComponentUpdateFN) {
+  //   this.willComponentUpdate = cb;
+  // }
 }
 
-export type ShouldComponentUpdateFN = (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot, defaultShouldComponentUpdate: ShouldComponentUpdateFN) => boolean;
+export type ShouldComponentUpdateFN = (defaultShouldComponentUpdate: ShouldComponentUpdateFN) => boolean;
 export type WillComponentUpdateFN = (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot) => boolean;

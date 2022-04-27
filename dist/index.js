@@ -405,7 +405,6 @@ __exportStar(__webpack_require__(686), exports);
 __exportStar(__webpack_require__(985), exports);
 __exportStar(__webpack_require__(309), exports);
 __exportStar(__webpack_require__(878), exports);
-__exportStar(__webpack_require__(31), exports);
 
 
 /***/ }),
@@ -496,7 +495,6 @@ class ComponentView {
             props: null,
         };
         this.customShouldComponentUpdate = null;
-        this.willComponentUpdate = null;
     }
     makeSnapshot() {
         const snapshot = {
@@ -522,7 +520,20 @@ class ComponentView {
         this.isDestroyed = true;
         this.isMounted = false;
     }
-    defaultShouldComponentUpdate(newSnapshot, prevSnapshot) {
+    defaultShouldComponentUpdate() {
+        var _a;
+        const prevSnapshot = this.lastSnapshot;
+        const prevAffectedModules = Object.keys(prevSnapshot.affectedModules);
+        let modulesChanged = false;
+        for (const moduleName of prevAffectedModules) {
+            if (prevSnapshot.affectedModules[moduleName] !== ((_a = this.store.modulesMetadata[moduleName]) === null || _a === void 0 ? void 0 : _a.rev)) {
+                modulesChanged = true;
+                break;
+            }
+        }
+        if (!modulesChanged)
+            return false;
+        const newSnapshot = this.makeSnapshot();
         if ((0, utils_1.isSimilar)(prevSnapshot.affectedModules, newSnapshot.affectedModules)) {
             // no modules changed, do not call compare props
             return false;
@@ -532,17 +543,14 @@ class ComponentView {
         }
         return false;
     }
-    shouldComponentUpdate(newSnapshot, prevSnapshot) {
+    shouldComponentUpdate() {
         if (this.customShouldComponentUpdate) {
-            return this.customShouldComponentUpdate(newSnapshot, prevSnapshot, this.defaultShouldComponentUpdate);
+            return this.customShouldComponentUpdate(this.defaultShouldComponentUpdate);
         }
-        return this.defaultShouldComponentUpdate(newSnapshot, prevSnapshot);
+        return this.defaultShouldComponentUpdate();
     }
     setShouldComponentUpdate(shouldUpdateCb) {
         this.customShouldComponentUpdate = shouldUpdateCb;
-    }
-    setWillComponentUpdate(cb) {
-        this.willComponentUpdate = cb;
     }
 }
 exports.ComponentView = ComponentView;
@@ -565,7 +573,7 @@ const store_1 = __webpack_require__(338);
 const react_store_adapter_1 = __webpack_require__(160);
 function useComponentView(module) {
     const forceUpdate = (0, hooks_1.useForceUpdate)();
-    const { componentId, reactStore, component, provider } = (0, hooks_1.useOnCreate)(() => {
+    const { componentId, reactStore, component, provider, } = (0, hooks_1.useOnCreate)(() => {
         const provider = (0, scope_1.getInstanceMetadata)(module).provider;
         const reactStore = provider.scope.resolve(react_store_adapter_1.ReactStoreAdapter);
         const store = provider.scope.resolve(store_1.Store);
@@ -614,14 +622,10 @@ function useComponentView(module) {
         const watcherId = reactStore.createWatcher(component.id, () => {
             if (provider.isDestroyed)
                 return;
-            const prevSnapshot = component.lastSnapshot;
-            // console.log('START SNAPSHOT FOR', componentId);
-            const newSnapshot = component.makeSnapshot();
-            // console.log('FINISH SNAPSHOT FOR', componentId, newSnapshot);
-            const shouldUpdate = component.shouldComponentUpdate(newSnapshot, prevSnapshot);
+            const shouldUpdate = component.shouldComponentUpdate();
             if (shouldUpdate) {
                 component.setInvalidated(true);
-                component.willComponentUpdate && component.willComponentUpdate(newSnapshot, prevSnapshot);
+                // component.willComponentUpdate && component.willComponentUpdate(newSnapshot, prevSnapshot);
             }
         });
         return () => {
@@ -710,65 +714,6 @@ function useModuleInstance(locator, initProps = null, name = '') {
     return instance;
 }
 exports.useModuleInstance = useModuleInstance;
-
-
-/***/ }),
-
-/***/ 31:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-//
-// export function useSelector(cb: Function) {
-//   const affectedModulesRef = useRef<Record<string, number>>({});
-//   const currentSelectorStateRef = useRef<Record<string, any>>({});
-//   const forceUpdate = useForceUpdate();
-//   const scope = useAppContext().modulesScope;
-//   const store = scope.resolve(Store);
-//   const reactStore = scope.resolve(ReactStoreAdapter);
-//
-//   useEffect(() => {
-//     affectedModulesRef.current = store.listenAffectedModules(() => {
-//       currentSelectorStateRef.current = cb();
-//     });
-//
-//     // TODO do not run watchers for non-observable component views
-//
-//     const watcherId = reactStore.createWatcher(() => {
-//       const prevRevisions = affectedModulesRef.current;
-//       const currentRevisions = store.moduleRevisions;
-//
-//       let modulesHasChanged = false;
-//       for (const moduleName in prevRevisions) {
-//         if (prevRevisions[moduleName] !== currentRevisions[moduleName]) {
-//           modulesHasChanged = true;
-//           break;
-//         }
-//
-//         if (!modulesHasChanged) {
-//           // dependent modules don't have changes in the state
-//           // do not re-render
-//           return;
-//         }
-//       }
-//
-//       const prevSelectorState = currentSelectorStateRef.current;
-//
-//       affectedModulesRef.current = store.listenAffectedModules(() => {
-//         currentSelectorStateRef.current = cb();
-//       });
-//
-//       if (!isSimilar(prevSelectorState, currentSelectorStateRef.current)) {
-//         // TODO try batched updates
-//         forceUpdate();
-//       }
-//     });
-//     return () => {
-//       reactStore.removeWatcher(watcherId);
-//     };
-//   }, []);
-// }
 
 
 /***/ }),
