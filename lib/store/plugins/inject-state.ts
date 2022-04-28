@@ -11,6 +11,7 @@ import {
 import { StateView } from '../StateView';
 import { injectChild } from './inject-child';
 import { GetInjectedFormBinding, injectFormBinding, TFormBindings } from './inject-form';
+import { createStateView } from './createStateView';
 
 export const StateInjectorType = Symbol('stateInjector');
 
@@ -65,7 +66,7 @@ export class StatefulModule<TStateConfig> {
       });
     }
 
-    this.stateView = this.stateController.createView() as any;
+    this.stateView = createStateView(this.stateController) as any;
     this.stateView.defineProp({
       description: 'StateFormBinding',
       name: 'bind',

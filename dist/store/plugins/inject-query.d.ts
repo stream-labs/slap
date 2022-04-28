@@ -12,7 +12,7 @@ export declare class QueryStateConfig<TData, TParams, TError> {
 export declare class QueryModule<TConstructorArgs extends Array<any>, TData = GetQueryData<TConstructorArgs>, TParams = GetQueryParams<TConstructorArgs>, TError = unknown> {
     state: import("../../scope").InjectedProp<import("../Store").GetStateControllerFor<typeof QueryStateConfig, QueryStateConfig<unknown, unknown, unknown>, QueryState<unknown, unknown, unknown>>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>>;
     provider: import("../../scope").Provider<any, []>;
-    watcher: import("../../scope").InjectedProp<import("./inject-watch").WatchModule<unknown>, import("../StateView").GetModuleStateView<typeof import("./inject-watch").WatchModule>, {}>;
+    watcher: import("../../scope").InjectedProp<import("./inject-watch").WatchModule<unknown>, import("./createModuleView").GetModuleStateView<typeof import("./inject-watch").WatchModule>, {}>;
     fetchingPromise: Promise<TData> | null;
     promiseId: string;
     enabled: boolean;
@@ -39,7 +39,7 @@ export declare class QueryModule<TConstructorArgs extends Array<any>, TData = Ge
         extra: null;
     };
 }
-export declare function injectQuery<TQueryArgs extends QueryArgs>(...args: TQueryArgs): import("../../scope").InjectedProp<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>, import("../StateView").GetModuleStateView<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>>, {}>;
+export declare function injectQuery<TQueryArgs extends QueryArgs>(...args: TQueryArgs): import("../../scope").InjectedProp<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>, import("./createModuleView").GetModuleStateView<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>>, {}>;
 export declare type QueryRequiredOptions = {
     fetch: (...args: any) => any;
 };

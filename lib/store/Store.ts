@@ -35,10 +35,7 @@ export class Store {
     }
 
     const config = parseStateConfig(configCreator);
-
-    console.log('REGISTER STORE', moduleName);
     const controller = new StateController(this, moduleName, config);
-
     return controller as GetStateControllerFor<TConfigCreator>;
   }
 
@@ -64,7 +61,6 @@ export class Store {
   destroyModule(moduleName: string) {
     delete this.rootState[moduleName];
     delete this.modulesMetadata[moduleName];
-    console.log('UNREGISTER STATE', moduleName);
   }
 
   recordingAccessors = 0;
@@ -149,12 +145,14 @@ export class StateController<TConfig = any> {
       });
     });
 
+    // create simple getters and setters from the state config
     Object.keys(config.getters).forEach(propName => {
       const getter = () => config.getters[propName].get.apply(controller);
       defineGetter(controller, propName, getter);
       defineGetter(getters, propName, getter);
     });
 
+    // create getter methods
     Object.keys(config.getterMethods).forEach(propName => {
       defineGetter(controller, propName, () => (...args: any) => config.getterMethods[propName].apply(controller, args));
     });
@@ -276,7 +274,6 @@ export class StateController<TConfig = any> {
 
   // TODO remove
   set state(val: any) {
-    console.log('set state ', val);
     throw new Error('Trying to set state');
   }
 
@@ -288,62 +285,6 @@ export class StateController<TConfig = any> {
     return this.getMetadata().getters as TStateFor<TConfig>;
   }
 
-  createView() {
-    const config = this.getMetadata().config;
-    const view = new StateView();
-    const controller = this;
-
-    view.defineProp({
-      description: 'StateRev',
-      name: 'getRev',
-      reactive: true,
-      getValue: () => {
-        // eslint-disable-next-line no-unused-expressions
-        controller.state; // read as reactive
-        // console.log(`read REV for ${controller.moduleName}.${controller.sectionName}`, controller.metadata.rev);
-        return controller.getMetadata().rev;
-      },
-    });
-
-    traverse(config.state, stateKey => {
-      view.defineProp({
-        description: 'StateProp',
-        name: stateKey,
-        reactive: true,
-        getValue: () => (controller as any)[stateKey],
-      });
-    });
-
-    traverse(config.mutations, stateKey => {
-      view.defineProp({
-        description: 'StateMutation',
-        name: stateKey,
-        reactive: false,
-        getValue: () => (controller as any)[stateKey],
-      });
-    });
-
-    traverse(config.getters, (propName) => {
-      view.defineProp({
-        description: 'StateGetter',
-        name: propName,
-        reactive: true,
-        getValue: () => (controller as any)[propName],
-      });
-    });
-
-    traverse(config.getterMethods, (propName) => {
-      view.defineProp({
-        description: 'StateGetterMethod',
-        name: propName,
-        reactive: false,
-        getValue: () => (controller as any)[propName],
-      });
-    });
-
-    return view;
-  }
-
 }
 
 export interface Mutation {
@@ -353,18 +294,6 @@ export interface Mutation {
   mutationContext?: any;
   payload: any;
 }
-//
-// /**
-//  * use immerjs API to clone the object
-//  */
-// export function clone<T>(state: T) {
-//   return produce(state, draft => {});
-// }
-
-export const defaultStateConfig: Partial<TStateConfig> = {
-  // persistent: false,
-  // autogenerateMutations: true,
-};
 
 export type TStateConfigCreator = (new (...args: any) => TStateConfigDraft) | TStateConfigDraft
 
@@ -376,7 +305,6 @@ export type TStateConfig = {
   [key: string]: any;
   // persistent?: boolean, // TODO ?
   // persistentKeys?: boolean, // TODO ?
-  // autogenerateMutations?: boolean, // TODO ?
 }
 
 export type TStateConfigDraft = Partial<TStateConfig>

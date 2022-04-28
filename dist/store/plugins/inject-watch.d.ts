@@ -11,4 +11,4 @@ export declare class WatchModule<T> {
     init(): void;
     destroy(): void;
 }
-export declare function injectWatch<T>(expression: () => T, onChange: (newVal: T, prevVal: T) => unknown, isEqual?: (newVal: T, prevVal: T) => boolean): import("../../scope").InjectedProp<WatchModule<unknown>, import("..").GetModuleStateView<typeof WatchModule>, {}>;
+export declare function injectWatch<T>(expression: () => T, onChange: (newVal: T, prevVal: T) => unknown, isEqual?: (newVal: T, prevVal: T) => boolean): import("../../scope").InjectedProp<WatchModule<unknown>, import("./createModuleView").GetModuleStateView<typeof WatchModule>, {}>;

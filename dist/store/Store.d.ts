@@ -1,5 +1,4 @@
 import { Scope, Dict, PickFunctionProperties } from '../scope';
-import { StateView } from './StateView';
 /**
  * All React related code should be handled in ReactAdapter
  * Framework agnostic store
@@ -40,7 +39,6 @@ export declare class StateController<TConfig = any> {
     set state(val: any);
     getMetadata(): StatefulModuleMetadata;
     get getters(): TStateFor<TConfig>;
-    createView(): StateView<{}>;
 }
 export interface Mutation {
     id: number;
@@ -49,7 +47,6 @@ export interface Mutation {
     mutationContext?: any;
     payload: any;
 }
-export declare const defaultStateConfig: Partial<TStateConfig>;
 export declare type TStateConfigCreator = (new (...args: any) => TStateConfigDraft) | TStateConfigDraft;
 export declare type TStateConfig = {
     state: any;

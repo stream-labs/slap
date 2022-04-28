@@ -4,6 +4,7 @@ import { StateView } from '../StateView';
 import { injectState } from './inject-state';
 import { injectWatch } from './inject-watch';
 import { injectChild } from './inject-child';
+import { createStateView } from './createStateView';
 
 export class QueryStateConfig<TData, TParams, TError> {
 
@@ -19,7 +20,6 @@ export class QueryStateConfig<TData, TParams, TError> {
   setData(data: TData) {
     this.state.status = 'success';
     this.state.data = data;
-    console.log('query fetched', data);
   }
 
   setError(error: TError) {
@@ -83,7 +83,7 @@ export class QueryModule<
         return () => this.refetch();
       },
     });
-    this.stateView = this.state.createView() as any;
+    this.stateView = createStateView(this.state) as any;
     this.queryView = this.stateView.mergeView(queryMethods);
     const data = this.options.initialData;
     this.state.update({
@@ -100,7 +100,6 @@ export class QueryModule<
 
   fetch(): Promise<TData> {
     let fetchResult: any;
-
 
     if (this.thisContext) {
       fetchResult = this.options.fetch.call(this.thisContext, this.getParams());

@@ -6,7 +6,6 @@ export declare type TAppContext = {
 };
 export declare const SlapContext: React.Context<TAppContext | null>;
 export declare function useAppContext(): TAppContext;
-export declare function useScope(): Scope;
 export declare function createApp(Services?: TModuleConstructorMap): TAppContext;
 export declare function ReactModules(p: {
     children: ReactNode | ReactNode[];

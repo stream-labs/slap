@@ -1,5 +1,6 @@
 import { GetModuleConstructorArgs, GetModuleInstanceFor, TModuleLocatorType } from '../scope';
-import { GetModuleStateView, ExtendView } from '../store/StateView';
+import { ExtendView } from '../store/StateView';
+import { GetModuleStateView } from '../store';
 import { ComponentView } from './react-store-adapter';
 export declare function useComponentView<TModule, TResult = GetUseComponentViewResult<TModule>>(module: TModule): TResult;
 export declare function useModule<T extends TModuleLocatorType, TInitState extends boolean | GetModuleConstructorArgs<T>>(locator: T, initProps?: TInitState | null, moduleName?: string): GetUseComponentViewResult<GetModuleInstanceFor<T>>;

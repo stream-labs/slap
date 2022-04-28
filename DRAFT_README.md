@@ -1,25 +1,110 @@
-# Redumbx
+# Slap
 
-Redumbx provides a Simple and Scalable way for managing application state and sharing logic between components.
+Scalable and performant architecture for large React application
 
-- React-Redux is under the hood
 - TypeScript ready
-- No additional wrappers for components
 - Minimal boilerplate code
+- No additional wrappers for components
+- Scale your app with modules and Dependency Injection
+- Use an alternative for stateful React hooks
 
+## Example 1
+
+```tsx
+
+// Define a React component
+export function FormComponent() {
+  
+  // define a module
+  const module = useModule(() => {
+
+    // inject a reactive state
+    const state = injectState({
+      name: 'Alex',
+      address: 'Earth'
+    });
+    
+    function reset() {
+      this.state.mutate(state => {
+        state.name = '';
+        state.address = '';
+      })
+    }
+
+    // export state and method for component
+    return { state, reset }
+  });
+
+  // select methods and state from the module
+  const { name, setName, address, setAddress, reset } = module;
+  
+  // render TSX
+  return (
+    <div>
+      <h1>Hello {name} from {address}</h1>
+      Name <TextInput value={name} onChange={setName} />
+      Address <TextInput value={address} onChange={setAddress} />
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+
+```
+
+
+## Alternative way
+
+```tsx
+
+// define a module
+class UserModule {
+
+  // inject a reactive state
+  state = injectState({
+    name: 'Alex',
+    address: 'Earth',
+
+    reset() {
+      this.name = '';
+      this.address = '';
+    }
+  });
+  
+};
+
+// Define a React component
+export function FormComponent() {
+
+  // select methods and state from the module
+  const { bind, reset } = useModule(UserModule);
+
+  // render TSX
+  return (
+    <div>
+      <h1>Hello {name} from {address}</h1>
+      Name <TextInput {...bind.name} />
+      Address <TextInput {...bind.address }/>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+
+```
 
  ## Get started with counter application
 
 ```tsx
-import { mutation, useModule, RedumbxApp } from 'redumbx';
+import { mutation, useModule, ReactModules } from 'slap';
 
-// Define a RedumbxModule
+// Define a Module
 class CounterModule {
 
-  state = {
+  // create reactive state
+  state = injectState({
     counter: 1,
-  };
+  });
 
+  // register mutations
   @mutation()
   increment() {
     this.state.counter++;
@@ -45,25 +130,12 @@ export function Counter() {
 
 // Create your application
 ReactDOM.render(
-  <RedumbxApp>
+  <ReactModules>
     <Counter />
-  </RedumbxApp>,
+  </ReactModules>,
   document.getElementById('app'),
 );
 ```
-You can compare a vanilla Redux version <a target="_blank" href="https://redux.js.org/usage/usage-with-typescript#standard-redux-toolkit-project-setup-with-typescript">here</a>
-
-Philosophy
-- keep components simple
-- follow Flux pattern
-- think about lifetime and encapsulation
-
-Redumbx helps to share logic between several components without [props drilling](https://www.geeksforgeeks.org/what-is-prop-drilling-and-how-to-avoid-it/)
-to keep your code clear
-
-Redumbx helps to organize code splitting with help of Redux Modules
-Each Redux Module controls its own chunk of state in the global Redux store
-Redux Modules are objects that contain initialState, actions, mutations and getters
 
 ## Multiple components TodoList example
 
@@ -156,7 +228,4 @@ class TodoModule {
 
 ```
 
-`useModule()` creates a stateful module that lives until at least one component is using this module
-
-If you need a module that lives for the duration of the application you should use `useService()`
 

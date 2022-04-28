@@ -1,14 +1,7 @@
-
 import {
-  defineGetter, Dict, forEach, GetModuleInstanceFor,
+  defineGetter, Dict, forEach,
 } from '../scope';
-import { getInstanceMetadata } from '../scope/provider';
-import { pickProps } from './plugins/pickProps';
-import {
-  GetAllInjectedProps,
-  GetInjectedProps,
-} from './plugins';
-import { GetMerge } from '../utils';
+import { GetComponentDataForModule } from './plugins/createModuleView';
 
 export class StateView<TProps = {}> {
 
@@ -99,33 +92,6 @@ export class StateView<TProps = {}> {
     return props;
   }
 
-  // use for debugging
-  get selectedProps() {
-    const selectedDescriptors = this.selectedDescriptors;
-    const result = {} as TProps;
-    forEach(selectedDescriptors, (descr, propName) => {
-      if (!descr.reactive) return;
-      // @ts-ignore
-      result[propName] = descr.getRev();
-    });
-    return result;
-  }
-
-  getAnalytics() {
-    // TODO ?
-  }
-
-  // DEFINE MULTIPLE WAYS FOR EXTENDING THE ModuleView
-  // TODO: remove overloads that we will never use
-
-  /**
-   * // Extend with a factory returning a new ModuleView
-   *
-   * module.extend((props, view) => {
-   *   const module = scope.resolve(MyModule)
-   *   return new ModuleView(module)
-   * })
-   */
   select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView {
     return newViewFactory(this.props, this);
   }
@@ -148,32 +114,6 @@ export class StateView<TProps = {}> {
 
 }
 
-export function createStateViewForModule<T>(module: T) {
-  const stateView = new StateView();
-  return stateView.select(pickProps(module));
-}
-
-export type GetModuleSelfView<
-  TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>
-  > = TModule extends { exportComponentData: () => ({ self: StateView<infer TView> })} ? TView : {}
-
-export type GetModuleExtraView<
-  TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>
-  > = TModule extends { exportComponentData: () => ({ extra: StateView<infer TView> })} ? TView : {}
-
-export type GetComponentDataForModule<
-  TModuleConfig,
-  TModule = GetModuleInstanceFor<TModuleConfig>,
-  TSelfExport = GetModuleSelfView<TModuleConfig>,
-  TExtraExport = GetModuleExtraView<TModuleConfig>,
-  TInjectedProps = TModule extends { exportComponentData: () => any } ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
-  > = GetMerge<TExtraExport, TSelfExport & TInjectedProps>;
-
-// export type GetModuleView<TModuleConfig, TModule = TModuleInstanceFor<TModuleConfig>> =
-//   TModule extends { getView: () => StateView<infer TView>} ? TView : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
-
-export type GetModuleStateView<TModuleConfig> = StateView<GetComponentDataForModule<TModuleConfig>>;
-
 export type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetComponentDataForModule<TExtendedModule>>;
 
 export type TModulePropDescriptor<TValue> = {
@@ -186,7 +126,6 @@ export type TModulePropDescriptor<TValue> = {
   enumerable: boolean,
   configurable: boolean,
   dynamic: boolean,
-  // module: unknown, // one module view can be assembled from multiple modules
 }
 
 export type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'description' | 'name' | 'getValue'>>

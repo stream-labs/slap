@@ -19,13 +19,14 @@ export function ShouldComponentUpdatePage() {
     return { userState };
   });
 
-  componentView.setShouldComponentUpdate(() => {
+  componentView.setShouldComponentUpdate(defaultShouldComponentUpdate => {
     const prevName = (componentView.lastSnapshot.props as any).name;
     const newName = (componentView.makeSnapshot().props as any).name;
     const nameBecameValid = prevName.length < minNameLength && newName.length >= minNameLength;
     const nameBecameInvalid = prevName.length >= minNameLength && newName.length < minNameLength;
     const shouldUpdate = nameBecameValid || nameBecameInvalid;
     return shouldUpdate;
+
   });
 
   renderCount.current++;

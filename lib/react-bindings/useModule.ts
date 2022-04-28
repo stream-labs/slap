@@ -1,5 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
-import { Simulate } from 'react-dom/test-utils';
+import { useEffect, useLayoutEffect } from 'react';
 import {
   getComponentName, useForceUpdate, useOnCreate, useOnDestroy,
 } from './hooks';
@@ -11,13 +10,9 @@ import {
   GetModuleInstanceFor,
   TModuleLocatorType,
 } from '../scope';
-import {
-  createStateViewForModule,
-  GetModuleStateView, ExtendView,
-} from '../store/StateView';
-import { Store } from '../store';
+import { ExtendView } from '../store/StateView';
+import { createModuleView, GetModuleStateView, Store } from '../store';
 import { ComponentView, ReactStoreAdapter } from './react-store-adapter';
-import { isSimilar } from '../utils';
 
 export function useComponentView<TModule, TResult = GetUseComponentViewResult<TModule>>
 (module: TModule): TResult {
@@ -32,7 +27,7 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
     const store = provider.scope.resolve(Store);
     const componentName = getComponentName();
     const componentId = `${componentName}__${generateId()}`;
-    let moduleView = createStateViewForModule(module);
+    let moduleView = createModuleView(module);
     const parentModuleView = provider.getMetadata('parentModuleView');
     if (parentModuleView) {
       moduleView = moduleView.mergeView(parentModuleView);
@@ -69,10 +64,6 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
 
   useOnDestroy(() => {
     reactStore.destroyComponent(componentId);
-
-    // // // TODO find better way of detecting one-off modules
-    // const shouldDestroyModule = provider.instanceId.includes('__component__');
-    // if (shouldDestroyModule) provider.scope.
   });
 
   useLayoutEffect(() => {
@@ -82,18 +73,13 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
 
     component.makeSnapshot();
 
-    // TODO do not run watchers for non-observable component views
-
     const watcherId = reactStore.createWatcher(component.id, () => {
 
       if (provider.isDestroyed) return;
 
-
-
       const shouldUpdate = component.shouldComponentUpdate();
       if (shouldUpdate) {
         component.setInvalidated(true);
-        // component.willComponentUpdate && component.willComponentUpdate(newSnapshot, prevSnapshot);
       }
     });
     return () => {

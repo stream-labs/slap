@@ -223,7 +223,11 @@ if (true) {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -246,7 +250,11 @@ __exportStar(__webpack_require__(225), exports);
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -264,7 +272,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ReactModules = exports.createApp = exports.useScope = exports.useAppContext = exports.SlapContext = void 0;
+exports.ReactModules = exports.createApp = exports.useAppContext = exports.SlapContext = void 0;
 const jsx_runtime_1 = __webpack_require__(893);
 const react_1 = __importStar(__webpack_require__(156));
 const hooks_1 = __webpack_require__(985);
@@ -276,10 +284,6 @@ function useAppContext() {
     return (0, react_1.useContext)(exports.SlapContext);
 }
 exports.useAppContext = useAppContext;
-function useScope() {
-    return useAppContext().servicesScope;
-}
-exports.useScope = useScope;
 function createApp(Services = {}) {
     const rootScope = new scope_1.Scope(Object.assign(Object.assign({}, Services), { Store: store_1.Store, ReactStoreAdapter: react_store_adapter_1.ReactStoreAdapter }));
     const modulesScope = rootScope.createChildScope({}, { autoregister: true });
@@ -289,7 +293,7 @@ function createApp(Services = {}) {
 exports.createApp = createApp;
 function ReactModules(p) {
     const appScope = (0, hooks_1.useOnCreate)(() => p.app || createApp());
-    return ((0, jsx_runtime_1.jsx)(exports.SlapContext.Provider, Object.assign({ value: appScope }, { children: p.children }), void 0));
+    return ((0, jsx_runtime_1.jsx)(exports.SlapContext.Provider, Object.assign({ value: appScope }, { children: p.children })));
 }
 exports.ReactModules = ReactModules;
 
@@ -302,7 +306,11 @@ exports.ReactModules = ReactModules;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -320,7 +328,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.useForceUpdate = exports.getComponentName = exports.useComponentId = exports.useOnDestroy = exports.useOnCreate = void 0;
+exports.useForceUpdate = exports.getComponentName = exports.useOnDestroy = exports.useOnCreate = void 0;
 const react_1 = __importStar(__webpack_require__(156));
 /**
  * onCreate shortcut
@@ -337,16 +345,6 @@ function useOnDestroy(cb) {
     (0, react_1.useEffect)(() => cb, []);
 }
 exports.useOnDestroy = useOnDestroy;
-let nextComponentId = 1;
-/**
- * Returns a unique component id
- * If DEBUG=true then the componentId includes a component name
- */
-function useComponentId() {
-    const DEBUG = false;
-    return useOnCreate(() => (DEBUG ? `${nextComponentId++}_${getComponentName()}` : `${nextComponentId++}`));
-}
-exports.useComponentId = useComponentId;
 /**
  * Get component name from the callstack
  * Use for debugging only
@@ -370,10 +368,6 @@ function getComponentName() {
 exports.getComponentName = getComponentName;
 /**
  * Returns a function for force updating of the component
- * Use it only for frequently used components for optimization purposes
- *
- * Current implementation from
- * https://github.com/ant-design/ant-design/blob/master/components/_util/hooks/useForceUpdate.ts
  */
 function useForceUpdate() {
     const [, forceUpdate] = react_1.default.useReducer(x => x + 1, 0);
@@ -390,7 +384,11 @@ exports.useForceUpdate = useForceUpdate;
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -494,6 +492,7 @@ class ComponentView {
             affectedModules: {},
             props: null,
         };
+        this.defaultShouldComponentUpdateCached = () => this.defaultShouldComponentUpdate();
         this.customShouldComponentUpdate = null;
     }
     makeSnapshot() {
@@ -545,7 +544,7 @@ class ComponentView {
     }
     shouldComponentUpdate() {
         if (this.customShouldComponentUpdate) {
-            return this.customShouldComponentUpdate(this.defaultShouldComponentUpdate);
+            return this.customShouldComponentUpdate(this.defaultShouldComponentUpdateCached);
         }
         return this.defaultShouldComponentUpdate();
     }
@@ -568,7 +567,6 @@ const react_1 = __webpack_require__(156);
 const hooks_1 = __webpack_require__(985);
 const useModuleInstance_1 = __webpack_require__(878);
 const scope_1 = __webpack_require__(527);
-const StateView_1 = __webpack_require__(32);
 const store_1 = __webpack_require__(338);
 const react_store_adapter_1 = __webpack_require__(160);
 function useComponentView(module) {
@@ -579,7 +577,7 @@ function useComponentView(module) {
         const store = provider.scope.resolve(store_1.Store);
         const componentName = (0, hooks_1.getComponentName)();
         const componentId = `${componentName}__${(0, scope_1.generateId)()}`;
-        let moduleView = (0, StateView_1.createStateViewForModule)(module);
+        let moduleView = (0, store_1.createModuleView)(module);
         const parentModuleView = provider.getMetadata('parentModuleView');
         if (parentModuleView) {
             moduleView = moduleView.mergeView(parentModuleView);
@@ -609,23 +607,18 @@ function useComponentView(module) {
     });
     (0, hooks_1.useOnDestroy)(() => {
         reactStore.destroyComponent(componentId);
-        // // // TODO find better way of detecting one-off modules
-        // const shouldDestroyModule = provider.instanceId.includes('__component__');
-        // if (shouldDestroyModule) provider.scope.
     });
     (0, react_1.useLayoutEffect)(() => {
         const stateView = component.stateView;
         if (!stateView.hasSelectedProps)
             return;
         component.makeSnapshot();
-        // TODO do not run watchers for non-observable component views
         const watcherId = reactStore.createWatcher(component.id, () => {
             if (provider.isDestroyed)
                 return;
             const shouldUpdate = component.shouldComponentUpdate();
             if (shouldUpdate) {
                 component.setInvalidated(true);
-                // component.willComponentUpdate && component.willComponentUpdate(newSnapshot, prevSnapshot);
             }
         });
         return () => {
@@ -735,7 +728,11 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -748,7 +745,6 @@ __exportStar(__webpack_require__(422), exports);
 __exportStar(__webpack_require__(521), exports);
 __exportStar(__webpack_require__(370), exports);
 __exportStar(__webpack_require__(869), exports);
-__exportStar(__webpack_require__(387), exports);
 __exportStar(__webpack_require__(986), exports);
 __exportStar(__webpack_require__(158), exports);
 
@@ -1329,36 +1325,6 @@ exports.getCurrentProvider = getCurrentProvider;
 
 /***/ }),
 
-/***/ 387:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Subscription = exports.Subject = void 0;
-const nanoevents_1 = __webpack_require__(111);
-class Subject {
-    constructor() {
-        this.emitter = (0, nanoevents_1.createNanoEvents)();
-    }
-    subscribe(cb) {
-        const unsubscribe = this.emitter.on('next', cb);
-        return new Subscription(unsubscribe);
-    }
-    next(data) {
-        this.emitter.emit('next', data);
-    }
-}
-exports.Subject = Subject;
-class Subscription {
-    constructor(unsubscribe) {
-        this.unsubscribe = unsubscribe;
-    }
-}
-exports.Subscription = Subscription;
-
-
-/***/ }),
-
 /***/ 986:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -1428,9 +1394,8 @@ exports.isClass = isClass;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createStateViewForModule = exports.StateView = void 0;
+exports.StateView = void 0;
 const scope_1 = __webpack_require__(527);
-const pickProps_1 = __webpack_require__(49);
 class StateView {
     constructor() {
         this.props = {};
@@ -1504,31 +1469,6 @@ class StateView {
         });
         return props;
     }
-    // use for debugging
-    get selectedProps() {
-        const selectedDescriptors = this.selectedDescriptors;
-        const result = {};
-        (0, scope_1.forEach)(selectedDescriptors, (descr, propName) => {
-            if (!descr.reactive)
-                return;
-            // @ts-ignore
-            result[propName] = descr.getRev();
-        });
-        return result;
-    }
-    getAnalytics() {
-        // TODO ?
-    }
-    // DEFINE MULTIPLE WAYS FOR EXTENDING THE ModuleView
-    // TODO: remove overloads that we will never use
-    /**
-     * // Extend with a factory returning a new ModuleView
-     *
-     * module.extend((props, view) => {
-     *   const module = scope.resolve(MyModule)
-     *   return new ModuleView(module)
-     * })
-     */
     select(newViewFactory) {
         return newViewFactory(this.props, this);
     }
@@ -1545,11 +1485,6 @@ class StateView {
     }
 }
 exports.StateView = StateView;
-function createStateViewForModule(module) {
-    const stateView = new StateView();
-    return stateView.select((0, pickProps_1.pickProps)(module));
-}
-exports.createStateViewForModule = createStateViewForModule;
 
 
 /***/ }),
@@ -1562,13 +1497,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.defaultStateConfig = exports.StateController = exports.Store = void 0;
+exports.StateController = exports.Store = void 0;
 const immer_1 = __importDefault(__webpack_require__(172));
 const nanoevents_1 = __webpack_require__(111);
 const scope_1 = __webpack_require__(527);
-const traverse_1 = __webpack_require__(222);
 const parse_config_1 = __webpack_require__(890);
-const StateView_1 = __webpack_require__(32);
 /**
  * All React related code should be handled in ReactAdapter
  * Framework agnostic store
@@ -1591,7 +1524,6 @@ class Store {
             throw new Error(`State with a name "${moduleName}" is already created`);
         }
         const config = (0, parse_config_1.parseStateConfig)(configCreator);
-        console.log('REGISTER STORE', moduleName);
         const controller = new StateController(this, moduleName, config);
         return controller;
     }
@@ -1613,7 +1545,6 @@ class Store {
     destroyModule(moduleName) {
         delete this.rootState[moduleName];
         delete this.modulesMetadata[moduleName];
-        console.log('UNREGISTER STATE', moduleName);
     }
     listenAffectedModules(cb) {
         this.recordingAccessors++;
@@ -1673,11 +1604,13 @@ class StateController {
                 return true;
             });
         });
+        // create simple getters and setters from the state config
         Object.keys(config.getters).forEach(propName => {
             const getter = () => config.getters[propName].get.apply(controller);
             (0, scope_1.defineGetter)(controller, propName, getter);
             (0, scope_1.defineGetter)(getters, propName, getter);
         });
+        // create getter methods
         Object.keys(config.getterMethods).forEach(propName => {
             (0, scope_1.defineGetter)(controller, propName, () => (...args) => config.getterMethods[propName].apply(controller, args));
         });
@@ -1783,7 +1716,6 @@ class StateController {
     }
     // TODO remove
     set state(val) {
-        console.log('set state ', val);
         throw new Error('Trying to set state');
     }
     getMetadata() {
@@ -1792,68 +1724,8 @@ class StateController {
     get getters() {
         return this.getMetadata().getters;
     }
-    createView() {
-        const config = this.getMetadata().config;
-        const view = new StateView_1.StateView();
-        const controller = this;
-        view.defineProp({
-            description: 'StateRev',
-            name: 'getRev',
-            reactive: true,
-            getValue: () => {
-                // eslint-disable-next-line no-unused-expressions
-                controller.state; // read as reactive
-                // console.log(`read REV for ${controller.moduleName}.${controller.sectionName}`, controller.metadata.rev);
-                return controller.getMetadata().rev;
-            },
-        });
-        (0, traverse_1.traverse)(config.state, stateKey => {
-            view.defineProp({
-                description: 'StateProp',
-                name: stateKey,
-                reactive: true,
-                getValue: () => controller[stateKey],
-            });
-        });
-        (0, traverse_1.traverse)(config.mutations, stateKey => {
-            view.defineProp({
-                description: 'StateMutation',
-                name: stateKey,
-                reactive: false,
-                getValue: () => controller[stateKey],
-            });
-        });
-        (0, traverse_1.traverse)(config.getters, (propName) => {
-            view.defineProp({
-                description: 'StateGetter',
-                name: propName,
-                reactive: true,
-                getValue: () => controller[propName],
-            });
-        });
-        (0, traverse_1.traverse)(config.getterMethods, (propName) => {
-            view.defineProp({
-                description: 'StateGetterMethod',
-                name: propName,
-                reactive: false,
-                getValue: () => controller[propName],
-            });
-        });
-        return view;
-    }
 }
 exports.StateController = StateController;
-//
-// /**
-//  * use immerjs API to clone the object
-//  */
-// export function clone<T>(state: T) {
-//   return produce(state, draft => {});
-// }
-exports.defaultStateConfig = {
-// persistent: false,
-// autogenerateMutations: true,
-};
 
 
 /***/ }),
@@ -1864,7 +1736,11 @@ exports.defaultStateConfig = {
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1980,13 +1856,233 @@ function parseDefaultState(target) {
 
 /***/ }),
 
+/***/ 502:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.pickProps = exports.createModuleView = void 0;
+const StateView_1 = __webpack_require__(32);
+const utils_1 = __webpack_require__(225);
+const scope_1 = __webpack_require__(527);
+function createModuleView(module) {
+    let view = new StateView_1.StateView();
+    const injectedProps = {};
+    (0, utils_1.traverse)(module, (propName, descr) => {
+        var _a;
+        if (scope_1.moduleSystemProps[propName])
+            return;
+        if (descr.get)
+            return;
+        const provider = (_a = descr.value) === null || _a === void 0 ? void 0 : _a.__provider;
+        if (provider) {
+            injectedProps[propName] = true;
+            const injectedModule = provider.instance;
+            const componentData = injectedModule.exportComponentData && injectedModule.exportComponentData();
+            const injectedValue = injectedModule.exportInjectorValue ? injectedModule.exportInjectorValue() : injectedModule;
+            const extraProps = componentData && componentData.extra;
+            if (extraProps) {
+                const extraPropsView = extraProps;
+                (0, scope_1.forEach)(extraPropsView.descriptors, (descriptor, p) => {
+                    if (!(descriptor.name in injectedModule))
+                        view.defineProp(descriptor);
+                });
+                view = view.mergeView(extraProps);
+            }
+            const selfProps = (componentData && componentData.self) || injectedValue;
+            if (selfProps) {
+                view.defineProp({
+                    description: 'InjectorView',
+                    name: propName,
+                    reactive: true,
+                    stateView: selfProps instanceof StateView_1.StateView ? selfProps : null,
+                    getValue() {
+                        return injectedValue;
+                    },
+                });
+            }
+        }
+    });
+    (0, utils_1.traverse)(module, (propName, descr) => {
+        if (injectedProps[propName])
+            return;
+        if (scope_1.moduleSystemProps[propName])
+            return;
+        if (descr.get) {
+            view.defineProp({
+                description: 'ModuleGetter',
+                reactive: true,
+                name: propName,
+                getValue: () => module[propName],
+            });
+            return;
+        }
+        if (typeof descr.value === 'function') {
+            view.defineProp({
+                description: 'ModuleMethod',
+                reactive: false,
+                name: propName,
+                getValue: () => descr.value.bind(module),
+            });
+            return;
+        }
+        view.defineProp({
+            description: 'ModuleVariable',
+            reactive: false,
+            name: propName,
+            getValue: () => module[propName],
+        });
+    });
+    return view;
+}
+exports.createModuleView = createModuleView;
+function pickProps(module) {
+    return function (props, view) {
+        const injectedProps = {};
+        (0, utils_1.traverse)(module, (propName, descr) => {
+            var _a;
+            if (scope_1.moduleSystemProps[propName])
+                return;
+            if (descr.get)
+                return;
+            const provider = (_a = descr.value) === null || _a === void 0 ? void 0 : _a.__provider;
+            if (provider) {
+                injectedProps[propName] = true;
+                const injectedModule = provider.instance;
+                const componentData = injectedModule.exportComponentData && injectedModule.exportComponentData();
+                const injectedValue = injectedModule.exportInjectorValue ? injectedModule.exportInjectorValue() : injectedModule;
+                const extraProps = componentData && componentData.extra;
+                if (extraProps) {
+                    const extraPropsView = extraProps;
+                    (0, scope_1.forEach)(extraPropsView.descriptors, (descriptor, p) => {
+                        if (!(descriptor.name in injectedModule))
+                            view.defineProp(descriptor);
+                    });
+                    view = view.mergeView(extraProps);
+                }
+                const selfProps = (componentData && componentData.self) || injectedValue;
+                if (selfProps) {
+                    view.defineProp({
+                        description: 'InjectorView',
+                        name: propName,
+                        reactive: true,
+                        stateView: selfProps instanceof StateView_1.StateView ? selfProps : null,
+                        getValue() {
+                            return injectedValue;
+                        },
+                    });
+                }
+            }
+        });
+        (0, utils_1.traverse)(module, (propName, descr) => {
+            if (injectedProps[propName])
+                return;
+            if (scope_1.moduleSystemProps[propName])
+                return;
+            if (descr.get) {
+                view.defineProp({
+                    description: 'ModuleGetter',
+                    reactive: true,
+                    name: propName,
+                    getValue: () => module[propName],
+                });
+                return;
+            }
+            if (typeof descr.value === 'function') {
+                view.defineProp({
+                    description: 'ModuleMethod',
+                    reactive: false,
+                    name: propName,
+                    getValue: () => descr.value.bind(module),
+                });
+                return;
+            }
+            view.defineProp({
+                description: 'ModuleVariable',
+                reactive: false,
+                name: propName,
+                getValue: () => module[propName],
+            });
+        });
+        return view;
+    };
+}
+exports.pickProps = pickProps;
+
+
+/***/ }),
+
+/***/ 135:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createStateView = void 0;
+const StateView_1 = __webpack_require__(32);
+const utils_1 = __webpack_require__(225);
+function createStateView(controller) {
+    const config = controller.getMetadata().config;
+    const view = new StateView_1.StateView();
+    view.defineProp({
+        description: 'StateRev',
+        name: 'getRev',
+        reactive: true,
+        getValue: () => {
+            // eslint-disable-next-line no-unused-expressions
+            controller.state; // read as reactive
+            return controller.getMetadata().rev;
+        },
+    });
+    (0, utils_1.traverse)(config.state, stateKey => {
+        view.defineProp({
+            description: 'StateProp',
+            name: stateKey,
+            reactive: true,
+            getValue: () => controller[stateKey],
+        });
+    });
+    (0, utils_1.traverse)(config.mutations, stateKey => {
+        view.defineProp({
+            description: 'StateMutation',
+            name: stateKey,
+            reactive: false,
+            getValue: () => controller[stateKey],
+        });
+    });
+    (0, utils_1.traverse)(config.getters, (propName) => {
+        view.defineProp({
+            description: 'StateGetter',
+            name: propName,
+            reactive: true,
+            getValue: () => controller[propName],
+        });
+    });
+    (0, utils_1.traverse)(config.getterMethods, (propName) => {
+        view.defineProp({
+            description: 'StateGetterMethod',
+            name: propName,
+            reactive: false,
+            getValue: () => controller[propName],
+        });
+    });
+    return view;
+}
+exports.createStateView = createStateView;
+
+
+/***/ }),
+
 /***/ 837:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
@@ -1995,13 +2091,13 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__webpack_require__(502), exports);
 __exportStar(__webpack_require__(835), exports);
 __exportStar(__webpack_require__(334), exports);
 __exportStar(__webpack_require__(746), exports);
 __exportStar(__webpack_require__(300), exports);
 __exportStar(__webpack_require__(668), exports);
-__exportStar(__webpack_require__(49), exports);
-__exportStar(__webpack_require__(187), exports);
+__exportStar(__webpack_require__(502), exports);
 
 
 /***/ }),
@@ -2088,6 +2184,7 @@ const StateView_1 = __webpack_require__(32);
 const inject_state_1 = __webpack_require__(300);
 const inject_watch_1 = __webpack_require__(668);
 const inject_child_1 = __webpack_require__(835);
+const createStateView_1 = __webpack_require__(135);
 class QueryStateConfig {
     constructor() {
         // constructor(public state: QueryState<TData, TParams, TError>) {}
@@ -2101,7 +2198,6 @@ class QueryStateConfig {
     setData(data) {
         this.state.status = 'success';
         this.state.data = data;
-        console.log('query fetched', data);
     }
     setError(error) {
         this.state.status = 'error';
@@ -2139,7 +2235,7 @@ class QueryModule {
                 return () => this.refetch();
             },
         });
-        this.stateView = this.state.createView();
+        this.stateView = (0, createStateView_1.createStateView)(this.state);
         this.queryView = this.stateView.mergeView(queryMethods);
         const data = this.options.initialData;
         this.state.update({
@@ -2283,6 +2379,7 @@ const scope_1 = __webpack_require__(527);
 const Store_1 = __webpack_require__(607);
 const inject_child_1 = __webpack_require__(835);
 const inject_form_1 = __webpack_require__(334);
+const createStateView_1 = __webpack_require__(135);
 exports.StateInjectorType = Symbol('stateInjector');
 function injectState(configCreator, allowMutationDecorators = true, onCreate) {
     return (0, inject_child_1.injectChild)(StatefulModule, configCreator, allowMutationDecorators, onCreate);
@@ -2320,7 +2417,7 @@ class StatefulModule {
                 this.stateController.finishInitialization();
             });
         }
-        this.stateView = this.stateController.createView();
+        this.stateView = (0, createStateView_1.createStateView)(this.stateController);
         this.stateView.defineProp({
             description: 'StateFormBinding',
             name: 'bind',
@@ -2411,107 +2508,17 @@ exports.injectWatch = injectWatch;
 
 /***/ }),
 
-/***/ 187:
-/***/ ((__unused_webpack_module, exports) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-
-/***/ }),
-
-/***/ 49:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickProps = void 0;
-const StateView_1 = __webpack_require__(32);
-const utils_1 = __webpack_require__(225);
-const scope_1 = __webpack_require__(527);
-function pickProps(module) {
-    return function (props, view) {
-        const injectedProps = {};
-        (0, utils_1.traverse)(module, (propName, descr) => {
-            var _a;
-            if (scope_1.moduleSystemProps[propName])
-                return;
-            if (descr.get)
-                return;
-            const provider = (_a = descr.value) === null || _a === void 0 ? void 0 : _a.__provider;
-            if (provider) {
-                injectedProps[propName] = true;
-                const injectedModule = provider.instance;
-                const componentData = injectedModule.exportComponentData && injectedModule.exportComponentData();
-                const injectedValue = injectedModule.exportInjectorValue ? injectedModule.exportInjectorValue() : injectedModule;
-                const extraProps = componentData && componentData.extra;
-                if (extraProps) {
-                    const extraPropsView = extraProps;
-                    (0, scope_1.forEach)(extraPropsView.descriptors, (descriptor, p) => {
-                        if (!(descriptor.name in injectedModule))
-                            view.defineProp(descriptor);
-                    });
-                    view = view.mergeView(extraProps);
-                }
-                const selfProps = (componentData && componentData.self) || injectedValue;
-                if (selfProps) {
-                    view.defineProp({
-                        description: 'InjectorView',
-                        name: propName,
-                        reactive: true,
-                        stateView: selfProps instanceof StateView_1.StateView ? selfProps : null,
-                        getValue() {
-                            return injectedValue;
-                        },
-                    });
-                }
-            }
-        });
-        (0, utils_1.traverse)(module, (propName, descr) => {
-            if (injectedProps[propName])
-                return;
-            if (scope_1.moduleSystemProps[propName])
-                return;
-            if (descr.get) {
-                view.defineProp({
-                    description: 'ModuleGetter',
-                    reactive: true,
-                    name: propName,
-                    getValue: () => module[propName],
-                });
-                return;
-            }
-            if (typeof descr.value === 'function') {
-                view.defineProp({
-                    description: 'ModuleMethod',
-                    reactive: false,
-                    name: propName,
-                    getValue: () => descr.value.bind(module),
-                });
-                return;
-            }
-            view.defineProp({
-                description: 'ModuleVariable',
-                reactive: false,
-                name: propName,
-                getValue: () => module[propName],
-            });
-        });
-        return view;
-    };
-}
-exports.pickProps = pickProps;
-
-
-/***/ }),
-
 /***/ 225:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
 }) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];

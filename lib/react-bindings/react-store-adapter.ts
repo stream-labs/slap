@@ -125,7 +125,7 @@ export class ComponentView {
     this.isMounted = false;
   }
 
-  defaultShouldComponentUpdate(): boolean {
+  private defaultShouldComponentUpdate(): boolean {
     const prevSnapshot = this.lastSnapshot;
     const prevAffectedModules = Object.keys(prevSnapshot.affectedModules);
     let modulesChanged = false;
@@ -151,25 +151,20 @@ export class ComponentView {
     return false;
   }
 
+  defaultShouldComponentUpdateCached = () => this.defaultShouldComponentUpdate();
+
   shouldComponentUpdate(): boolean {
     if (this.customShouldComponentUpdate) {
-      return this.customShouldComponentUpdate(this.defaultShouldComponentUpdate);
+      return this.customShouldComponentUpdate(this.defaultShouldComponentUpdateCached);
     }
     return this.defaultShouldComponentUpdate();
   }
 
-  customShouldComponentUpdate: ShouldComponentUpdateFN | null = null;
+  private customShouldComponentUpdate: ShouldComponentUpdateFN | null = null;
 
   setShouldComponentUpdate(shouldUpdateCb: ShouldComponentUpdateFN) {
     this.customShouldComponentUpdate = shouldUpdateCb;
   }
-
-  // willComponentUpdate: WillComponentUpdateFN | null = null;
-  //
-  // setWillComponentUpdate(cb: WillComponentUpdateFN) {
-  //   this.willComponentUpdate = cb;
-  // }
 }
 
-export type ShouldComponentUpdateFN = (defaultShouldComponentUpdate: ShouldComponentUpdateFN) => boolean;
-export type WillComponentUpdateFN = (newSnapshot: ComponentSnapshot, prevSnapshot: ComponentSnapshot) => boolean;
+export type ShouldComponentUpdateFN = (defaultShouldComponentUpdate: () => boolean) => boolean;

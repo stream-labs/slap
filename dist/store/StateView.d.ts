@@ -1,6 +1,5 @@
-import { Dict, GetModuleInstanceFor } from '../scope';
-import { GetAllInjectedProps, GetInjectedProps } from './plugins';
-import { GetMerge } from '../utils';
+import { Dict } from '../scope';
+import { GetComponentDataForModule } from './plugins/createModuleView';
 export declare class StateView<TProps = {}> {
     props: TProps;
     proxy: TProps;
@@ -15,35 +14,10 @@ export declare class StateView<TProps = {}> {
     defineWildcardProp(cb: StateView['wildcardPropCreator']): void;
     private selectValue;
     getSnapshot(): TProps;
-    get selectedProps(): TProps;
-    getAnalytics(): void;
-    /**
-     * // Extend with a factory returning a new ModuleView
-     *
-     * module.extend((props, view) => {
-     *   const module = scope.resolve(MyModule)
-     *   return new ModuleView(module)
-     * })
-     */
     select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView;
     clone(): StateView<TProps>;
     mergeView<TExtension extends StateView<any>, TResult = ExtendView<TProps, TExtension>>(extension: TExtension): TResult;
 }
-export declare function createStateViewForModule<T>(module: T): StateView<{} & T>;
-export declare type GetModuleSelfView<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>> = TModule extends {
-    exportComponentData: () => ({
-        self: StateView<infer TView>;
-    });
-} ? TView : {};
-export declare type GetModuleExtraView<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>> = TModule extends {
-    exportComponentData: () => ({
-        extra: StateView<infer TView>;
-    });
-} ? TView : {};
-export declare type GetComponentDataForModule<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>, TSelfExport = GetModuleSelfView<TModuleConfig>, TExtraExport = GetModuleExtraView<TModuleConfig>, TInjectedProps = TModule extends {
-    exportComponentData: () => any;
-} ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>> = GetMerge<TExtraExport, TSelfExport & TInjectedProps>;
-export declare type GetModuleStateView<TModuleConfig> = StateView<GetComponentDataForModule<TModuleConfig>>;
 export declare type ExtendView<TBaseProps, TExtendedModule> = StateView<TBaseProps & GetComponentDataForModule<TExtendedModule>>;
 export declare type TModulePropDescriptor<TValue> = {
     name: string;
