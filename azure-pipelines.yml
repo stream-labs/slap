@@ -17,5 +17,5 @@ jobs:
       - script: 'npm run build'
         displayName: 'Compile Assets'
 
-      - script: 'npm run jest'
+      - script: 'npm run test'
         displayName: 'Run Tests'
