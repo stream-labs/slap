@@ -1,0 +1,21 @@
+trigger:
+  - alpha
+
+
+jobs:
+  - job: Test
+
+    workspace:
+      clean: resources
+
+
+    steps:
+
+      - script: npm install --immutable 2>&1
+        displayName: 'Install Dependencies'
+
+      - script: 'npm run build'
+        displayName: 'Compile Assets'
+
+      - script: 'npm run jest'
+        displayName: 'Run Tests'
