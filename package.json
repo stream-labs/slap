@@ -1,6 +1,6 @@
 {
   "name": "slap",
-  "version": "0.1.75",
+  "version": "0.1.76",
   "description": "Streamlabs Application modules",
   "scripts": {
     "test": "jest --collectCoverage",
