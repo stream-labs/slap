@@ -91,6 +91,52 @@ export function FormComponent() {
 
 ```
 
+## Extend modules
+
+```tsx
+
+class FooBarModule {
+  foo = 1;
+  bar = 2;
+};
+
+export function MyComponent() {
+  const { foo, bar, sum } = useModule(FooBarModule).extend(module => {
+    sum: module.foo + module.bar;
+  });
+
+  // renders "1 + 2 = 3"
+  return <>{foo} + {bar} = {fooPlulBar}</>
+}
+
+```
+
+##  Modules composition
+
+```tsx
+
+class FooModule {
+  foo: 1;
+};
+
+class BarModule {
+  bar: 2;
+};
+
+class FooBarModule {
+  fooModule = injectChild(FooModule);
+  barModule = injectChild(BarModule);
+  get sum() {
+    return this.fooModule.foo + this.barModule.bar;
+  }
+};
+
+```
+
+
+
+
+
  ## Get started with counter application
 
 ```tsx
