@@ -1,12 +1,15 @@
 import { createNanoEvents } from 'nanoevents';
 import { isPlainObject } from 'is-plain-object';
 import { Scope } from './scope';
-import { defineGetter, Dict, generateId, isClass } from './utils';
+import {
+  defineGetter, Dict, generateId, isClass,
+} from './utils';
 import { Injector } from './injector';
 import {
+  GetModuleInstanceFor,
   InjectableModule,
   TLoadingStatus,
-  TModuleCreator,TProviderFor
+  TModuleCreator, TProviderFor,
 } from './interfaces';
 
 export class Provider<TInstance, TInitParams extends [] = []> {
@@ -33,6 +36,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   childScope: Scope | null = null;
   childModules: Dict<InjectableModule> = {};
+  injectedModules: Dict<InjectableModule> = {};
 
   constructor(
     public scope: Scope,
@@ -47,7 +51,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     this.options = { shouldCallHooks: true, ...this.options };
 
     if (typeof creator === 'function') {
-
 
       if (isClass(creator)) {
         this.factory = (args: TInitParams) => new (creator as any)(...args);
@@ -77,9 +80,9 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   }
 
   mountModule() {
-    Object.keys(this.childModules).forEach(childName => {
-      const childModuleProvider = getInstanceMetadata(this.childModules[childName]).provider;
-      childModuleProvider.mountModule();
+    Object.keys(this.injectedModules).forEach(injectedName => {
+      const childModuleProvider = getInstanceMetadata(this.injectedModules[injectedName]).provider;
+      if (!childModuleProvider.isInited) childModuleProvider.mountModule();
     });
     if (this.options.shouldCallHooks) {
       const instance = this.instance as InjectableModule;
@@ -237,12 +240,21 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     return childScope.resolveProvider(name) as TProviderFor<T>;
   }
 
+  injectModule<T extends TModuleCreator>(ModuleLocator: T) {
+    const module = this.scope.resolve(ModuleLocator);
+    const moduleProvider = getInstanceMetadata(module).provider;
+    this.injectedModules[moduleProvider.name] = module;
+    const returnValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
+    return returnValue as GetModuleInstanceFor<T>; // TODO: resolve injected value
+  }
+
   injectChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any) {
     const childScope = this.resolveChildScope();
     const name = `${this.id}__child_${ModuleCreator.name || ''}_${generateId()}`;
-    childScope.register(ModuleCreator, name, { parentProvider: this as Provider<any, any>});
+    childScope.register(ModuleCreator, name, { parentProvider: this as Provider<any, any> });
     const childModule = childScope.init(name, ...args) as InjectableModule;
     this.childModules[name] = childModule;
+    this.injectedModules[name] = childModule;
     const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
     return returnValue;
   }

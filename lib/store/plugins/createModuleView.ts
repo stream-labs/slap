@@ -101,6 +101,7 @@ export function pickProps<TModule, TProps>(module: TModule): (props: TProps, vie
       if (moduleSystemProps[propName]) return;
       if (descr.get) return;
       const provider = descr.value?.__provider as Provider<any>;
+      if (!(provider instanceof Provider)) return;
       if (provider) {
 
         injectedProps[propName] = true;

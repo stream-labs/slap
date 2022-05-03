@@ -37,7 +37,6 @@ export declare type GetInjectedProp<TParams, TValue = TParams extends {
     };
 } ? R : unknown> = InjectedProp<TValue, TView, TViewExtra>;
 export declare function createInjector<TParams extends InjectorParams<any, any, any>>(paramsCreator: (injector: Injector<any, any, any>) => TParams): GetInjectedProp<TParams>;
-export declare const ModuleInjectorType: unique symbol;
 export declare function inject<T extends TModuleClass>(ModuleClass: T): import("./interfaces").GetModuleInstanceFor<T>;
 export declare function injectScope(): import("./scope").Scope;
 export declare function injectProvider(): Provider<any>;

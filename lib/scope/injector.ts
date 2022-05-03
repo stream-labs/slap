@@ -110,20 +110,9 @@ export function createInjector<TParams extends InjectorParams<any, any, any>>
   return injectorProxy as any as GetInjectedProp<TParams>;
 }
 
-// DEFINE BUILT-IN INJECTORS
-
-export const ModuleInjectorType = Symbol('moduleInjector');
-
-// export function inject<T extends TModuleClass>(ModuleClass: T) {
-//   return createInjector(injector => ({
-//     type: ModuleInjectorType,
-//     getValue: () => injector.provider.scope.resolve(ModuleClass),
-//   }));
-// }
-
 export function inject<T extends TModuleClass>(ModuleClass: T) {
   const provider = injectProvider();
-  const module = provider.scope.resolve(ModuleClass);
+  const module = provider.injectModule(ModuleClass);
   return module;
 }
 
@@ -134,25 +123,6 @@ export function injectScope() {
 export function injectProvider(): Provider<any> {
   return getCurrentProvider()!;
 }
-
-// export const ScopeInjectorType = Symbol('providerInjector');
-//
-// export function injectScope() {
-//   return createInjector(injector => ({
-//     type: ScopeInjectorType,
-//     getValue: () => injector.provider.scope,
-//   }));
-// }
-//
-//
-// export const ProviderInjectorType = Symbol('providerInjector');
-// export function injectProvider() {
-//   return createInjector(injector => ({
-//     type: ProviderInjectorType,
-//     getValue: () => injector.provider,
-//   }));
-// }
-
 
 export type InjectedProp<TValue, TView, TExtraView> = TValue & { __injector: Injector<TValue, TView, TExtraView> }
 

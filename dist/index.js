@@ -756,7 +756,7 @@ __exportStar(__webpack_require__(158), exports);
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectProvider = exports.injectScope = exports.inject = exports.ModuleInjectorType = exports.createInjector = exports.Injector = void 0;
+exports.injectProvider = exports.injectScope = exports.inject = exports.createInjector = exports.Injector = void 0;
 const utils_1 = __webpack_require__(986);
 const scope_1 = __webpack_require__(521);
 class Injector {
@@ -836,17 +836,9 @@ function createInjector(paramsCreator) {
     return injectorProxy;
 }
 exports.createInjector = createInjector;
-// DEFINE BUILT-IN INJECTORS
-exports.ModuleInjectorType = Symbol('moduleInjector');
-// export function inject<T extends TModuleClass>(ModuleClass: T) {
-//   return createInjector(injector => ({
-//     type: ModuleInjectorType,
-//     getValue: () => injector.provider.scope.resolve(ModuleClass),
-//   }));
-// }
 function inject(ModuleClass) {
     const provider = injectProvider();
-    const module = provider.scope.resolve(ModuleClass);
+    const module = provider.injectModule(ModuleClass);
     return module;
 }
 exports.inject = inject;
@@ -900,6 +892,7 @@ class Provider {
         this.waitForLoad = new Promise(resolve => { this.resolveLoad = resolve; });
         this.childScope = null;
         this.childModules = {};
+        this.injectedModules = {};
         this.events = (0, nanoevents_1.createNanoEvents)();
         if (!this.name)
             this.name = `AnonymousProvider__${(0, utils_1.generateId)()}`;
@@ -930,9 +923,10 @@ class Provider {
         return instance;
     }
     mountModule() {
-        Object.keys(this.childModules).forEach(childName => {
-            const childModuleProvider = getInstanceMetadata(this.childModules[childName]).provider;
-            childModuleProvider.mountModule();
+        Object.keys(this.injectedModules).forEach(injectedName => {
+            const childModuleProvider = getInstanceMetadata(this.injectedModules[injectedName]).provider;
+            if (!childModuleProvider.isInited)
+                childModuleProvider.mountModule();
         });
         if (this.options.shouldCallHooks) {
             const instance = this.instance;
@@ -1075,12 +1069,20 @@ class Provider {
         }
         return childScope.resolveProvider(name);
     }
+    injectModule(ModuleLocator) {
+        const module = this.scope.resolve(ModuleLocator);
+        const moduleProvider = getInstanceMetadata(module).provider;
+        this.injectedModules[moduleProvider.name] = module;
+        const returnValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
+        return returnValue; // TODO: resolve injected value
+    }
     injectChildModule(ModuleCreator, ...args) {
         const childScope = this.resolveChildScope();
         const name = `${this.id}__child_${ModuleCreator.name || ''}_${(0, utils_1.generateId)()}`;
         childScope.register(ModuleCreator, name, { parentProvider: this });
         const childModule = childScope.init(name, ...args);
         this.childModules[name] = childModule;
+        this.injectedModules[name] = childModule;
         const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
         return returnValue;
     }
@@ -1946,6 +1948,8 @@ function pickProps(module) {
             if (descr.get)
                 return;
             const provider = (_a = descr.value) === null || _a === void 0 ? void 0 : _a.__provider;
+            if (!(provider instanceof scope_1.Provider))
+                return;
             if (provider) {
                 injectedProps[propName] = true;
                 const injectedModule = provider.instance;

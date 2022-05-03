@@ -1,7 +1,7 @@
 import { Scope } from './scope';
 import { Dict } from './utils';
 import { Injector } from './injector';
-import { InjectableModule, TLoadingStatus, TModuleCreator, TProviderFor } from './interfaces';
+import { GetModuleInstanceFor, InjectableModule, TLoadingStatus, TModuleCreator, TProviderFor } from './interfaces';
 export declare class Provider<TInstance, TInitParams extends [] = []> {
     scope: Scope;
     creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance;
@@ -23,6 +23,7 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     initParams?: TInitParams;
     childScope: Scope | null;
     childModules: Dict<InjectableModule>;
+    injectedModules: Dict<InjectableModule>;
     constructor(scope: Scope, creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance, name?: string, options?: Partial<ProviderOptions>);
     createInstance(args: TInitParams): TInstance;
     mountModule(): void;
@@ -34,6 +35,7 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     get instanceId(): string;
     resolveChildScope(): Scope;
     resolveChildProvider<T extends TModuleCreator>(ModuleCreator: T, name: string): TProviderFor<T>;
+    injectModule<T extends TModuleCreator>(ModuleLocator: T): GetModuleInstanceFor<T>;
     injectChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any): any;
     events: import("nanoevents").Emitter<ProviderEvents>;
 }

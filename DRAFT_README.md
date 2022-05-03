@@ -13,7 +13,7 @@ Scalable and performant architecture for large React application
 ```tsx
 
 // Define a React component
-export function FormComponent() {
+function FormComponent() {
   
   // define a module
   const module = useModule(() => {
@@ -73,7 +73,7 @@ class UserModule {
 };
 
 // Define a React component
-export function FormComponent() {
+function FormComponent() {
 
   // select methods and state from the module
   const { bind, reset } = useModule(UserModule);
@@ -91,6 +91,64 @@ export function FormComponent() {
 
 ```
 
+## Getting started with services
+
+```tsx
+class ShopService {
+
+  cartState = injectState({
+    items: [],
+    addItem(item: string) {
+      this.cart.push(item);
+    }
+  });
+
+  checkout() {
+    alert(`Your items: ${this.cartState.items.join(',')}`);
+    this.cartState.setItems([]);
+  }
+
+};
+
+function ShopComponent() {
+
+  const { itemsCount, addPopcorn, checkout } = useModule(() => {
+    const shop = inject(ShopService);
+    function addPopcorn() {
+      shop.cartState.addItem('Popcorn');
+    }
+    return {
+      addPopcorn,
+      get itemsCount() {
+        return shop.items.length;
+      },
+      checkout() {
+        shop.checkout();
+      }
+    }
+  });
+
+  return (
+    <div>
+      <h1>You have {itemsCount} in your cart</h1>
+      <button onClick={addPopcorn}>Add popcorn</button>
+      <button onClick={checkout}>Checkout</button>
+    </div>
+  )
+}
+
+function MyApp() {
+  const app = createApp({ ShopService });
+  return <ReactModules app={app}><ShopComponent/></ReactModules>
+}
+
+
+
+
+```
+
+
+
 ## Extend modules
 
 ```tsx
@@ -100,7 +158,7 @@ class FooBarModule {
   bar = 2;
 };
 
-export function MyComponent() {
+function MyComponent() {
   const { foo, bar, sum } = useModule(FooBarModule).extend(module => {
     sum: module.foo + module.bar;
   });
@@ -163,7 +221,7 @@ class CounterModule {
 }
 
 // Define a React component
-export function Counter() {
+function Counter() {
   const { counter, increment, decrement } = useModule(CounterModule);
   return (
     <div>
