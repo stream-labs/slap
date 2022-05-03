@@ -10,16 +10,9 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     id: string;
     instance: TInstance | null;
     metadata: Dict<any>;
-    injectors: Dict<Injector<unknown, unknown, unknown>>;
     factory: (args: TInitParams) => TInstance;
     isInited: boolean;
     isDestroyed: boolean;
-    injectionCompleted: boolean;
-    loadMethodCompleted: boolean;
-    isAsync: boolean;
-    isLoaded: boolean;
-    private resolveLoad;
-    waitForLoad: Promise<unknown>;
     initParams?: TInitParams;
     childScope: Scope | null;
     childModules: Dict<InjectableModule>;
@@ -27,7 +20,6 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     constructor(scope: Scope, creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance, name?: string, options?: Partial<ProviderOptions>);
     createInstance(args: TInitParams): TInstance;
     mountModule(): void;
-    registerInjector(injector: Injector<unknown, unknown, unknown>): void;
     getMetadata(pluginName: string): any;
     setMetadata(pluginName: string, data: any): any;
     destroy(): void;

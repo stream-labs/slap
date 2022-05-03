@@ -17,20 +17,15 @@ export function useOnDestroy(cb: () => void) {
 
 /**
  * Get component name from the callstack
- * Use for debugging only
  */
 export function getComponentName(): string {
+  const stack = new Error().stack;
+  const regex = / at ([A-Z]\w+) /;
   try {
-    throw new Error();
-  } catch (e: unknown) {
-    const error = e as Error;
-    const regex = / at ([A-Z]\w+) /;
-    try {
-      const componentName = error.stack!.split('\n').find(message => message.match(regex))!.match(regex)![1];
-      return componentName;
-    } catch (e) {
-      return 'unknown_component';
-    }
+    const componentName = stack!.split('\n').find(message => message.match(regex))!.match(regex)![1];
+    return componentName;
+  } catch (e) {
+    return 'unknown_component';
   }
 }
 

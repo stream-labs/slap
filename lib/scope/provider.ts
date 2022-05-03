@@ -16,21 +16,10 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   id: string;
   instance: TInstance | null = null;
   metadata: Dict<any> = {};
-  injectors: Dict<Injector<unknown, unknown, unknown>> = {}; // dict of injectors by id
   factory: (args: TInitParams) => TInstance;
 
   isInited = false; // true if instance is added to the Scope
   isDestroyed = false;
-  // private resolveInit!: Function;
-  // waitForInit = new Promise(resolve => { this.resolveInit = resolve });
-
-  injectionCompleted = false;
-  loadMethodCompleted = false;
-  isAsync = false;
-
-  isLoaded = false;
-  private resolveLoad!: Function;
-  waitForLoad = new Promise(resolve => { this.resolveLoad = resolve; });
 
   initParams?: TInitParams; // TODO
 
@@ -94,48 +83,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     this.isInited = true;
   }
 
-  //
-  // setInited() {
-  //   this.isInited = true;
-  //   // this.events.emit('onModuleInit');
-  //   // this.checkModuleIsLoaded();
-  // }
-
-  registerInjector(injector: Injector<unknown, unknown, unknown>) {
-    this.injectors[injector.id] = injector;
-  }
-
-  // private resolveInjectedProps() {
-  //   const provider = this;
-  //   const instance = provider.instance;
-  //   const descriptors = Object.getOwnPropertyDescriptors(instance);
-  //
-  //   // set propetyNames for injectors
-  //   Object.keys(descriptors).forEach(propName => {
-  //     const descriptor = descriptors[propName];
-  //     if (descriptor.get) return; // don't execute getters
-  //     const propValue = descriptor.value;
-  //     if (!(propValue?.__injector)) return;
-  //     const injector = propValue.__injector as Injector<unknown, unknown, unknown>;
-  //     injector.setPropertyName(propName);
-  //   });
-  // }
-  //
-  // private loadInjectors() {
-  //   let hasAsyncInjectors = false;
-  //   // call load() for injectors
-  //   Object.values(this.injectors).forEach(injector => {
-  //     injector.load();
-  //     if (injector.loadingStatus !== 'done') hasAsyncInjectors = true;
-  //   });
-  //
-  //   if (hasAsyncInjectors) {
-  //     this.isAsync = true;
-  //   } else {
-  //     this.handleInjectionsCompleted();
-  //   }
-  // }
-
   getMetadata(pluginName: string) {
     return this.metadata[pluginName];
   }
@@ -168,60 +115,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     this.instance = null;
     this.isInited = false;
   }
-
-  // handleInjectorStatusChange(
-  //   injector: Injector<unknown, unknown, unknown>,
-  //   currentStatus: TLoadingStatus,
-  //   prevStatus: TLoadingStatus,
-  // ) {
-  //   this.events.emit('onInjectorStatusChange', injector, currentStatus, prevStatus);
-  //   this.checkInjectionIsCompleted();
-  // }
-
-  // protected checkInjectionIsCompleted() {
-  //   if (!this.injectionCompleted) {
-  //     const injectors = Object.values(this.injectors);
-  //     for (const injector of injectors) {
-  //       if (injector.loadingStatus !== 'done') return;
-  //     }
-  //   }
-  //   this.handleInjectionsCompleted();
-  // }
-
-  // protected handleInjectionsCompleted() {
-  //   this.injectionCompleted = true;
-  //
-  //   if (this.options.shouldCallHooks) {
-  //     const instance = this.instance as any;
-  //     const loadResult = instance.load && instance.load();
-  //     if (loadResult?.then) {
-  //       this.isAsync = true;
-  //       loadResult.then(() => {
-  //         this.loadMethodCompleted = true;
-  //         this.checkModuleIsLoaded();
-  //       });
-  //       return;
-  //     }
-  //   }
-  //
-  //   this.loadMethodCompleted = true;
-  //   this.checkModuleIsLoaded();
-  // }
-
-  // protected checkModuleIsLoaded() {
-  //   if (!this.isInited) return;
-  //   if (!this.injectionCompleted) return;
-  //   if (!this.loadMethodCompleted) return;
-  //
-  //   if (this.options.shouldCallHooks) {
-  //     const instance = this.instance as any;
-  //     instance.onLoad && instance.onLoad();
-  //   }
-  //
-  //   this.isLoaded = true;
-  //   this.resolveLoad();
-  //   this.events.emit('onModuleLoaded');
-  // }
 
   get instanceId() {
     return getInstanceMetadata(this.instance).id;
@@ -296,7 +189,6 @@ export interface ProviderEvents {
   ) => unknown;
   onBeforeInit: (provider: Provider<any>) => unknown,
   onAfterInit: (provider: Provider<any>) => unknown,
-  // onModuleLoaded: () => unknown,
 }
 
 export type ProviderOptions = {

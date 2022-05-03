@@ -1,5 +1,5 @@
 import { TLoadingStatus, TModuleClass } from './interfaces';
-import { defineGetter, generateId } from './utils';
+import { generateId } from './utils';
 import { getCurrentProvider, getCurrentScope } from './scope';
 import { Provider } from './provider';
 
@@ -16,6 +16,8 @@ export type InjectorParams<TValue, TView, TExtraView> = {
   onDestroy?(): unknown;
 }
 
+
+// TODO: remove
 export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
   id = generateId();
   params!: InjectorParams<TValue, TViewValue, TInjectedViewExtra>;
@@ -23,46 +25,6 @@ export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
   propertyName = '';
   isDestroyed = false;
 
-  constructor(public provider: Provider<any>) {
-    provider.registerInjector(this);
-  }
-
-  init() {
-    this.params.init && this.params.init();
-  }
-
-  load() {
-    // const load = this.params.load;
-    // const loadResult = load && load() as any;
-    // if (loadResult && loadResult.then) {
-    //   this.setLoadingStatus('loading');
-    //   loadResult.then(() => {
-    //     this.setLoadingStatus('done');
-    //   });
-    // } else {
-    //   this.loadingStatus = 'done';
-    // }
-  }
-
-  setPropertyName(propertyName: string) {
-    this.propertyName = propertyName;
-    const getValue = this.params.getValue;
-    if (getValue) {
-      defineGetter(this.provider.instance, propertyName, getValue);
-    }
-  }
-
-  setLoadingStatus(loadingStatus: TLoadingStatus) {
-    // if (this.isDestroyed) return;
-    // const prevStatus = this.loadingStatus;
-    // this.loadingStatus = loadingStatus;
-    // this.provider.handleInjectorStatusChange(this, this.loadingStatus, prevStatus);
-  }
-
-  // onDestroy() {
-  //   this.params.onDestroy && this.params.onDestroy();
-  //   this.isDestroyed = true;
-  // }
 
   resolveValue(): TValue {
     return this.params.getValue!();
@@ -84,31 +46,6 @@ export class Injector<TValue, TViewValue, TInjectedViewExtra = null> {
   }
 }
 
-export type GetInjectedProp<
-  TParams,
-  TValue = TParams extends { getValue(): infer R } ? R : unknown,
-  TView = TParams extends { exportComponentData(): { self: infer R }} ? R : unknown,
-  TViewExtra = TParams extends { exportComponentData(): { extra: infer R }} ? R : unknown,
-  > = InjectedProp<TValue, TView, TViewExtra>;
-
-export function createInjector<TParams extends InjectorParams<any, any, any>>
-(paramsCreator: (injector: Injector<any, any, any>) => TParams): GetInjectedProp<TParams> {
-  const provider = getCurrentProvider();
-  if (!provider) {
-    throw new Error('Injections a not allowed for objects outside the Scope. Create this object via Scope.resolve() or Scope.init() or Scope.create()');
-  }
-  const injector = new Injector<unknown, unknown, unknown>(provider);
-  injector.params = paramsCreator(injector);
-  injector.init();
-  const value = injector.resolveValue();
-  const returnValue = value instanceof Object ? value : {};
-  const injectorProxy = new Proxy(returnValue, {
-    get(target, p) {
-      return p === '__injector' ? injector : (target as any)[p];
-    },
-  });
-  return injectorProxy as any as GetInjectedProp<TParams>;
-}
 
 export function inject<T extends TModuleClass>(ModuleClass: T) {
   const provider = injectProvider();

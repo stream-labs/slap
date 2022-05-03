@@ -2,7 +2,6 @@ import { GetProps, StateView } from '../StateView';
 import { GetMerge } from '../../utils';
 import { Flatten, GetModuleInstanceFor, Injector } from '../../scope';
 export declare function createModuleView<TModule>(module: TModule): GetModuleStateView<TModule>;
-export declare function pickProps<TModule, TProps>(module: TModule): (props: TProps, view: StateView<TProps>) => StateView<TProps & TModule>;
 export declare type GetModuleSelfView<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>> = TModule extends {
     exportComponentData: () => ({
         self: StateView<infer TView>;

@@ -9,9 +9,7 @@ import {
   defineSetter,
   PickFunctionProperties,
 } from '../scope';
-import { traverse } from '../utils/traverse';
 import { parseStateConfig } from './parse-config';
-import { StateView } from './StateView';
 
 /**
  * All React related code should be handled in ReactAdapter

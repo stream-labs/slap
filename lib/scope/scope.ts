@@ -176,14 +176,6 @@ export class Scope {
     currentScope = prevScope;
     currentProvider = prevProvider;
 
-    // if (isRegistered) {
-    //   provider.events.on('onModuleLoaded', () => {
-    //     this.events.emit('onModuleLoad', provider);
-    //   });
-    //   this.events.emit('onModuleInit', provider);
-    //   provider.setInited();
-    // }
-
     return instance;
   }
 

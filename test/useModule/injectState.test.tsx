@@ -3,8 +3,9 @@
  */
 import React from 'react';
 import { screen, fireEvent } from '@testing-library/react';
-import { renderApp, TextInput, useModule, injectState } from '../helpers';
-
+import {
+  renderApp, TextInput, useModule, injectState, mutation,
+} from '../helpers';
 class UserModule1 {
 
   state = injectState({
@@ -65,15 +66,50 @@ function UserFormComponentStyle2() {
   );
 }
 
+class UserModule3 {
+
+  state = injectState({
+    name: 'Alex',
+    address: 'Earth',
+  });
+
+  @mutation()
+  reset() {
+    this.state.name = '';
+    this.state.address = '';
+  }
+}
+
+function UserFormComponentStyle3() {
+
+  const {
+    name, address, bind, reset,
+  } = useModule(UserModule3);
+
+  return (
+    <div>
+      <h1>Hello {name} from {address}</h1>
+      Name:<TextInput {...bind.name} />
+      Address:<TextInput {...bind.address} />
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+
 describe('Inject reactive state', () => {
 
-  it('Inject state style 1', () => {
+  it('Inject state into a ClassModule', () => {
     const component = renderApp(<UserFormComponentStyle1 />);
     testComponent(component);
   });
 
-  it('Inject state style 2', () => {
+  it('Inject state into an anonymous Module', () => {
     const component = renderApp(<UserFormComponentStyle2 />);
+    testComponent(component);
+  });
+
+  it('Use mutation decorator', () => {
+    const component = renderApp(<UserFormComponentStyle3 />);
     testComponent(component);
   });
 

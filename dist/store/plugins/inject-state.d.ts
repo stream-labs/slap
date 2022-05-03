@@ -2,7 +2,6 @@ import { InjectedProp } from '../../scope';
 import { Store, TStateConfigCreator, GetStateControllerFor, TStateFor, TStateViewForStateConfig } from '../Store';
 import { StateView } from '../StateView';
 import { GetInjectedFormBinding, TFormBindings } from './inject-form';
-export declare const StateInjectorType: unique symbol;
 export declare function injectState<TConfigCreator extends TStateConfigCreator, TValue = GetStateControllerFor<TConfigCreator>, TViewValue = GetStateViewFor<TConfigCreator>>(configCreator: TConfigCreator, allowMutationDecorators?: boolean, onCreate?: (statefulModule: StatefulModule<TConfigCreator>) => unknown): InjectedProp<TValue, TViewValue, TViewValue>;
 export declare class StatefulModule<TStateConfig> {
     stateConfig: TStateConfig;

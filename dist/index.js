@@ -347,22 +347,16 @@ function useOnDestroy(cb) {
 exports.useOnDestroy = useOnDestroy;
 /**
  * Get component name from the callstack
- * Use for debugging only
  */
 function getComponentName() {
+    const stack = new Error().stack;
+    const regex = / at ([A-Z]\w+) /;
     try {
-        throw new Error();
+        const componentName = stack.split('\n').find(message => message.match(regex)).match(regex)[1];
+        return componentName;
     }
     catch (e) {
-        const error = e;
-        const regex = / at ([A-Z]\w+) /;
-        try {
-            const componentName = error.stack.split('\n').find(message => message.match(regex)).match(regex)[1];
-            return componentName;
-        }
-        catch (e) {
-            return 'unknown_component';
-        }
+        return 'unknown_component';
     }
 }
 exports.getComponentName = getComponentName;
@@ -650,6 +644,9 @@ const react_1 = __webpack_require__(156);
 const hooks_1 = __webpack_require__(985);
 const ReactModules_1 = __webpack_require__(686);
 const Store_1 = __webpack_require__(607);
+/**
+ * Resolve module instance for a component
+ */
 function useModuleInstance(locator, initProps = null, name = '') {
     const { modulesScope, servicesScope } = (0, ReactModules_1.useAppContext)();
     const { instance, moduleName, scope, isRoot, shouldInitInNewScope, isService, store, } = (0, hooks_1.useOnCreate)(() => {
@@ -756,50 +753,17 @@ __exportStar(__webpack_require__(158), exports);
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectProvider = exports.injectScope = exports.inject = exports.createInjector = exports.Injector = void 0;
+exports.injectProvider = exports.injectScope = exports.inject = exports.Injector = void 0;
 const utils_1 = __webpack_require__(986);
 const scope_1 = __webpack_require__(521);
+// TODO: remove
 class Injector {
-    constructor(provider) {
-        this.provider = provider;
+    constructor() {
         this.id = (0, utils_1.generateId)();
         this.loadingStatus = 'not-started';
         this.propertyName = '';
         this.isDestroyed = false;
-        provider.registerInjector(this);
     }
-    init() {
-        this.params.init && this.params.init();
-    }
-    load() {
-        // const load = this.params.load;
-        // const loadResult = load && load() as any;
-        // if (loadResult && loadResult.then) {
-        //   this.setLoadingStatus('loading');
-        //   loadResult.then(() => {
-        //     this.setLoadingStatus('done');
-        //   });
-        // } else {
-        //   this.loadingStatus = 'done';
-        // }
-    }
-    setPropertyName(propertyName) {
-        this.propertyName = propertyName;
-        const getValue = this.params.getValue;
-        if (getValue) {
-            (0, utils_1.defineGetter)(this.provider.instance, propertyName, getValue);
-        }
-    }
-    setLoadingStatus(loadingStatus) {
-        // if (this.isDestroyed) return;
-        // const prevStatus = this.loadingStatus;
-        // this.loadingStatus = loadingStatus;
-        // this.provider.handleInjectorStatusChange(this, this.loadingStatus, prevStatus);
-    }
-    // onDestroy() {
-    //   this.params.onDestroy && this.params.onDestroy();
-    //   this.isDestroyed = true;
-    // }
     resolveValue() {
         return this.params.getValue();
     }
@@ -818,24 +782,6 @@ class Injector {
     }
 }
 exports.Injector = Injector;
-function createInjector(paramsCreator) {
-    const provider = (0, scope_1.getCurrentProvider)();
-    if (!provider) {
-        throw new Error('Injections a not allowed for objects outside the Scope. Create this object via Scope.resolve() or Scope.init() or Scope.create()');
-    }
-    const injector = new Injector(provider);
-    injector.params = paramsCreator(injector);
-    injector.init();
-    const value = injector.resolveValue();
-    const returnValue = value instanceof Object ? value : {};
-    const injectorProxy = new Proxy(returnValue, {
-        get(target, p) {
-            return p === '__injector' ? injector : target[p];
-        },
-    });
-    return injectorProxy;
-}
-exports.createInjector = createInjector;
 function inject(ModuleClass) {
     const provider = injectProvider();
     const module = provider.injectModule(ModuleClass);
@@ -880,16 +826,8 @@ class Provider {
         this.options = options;
         this.instance = null;
         this.metadata = {};
-        this.injectors = {}; // dict of injectors by id
         this.isInited = false; // true if instance is added to the Scope
         this.isDestroyed = false;
-        // private resolveInit!: Function;
-        // waitForInit = new Promise(resolve => { this.resolveInit = resolve });
-        this.injectionCompleted = false;
-        this.loadMethodCompleted = false;
-        this.isAsync = false;
-        this.isLoaded = false;
-        this.waitForLoad = new Promise(resolve => { this.resolveLoad = resolve; });
         this.childScope = null;
         this.childModules = {};
         this.injectedModules = {};
@@ -937,45 +875,6 @@ class Provider {
         }
         this.isInited = true;
     }
-    //
-    // setInited() {
-    //   this.isInited = true;
-    //   // this.events.emit('onModuleInit');
-    //   // this.checkModuleIsLoaded();
-    // }
-    registerInjector(injector) {
-        this.injectors[injector.id] = injector;
-    }
-    // private resolveInjectedProps() {
-    //   const provider = this;
-    //   const instance = provider.instance;
-    //   const descriptors = Object.getOwnPropertyDescriptors(instance);
-    //
-    //   // set propetyNames for injectors
-    //   Object.keys(descriptors).forEach(propName => {
-    //     const descriptor = descriptors[propName];
-    //     if (descriptor.get) return; // don't execute getters
-    //     const propValue = descriptor.value;
-    //     if (!(propValue?.__injector)) return;
-    //     const injector = propValue.__injector as Injector<unknown, unknown, unknown>;
-    //     injector.setPropertyName(propName);
-    //   });
-    // }
-    //
-    // private loadInjectors() {
-    //   let hasAsyncInjectors = false;
-    //   // call load() for injectors
-    //   Object.values(this.injectors).forEach(injector => {
-    //     injector.load();
-    //     if (injector.loadingStatus !== 'done') hasAsyncInjectors = true;
-    //   });
-    //
-    //   if (hasAsyncInjectors) {
-    //     this.isAsync = true;
-    //   } else {
-    //     this.handleInjectionsCompleted();
-    //   }
-    // }
     getMetadata(pluginName) {
         return this.metadata[pluginName];
     }
@@ -1004,56 +903,6 @@ class Provider {
         this.instance = null;
         this.isInited = false;
     }
-    // handleInjectorStatusChange(
-    //   injector: Injector<unknown, unknown, unknown>,
-    //   currentStatus: TLoadingStatus,
-    //   prevStatus: TLoadingStatus,
-    // ) {
-    //   this.events.emit('onInjectorStatusChange', injector, currentStatus, prevStatus);
-    //   this.checkInjectionIsCompleted();
-    // }
-    // protected checkInjectionIsCompleted() {
-    //   if (!this.injectionCompleted) {
-    //     const injectors = Object.values(this.injectors);
-    //     for (const injector of injectors) {
-    //       if (injector.loadingStatus !== 'done') return;
-    //     }
-    //   }
-    //   this.handleInjectionsCompleted();
-    // }
-    // protected handleInjectionsCompleted() {
-    //   this.injectionCompleted = true;
-    //
-    //   if (this.options.shouldCallHooks) {
-    //     const instance = this.instance as any;
-    //     const loadResult = instance.load && instance.load();
-    //     if (loadResult?.then) {
-    //       this.isAsync = true;
-    //       loadResult.then(() => {
-    //         this.loadMethodCompleted = true;
-    //         this.checkModuleIsLoaded();
-    //       });
-    //       return;
-    //     }
-    //   }
-    //
-    //   this.loadMethodCompleted = true;
-    //   this.checkModuleIsLoaded();
-    // }
-    // protected checkModuleIsLoaded() {
-    //   if (!this.isInited) return;
-    //   if (!this.injectionCompleted) return;
-    //   if (!this.loadMethodCompleted) return;
-    //
-    //   if (this.options.shouldCallHooks) {
-    //     const instance = this.instance as any;
-    //     instance.onLoad && instance.onLoad();
-    //   }
-    //
-    //   this.isLoaded = true;
-    //   this.resolveLoad();
-    //   this.events.emit('onModuleLoaded');
-    // }
     get instanceId() {
         return getInstanceMetadata(this.instance).id;
     }
@@ -1254,13 +1103,6 @@ class Scope {
         const instance = provider.createInstance(args);
         currentScope = prevScope;
         currentProvider = prevProvider;
-        // if (isRegistered) {
-        //   provider.events.on('onModuleLoaded', () => {
-        //     this.events.emit('onModuleLoad', provider);
-        //   });
-        //   this.events.emit('onModuleInit', provider);
-        //   provider.setInited();
-        // }
         return instance;
     }
     createChildScope(dependencies, settings) {
@@ -1863,7 +1705,7 @@ function parseDefaultState(target) {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.pickProps = exports.createModuleView = void 0;
+exports.createModuleView = void 0;
 const StateView_1 = __webpack_require__(32);
 const utils_1 = __webpack_require__(225);
 const scope_1 = __webpack_require__(527);
@@ -1877,6 +1719,8 @@ function createModuleView(module) {
         if (descr.get)
             return;
         const provider = (_a = descr.value) === null || _a === void 0 ? void 0 : _a.__provider;
+        if (!(provider instanceof scope_1.Provider))
+            return;
         if (provider) {
             injectedProps[propName] = true;
             const injectedModule = provider.instance;
@@ -1938,80 +1782,6 @@ function createModuleView(module) {
     return view;
 }
 exports.createModuleView = createModuleView;
-function pickProps(module) {
-    return function (props, view) {
-        const injectedProps = {};
-        (0, utils_1.traverse)(module, (propName, descr) => {
-            var _a;
-            if (scope_1.moduleSystemProps[propName])
-                return;
-            if (descr.get)
-                return;
-            const provider = (_a = descr.value) === null || _a === void 0 ? void 0 : _a.__provider;
-            if (!(provider instanceof scope_1.Provider))
-                return;
-            if (provider) {
-                injectedProps[propName] = true;
-                const injectedModule = provider.instance;
-                const componentData = injectedModule.exportComponentData && injectedModule.exportComponentData();
-                const injectedValue = injectedModule.exportInjectorValue ? injectedModule.exportInjectorValue() : injectedModule;
-                const extraProps = componentData && componentData.extra;
-                if (extraProps) {
-                    const extraPropsView = extraProps;
-                    (0, scope_1.forEach)(extraPropsView.descriptors, (descriptor, p) => {
-                        if (!(descriptor.name in injectedModule))
-                            view.defineProp(descriptor);
-                    });
-                    view = view.mergeView(extraProps);
-                }
-                const selfProps = (componentData && componentData.self) || injectedValue;
-                if (selfProps) {
-                    view.defineProp({
-                        description: 'InjectorView',
-                        name: propName,
-                        reactive: true,
-                        stateView: selfProps instanceof StateView_1.StateView ? selfProps : null,
-                        getValue() {
-                            return injectedValue;
-                        },
-                    });
-                }
-            }
-        });
-        (0, utils_1.traverse)(module, (propName, descr) => {
-            if (injectedProps[propName])
-                return;
-            if (scope_1.moduleSystemProps[propName])
-                return;
-            if (descr.get) {
-                view.defineProp({
-                    description: 'ModuleGetter',
-                    reactive: true,
-                    name: propName,
-                    getValue: () => module[propName],
-                });
-                return;
-            }
-            if (typeof descr.value === 'function') {
-                view.defineProp({
-                    description: 'ModuleMethod',
-                    reactive: false,
-                    name: propName,
-                    getValue: () => descr.value.bind(module),
-                });
-                return;
-            }
-            view.defineProp({
-                description: 'ModuleVariable',
-                reactive: false,
-                name: propName,
-                getValue: () => module[propName],
-            });
-        });
-        return view;
-    };
-}
-exports.pickProps = pickProps;
 
 
 /***/ }),
@@ -2378,13 +2148,12 @@ exports.getQueryOptionsFromArgs = getQueryOptionsFromArgs;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.mutation = exports.StatefulModule = exports.injectState = exports.StateInjectorType = void 0;
+exports.mutation = exports.StatefulModule = exports.injectState = void 0;
 const scope_1 = __webpack_require__(527);
 const Store_1 = __webpack_require__(607);
 const inject_child_1 = __webpack_require__(835);
 const inject_form_1 = __webpack_require__(334);
 const createStateView_1 = __webpack_require__(135);
-exports.StateInjectorType = Symbol('stateInjector');
 function injectState(configCreator, allowMutationDecorators = true, onCreate) {
     return (0, inject_child_1.injectChild)(StatefulModule, configCreator, allowMutationDecorators, onCreate);
 }

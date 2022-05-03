@@ -1,19 +1,16 @@
 import {
-  createInjector, defineGetter, inject,
+  defineGetter, inject,
   InjectedProp,
-  Injector, injectProvider,
+  injectProvider,
 } from '../../scope';
 
 import {
-  StateController,
   Store, TStateConfigCreator, GetStateControllerFor, TStateFor, TStateViewForStateConfig,
 } from '../Store';
 import { StateView } from '../StateView';
 import { injectChild } from './inject-child';
 import { GetInjectedFormBinding, injectFormBinding, TFormBindings } from './inject-form';
 import { createStateView } from './createStateView';
-
-export const StateInjectorType = Symbol('stateInjector');
 
 export function injectState<
 
@@ -61,7 +58,7 @@ export class StatefulModule<TStateConfig> {
         parentModule[mutationName] = (...args: any) => (this.stateController as any)[mutationName](...args);
       });
 
-      parentProvider.events.on('onAfterInit',() => {
+      parentProvider.events.on('onAfterInit', () => {
         this.stateController.finishInitialization();
       });
     }
