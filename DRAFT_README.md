@@ -193,143 +193,261 @@ class FooBarModule {
 
 
 
+[//]: # ()
+[//]: # ()
+[//]: # ( ## Get started with counter application)
 
+[//]: # ()
+[//]: # (```tsx)
 
- ## Get started with counter application
+[//]: # (import { mutation, useModule, ReactModules } from 'slap';)
 
-```tsx
-import { mutation, useModule, ReactModules } from 'slap';
+[//]: # ()
+[//]: # (// Define a Module)
 
-// Define a Module
-class CounterModule {
+[//]: # (class CounterModule {)
 
-  // create reactive state
-  state = injectState({
-    counter: 1,
-  });
+[//]: # ()
+[//]: # (  // create reactive state)
 
-  // register mutations
-  @mutation()
-  increment() {
-    this.state.counter++;
-  }
+[//]: # (  state = injectState&#40;{)
 
-  @mutation()
-  decrement() {
-    this.state.counter--;
-  }
-}
+[//]: # (    counter: 1,)
 
-// Define a React component
-function Counter() {
-  const { counter, increment, decrement } = useModule(CounterModule);
-  return (
-    <div>
-      Counter Value = {counter}
-      <button onClick={increment}> + </button>
-      <button onClick={decrement}> - </button>
-    </div>
-  );
-}
+[//]: # (  }&#41;;)
 
-// Create your application
-ReactDOM.render(
-  <ReactModules>
-    <Counter />
-  </ReactModules>,
-  document.getElementById('app'),
-);
-```
+[//]: # ()
+[//]: # (  // register mutations)
 
-## Multiple components TodoList example
+[//]: # (  @mutation&#40;&#41;)
 
-```tsx
-import React from 'react';
-import { mutation, useModule } from '../lib';
-import { RedumbxApp } from './RedumbxApp';
+[//]: # (  increment&#40;&#41; {)
 
-export function TodoListApp() {
-  return (
-    <RedumbxApp>
-      <TodoListCounter/>
-      <TodoListItems/>
-      <TodoListButtons/>
-    </RedumbxApp>
-  );
-}
+[//]: # (    this.state.counter++;)
 
-export function TodoListCounter() {
-  const { itemsCount } = useModule(TodoModule);
-  return (
-    <div>
-      Total items:
-      {itemsCount}
-    </div>
-  );
-}
+[//]: # (  })
 
-export function TodoListItems() {
-  const { tasks } = useModule(TodoModule);
-  return (
-    <ul>
-      {tasks.map((task) => (
-        <li key={task.id} style={{ textDecoration: task.isCompleted ? 'line-through' : 'none' }}>{task.name}</li>))}
-    </ul>
-  );
-}
+[//]: # ()
+[//]: # (  @mutation&#40;&#41;)
 
-export function TodoListButtons() {
-  const { addTask, completeAll } = useModule(TodoModule);
-  return (
-    <div>
-      <button onClick={addTask}>Add Task</button>
-      <button onClick={completeAll}>Complete All</button>
-    </div>
-  );
-}
+[//]: # (  decrement&#40;&#41; {)
 
-class TodoModule {
-  state = {
-    counter: 3,
-    tasks: [
-      {
-        id: 1,
-        name: 'task1',
-        isCompleted: false
-      },
-      {
-        id: 2,
-        name: 'task2',
-        isCompleted: false
-      },
-    ],
-  };
+[//]: # (    this.state.counter--;)
 
-  get itemsCount() {
-    return this.state.tasks.length;
-  }
+[//]: # (  })
 
-  @mutation()
-  addTask() {
-    this.state.counter++;
-    this.state.tasks.push(
-      {
-        id: this.state.counter,
-        name: 'new task',
-        isCompleted: false
-      },
-    );
-  }
+[//]: # (})
 
-  @mutation()
-  completeAll() {
-    this.state.tasks = this.state.tasks.map((task) => ({
-      ...task,
-      completed: true
-    }));
-  }
-}
+[//]: # ()
+[//]: # (// Define a React component)
 
-```
+[//]: # (function Counter&#40;&#41; {)
 
+[//]: # (  const { counter, increment, decrement } = useModule&#40;CounterModule&#41;;)
 
+[//]: # (  return &#40;)
+
+[//]: # (    <div>)
+
+[//]: # (      Counter Value = {counter})
+
+[//]: # (      <button onClick={increment}> + </button>)
+
+[//]: # (      <button onClick={decrement}> - </button>)
+
+[//]: # (    </div>)
+
+[//]: # (  &#41;;)
+
+[//]: # (})
+
+[//]: # ()
+[//]: # (// Create your application)
+
+[//]: # (ReactDOM.render&#40;)
+
+[//]: # (  <ReactModules>)
+
+[//]: # (    <Counter />)
+
+[//]: # (  </ReactModules>,)
+
+[//]: # (  document.getElementById&#40;'app'&#41;,)
+
+[//]: # (&#41;;)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (## Multiple components TodoList example)
+
+[//]: # ()
+[//]: # (```tsx)
+
+[//]: # (import React from 'react';)
+
+[//]: # (import { mutation, useModule } from '../lib';)
+
+[//]: # (import { RedumbxApp } from './RedumbxApp';)
+
+[//]: # ()
+[//]: # (export function TodoListApp&#40;&#41; {)
+
+[//]: # (  return &#40;)
+
+[//]: # (    <RedumbxApp>)
+
+[//]: # (      <TodoListCounter/>)
+
+[//]: # (      <TodoListItems/>)
+
+[//]: # (      <TodoListButtons/>)
+
+[//]: # (    </RedumbxApp>)
+
+[//]: # (  &#41;;)
+
+[//]: # (})
+
+[//]: # ()
+[//]: # (export function TodoListCounter&#40;&#41; {)
+
+[//]: # (  const { itemsCount } = useModule&#40;TodoModule&#41;;)
+
+[//]: # (  return &#40;)
+
+[//]: # (    <div>)
+
+[//]: # (      Total items:)
+
+[//]: # (      {itemsCount})
+
+[//]: # (    </div>)
+
+[//]: # (  &#41;;)
+
+[//]: # (})
+
+[//]: # ()
+[//]: # (export function TodoListItems&#40;&#41; {)
+
+[//]: # (  const { tasks } = useModule&#40;TodoModule&#41;;)
+
+[//]: # (  return &#40;)
+
+[//]: # (    <ul>)
+
+[//]: # (      {tasks.map&#40;&#40;task&#41; => &#40;)
+
+[//]: # (        <li key={task.id} style={{ textDecoration: task.isCompleted ? 'line-through' : 'none' }}>{task.name}</li>&#41;&#41;})
+
+[//]: # (    </ul>)
+
+[//]: # (  &#41;;)
+
+[//]: # (})
+
+[//]: # ()
+[//]: # (export function TodoListButtons&#40;&#41; {)
+
+[//]: # (  const { addTask, completeAll } = useModule&#40;TodoModule&#41;;)
+
+[//]: # (  return &#40;)
+
+[//]: # (    <div>)
+
+[//]: # (      <button onClick={addTask}>Add Task</button>)
+
+[//]: # (      <button onClick={completeAll}>Complete All</button>)
+
+[//]: # (    </div>)
+
+[//]: # (  &#41;;)
+
+[//]: # (})
+
+[//]: # ()
+[//]: # (class TodoModule {)
+
+[//]: # (  state = {)
+
+[//]: # (    counter: 3,)
+
+[//]: # (    tasks: [)
+
+[//]: # (      {)
+
+[//]: # (        id: 1,)
+
+[//]: # (        name: 'task1',)
+
+[//]: # (        isCompleted: false)
+
+[//]: # (      },)
+
+[//]: # (      {)
+
+[//]: # (        id: 2,)
+
+[//]: # (        name: 'task2',)
+
+[//]: # (        isCompleted: false)
+
+[//]: # (      },)
+
+[//]: # (    ],)
+
+[//]: # (  };)
+
+[//]: # ()
+[//]: # (  get itemsCount&#40;&#41; {)
+
+[//]: # (    return this.state.tasks.length;)
+
+[//]: # (  })
+
+[//]: # ()
+[//]: # (  @mutation&#40;&#41;)
+
+[//]: # (  addTask&#40;&#41; {)
+
+[//]: # (    this.state.counter++;)
+
+[//]: # (    this.state.tasks.push&#40;)
+
+[//]: # (      {)
+
+[//]: # (        id: this.state.counter,)
+
+[//]: # (        name: 'new task',)
+
+[//]: # (        isCompleted: false)
+
+[//]: # (      },)
+
+[//]: # (    &#41;;)
+
+[//]: # (  })
+
+[//]: # ()
+[//]: # (  @mutation&#40;&#41;)
+
+[//]: # (  completeAll&#40;&#41; {)
+
+[//]: # (    this.state.tasks = this.state.tasks.map&#40;&#40;task&#41; => &#40;{)
+
+[//]: # (      ...task,)
+
+[//]: # (      completed: true)
+
+[//]: # (    }&#41;&#41;;)
+
+[//]: # (  })
+
+[//]: # (})
+
+[//]: # ()
+[//]: # (```)
+
+[//]: # ()
+[//]: # ()

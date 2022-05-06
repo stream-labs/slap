@@ -80,7 +80,7 @@ export class StatefulModule<TStateConfig> {
     return this.provider.id;
   }
 
-  onDestroy() {
+  destroy() {
     this.store.destroyModule(this.moduleName);
   }
 

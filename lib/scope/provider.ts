@@ -21,8 +21,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   isInited = false; // true if instance is added to the Scope
   isDestroyed = false;
 
-  initParams?: TInitParams; // TODO
-
   childScope: Scope | null = null;
   childModules: Dict<InjectableModule> = {};
   injectedModules: Dict<InjectableModule> = {};
@@ -63,7 +61,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   createInstance(args: TInitParams): TInstance {
     const instance = this.factory(args) as any;
     this.instance = instance;
-    this.initParams = args;
     createInstanceMetadata(instance, this);
     return instance;
   }
@@ -105,7 +102,6 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
     // destroy instance
     instance.destroy && instance.destroy();
-    this.initParams = [] as any;
 
     // destroy child modules
     this.childScope?.dispose();
