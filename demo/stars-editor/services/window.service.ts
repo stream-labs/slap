@@ -7,6 +7,7 @@ export class WindowState {
     { title: 'Editor', id: 'editor' },
     { title: 'About', id: 'about' },
     { title: 'Highload', id: 'highload' },
+    { title: 'Events', id: 'events' },
     { title: 'Users', id: 'users' },
     { title: 'Watchers', id: 'watchers' },
     { title: 'Queries', id: 'queries' },

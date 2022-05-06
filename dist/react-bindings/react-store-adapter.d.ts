@@ -12,7 +12,7 @@ export declare class ReactStoreAdapter {
     createWatcher(watcherId: string, cb: Function): string;
     removeWatcher(watcherId: string): void;
     updateIsInProgress: boolean;
-    onMutation(): void;
+    onAfterMutations(): void;
     updateUI(): void;
 }
 export declare type ComponentSnapshot = {

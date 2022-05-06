@@ -15,6 +15,7 @@ import { FormBindingsPage } from './pages/FormBindingsPage';
 import { FunctionalModulesPage } from './pages/FunctionalModules';
 import { ShouldComponentUpdatePage } from './pages/ShouldComponentUpdate';
 import { ErrorsPage } from './pages/ErrorsPage';
+import { EventsPage } from './pages/GeneratedEvents';
 
 export function ClientApp() {
   const { activePage } = useModule(WindowService);
@@ -26,6 +27,7 @@ export function ClientApp() {
       <Header />
       {activePage === 'editor' && <EditorPage /> }
       {activePage === 'about' && <AboutPage /> }
+      {activePage === 'events' && <EventsPage /> }
       {activePage === 'highload' && <HighloadPage /> }
       {activePage === 'users' && <UsersPage /> }
       {activePage === 'watchers' && <WatchersPage /> }

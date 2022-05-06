@@ -30,7 +30,7 @@ export declare type TModulePropDescriptor<TValue> = {
     configurable: boolean;
     dynamic: boolean;
 };
-export declare type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'description' | 'name' | 'getValue'>>;
+export declare type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'name' | 'getValue'>>;
 export declare type TGetDescriptorsForProps<TProps extends Dict<any>> = {
     [P in keyof TProps]: TModulePropDescriptor<TProps[P]>;
 };

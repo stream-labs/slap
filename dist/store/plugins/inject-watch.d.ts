@@ -1,6 +1,7 @@
+import { InjectableModule } from '../../scope';
 import { Store } from '../Store';
 import { isSimilar } from '../../utils';
-export declare class WatchModule<T> {
+export declare class WatchModule<T> implements InjectableModule {
     watchExpr: () => T;
     onChange: (newVal: T, prevVal: T) => unknown;
     isEqual: typeof isSimilar;

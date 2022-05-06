@@ -1,3 +1,4 @@
+import { InjectableModule } from '../../scope';
 import { TStateViewForStateConfig } from '../Store';
 import { StateView } from '../StateView';
 export declare class QueryStateConfig<TData, TParams, TError> {
@@ -9,7 +10,7 @@ export declare class QueryStateConfig<TData, TParams, TError> {
 /**
  * Alternative for https://react-query.tanstack.com/reference/useQuery
  */
-export declare class QueryModule<TConstructorArgs extends Array<any>, TData = GetQueryData<TConstructorArgs>, TParams = GetQueryParams<TConstructorArgs>, TError = unknown> {
+export declare class QueryModule<TConstructorArgs extends Array<any>, TData = GetQueryData<TConstructorArgs>, TParams = GetQueryParams<TConstructorArgs>, TError = unknown> implements InjectableModule {
     state: import("../../scope").InjectedProp<import("../Store").GetStateControllerFor<typeof QueryStateConfig, QueryStateConfig<unknown, unknown, unknown>, QueryState<unknown, unknown, unknown>>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>>;
     provider: import("../../scope").Provider<any, []>;
     watcher: import("../../scope").InjectedProp<import("./inject-watch").WatchModule<unknown>, import("./createModuleView").GetModuleStateView<typeof import("./inject-watch").WatchModule>, {}>;
@@ -31,13 +32,10 @@ export declare class QueryModule<TConstructorArgs extends Array<any>, TData = Ge
     refetch(): Promise<TData> | undefined;
     stopFetching(): void;
     setEnabled(enabled: boolean): void;
-    onDestroy(): void;
-    exportComponentData(): {
-        self: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & {
-            refetch: () => Promise<TData>;
-        }>;
-        extra: null;
-    };
+    destroy(): void;
+    exportSelectorValue(): StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & {
+        refetch: () => Promise<TData>;
+    }>;
 }
 export declare function injectQuery<TQueryArgs extends QueryArgs>(...args: TQueryArgs): import("../../scope").InjectedProp<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>, import("./createModuleView").GetModuleStateView<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>>, {}>;
 export declare type QueryRequiredOptions = {

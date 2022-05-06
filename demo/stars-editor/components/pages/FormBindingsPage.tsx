@@ -1,8 +1,8 @@
 import React from 'react';
 import {
   createFormBinding, GetAllInjectedProps,
-  GetModuleExtraView,
-  GetModuleSelfView,
+  GetModuleExtraValue,
+  GetModuleSelectorValue,
   injectFormBinding,
   injectState,
   merge,

@@ -4,11 +4,9 @@ import { Scope } from './scope';
 import {
   defineGetter, Dict, generateId, isClass,
 } from './utils';
-import { Injector } from './injector';
 import {
   GetModuleInstanceFor,
-  InjectableModule,
-  TLoadingStatus,
+  InjectableModuleTyped,
   TModuleCreator, TProviderFor,
 } from './interfaces';
 
@@ -22,8 +20,8 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   isDestroyed = false;
 
   childScope: Scope | null = null;
-  childModules: Dict<InjectableModule> = {};
-  injectedModules: Dict<InjectableModule> = {};
+  childModules: Dict<InjectableModuleTyped<any, any, any>> = {};
+  injectedModules: Dict<InjectableModuleTyped<any, any, any>> = {};
 
   constructor(
     public scope: Scope,
@@ -71,7 +69,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
       if (!childModuleProvider.isInited) childModuleProvider.mountModule();
     });
     if (this.options.shouldCallHooks) {
-      const instance = this.instance as InjectableModule;
+      const instance = this.instance as InjectableModuleTyped<any, any, any>;
       const provider = this as Provider<any, any>;
       this.events.emit('onBeforeInit', provider);
       instance.init && instance.init();
@@ -141,7 +139,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     const childScope = this.resolveChildScope();
     const name = `${this.id}__child_${ModuleCreator.name || ''}_${generateId()}`;
     childScope.register(ModuleCreator, name, { parentProvider: this as Provider<any, any> });
-    const childModule = childScope.init(name, ...args) as InjectableModule;
+    const childModule = childScope.init(name, ...args) as InjectableModuleTyped<any, any, any>;
     this.childModules[name] = childModule;
     this.injectedModules[name] = childModule;
     const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
@@ -178,11 +176,6 @@ export const moduleSystemProps: Dict<boolean> = {
 };
 
 export interface ProviderEvents {
-  onInjectorStatusChange: (
-    injector: Injector<unknown, unknown, unknown>,
-    current: TLoadingStatus,
-    prev: TLoadingStatus
-  ) => unknown;
   onBeforeInit: (provider: Provider<any>) => unknown,
   onAfterInit: (provider: Provider<any>) => unknown,
 }

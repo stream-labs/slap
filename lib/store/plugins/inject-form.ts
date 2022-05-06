@@ -1,5 +1,5 @@
 import { StateView } from '../StateView';
-import { InjectedProp } from '../../scope';
+import { InjectableModule, InjectedProp } from '../../scope';
 import { injectChild } from './inject-child';
 
 export type TFormBindings<TState, TExtraProps = {}> = {
@@ -49,7 +49,7 @@ export function createFormBinding<TState, TExtraProps = {}>(
 }
 
 // TODO fix types
-export class FormBindingModule {
+export class FormBindingModule implements InjectableModule {
 
   formBinding: any;
 
@@ -57,11 +57,8 @@ export class FormBindingModule {
     this.formBinding = createFormBinding(stateGetter, stateSetter, extraPropsGenerator);
   }
 
-  exportComponentData() {
-    return {
-      self: this.formBinding,
-      extra: null,
-    };
+  exportSelectorValue() {
+    return this.formBinding;
   }
 
 }

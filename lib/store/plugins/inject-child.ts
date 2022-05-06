@@ -3,11 +3,11 @@ import {
 } from '../../scope/injector';
 
 import { GetModuleInstanceFor } from '../../scope';
-import { GetModuleExtraView, GetModuleStateView } from './createModuleView';
+import { GetModuleExtraValue, GetModuleStateView } from './createModuleView';
 
 export type GetModuleInjectorValue<TModuleConfig> = GetModuleInstanceFor<TModuleConfig> extends { exportInjectorValue: (...args: any) => infer TValue } ? TValue : GetModuleInstanceFor<TModuleConfig>;
 
-export function injectChild<TModule>(Module: TModule, ...args: any): InjectedProp<GetModuleInjectorValue<TModule>, GetModuleStateView<TModule>, GetModuleExtraView<TModule>> {
+export function injectChild<TModule>(Module: TModule, ...args: any): InjectedProp<GetModuleInjectorValue<TModule>, GetModuleStateView<TModule>, GetModuleExtraValue<TModule>> {
 
   const provider = injectProvider();
   const injectedValue = provider.injectChildModule(Module, ...args);

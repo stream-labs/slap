@@ -1,5 +1,5 @@
 import {
-  defineGetter, inject,
+  defineGetter, inject, InjectableModule,
   InjectedProp,
   injectProvider,
 } from '../../scope';
@@ -25,7 +25,7 @@ export function injectState<
   return injectChild(StatefulModule, configCreator, allowMutationDecorators, onCreate) as any as InjectedProp<TValue, TViewValue, TViewValue>;
 }
 
-export class StatefulModule<TStateConfig> {
+export class StatefulModule<TStateConfig> implements InjectableModule {
 
   store = inject(Store);
   provider = injectProvider();
@@ -88,13 +88,13 @@ export class StatefulModule<TStateConfig> {
     return this.stateController;
   }
 
-  exportComponentData() {
-    return {
-      self: this.stateView,
-      extra: this.stateView,
-    };
+  exportSelectorValue() {
+    return this.stateView;
   }
 
+  exportSelectorExtraValues() {
+    return this.stateView;
+  }
 }
 
 /**

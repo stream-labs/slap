@@ -31,11 +31,17 @@ export type GetModuleConstructorArgs<TModuleLocator> =
         unknown[]
 
 export type TProviderFor<TModuleLocator extends TModuleLocatorType> = Provider<GetModuleInstanceFor<TModuleLocator>>
-export type TLoadingStatus = 'not-started' | 'loading' | 'done' | 'error';
 
 export interface InjectableModule {
   init?(): unknown;
   destroy?(): unknown;
-  exportInjectorValue?(): any
-  exportComponentData?(): { self: any; extra: any },
+  exportInjectorValue?(): any;
+  exportSelectorValue?(): any;
+  exportSelectorExtraValues?(): any;
+}
+
+export interface InjectableModuleTyped<TInjectedValue, TSelectorValue, TSelectorExtraValues> extends InjectableModule {
+  exportInjectorValue?(): TInjectedValue;
+  exportSelectorValue?(): TSelectorValue;
+  exportSelectorExtraValues?(): TSelectorExtraValues;
 }

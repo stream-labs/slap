@@ -1,9 +1,9 @@
-import { InjectedProp } from '../../scope';
+import { InjectableModule, InjectedProp } from '../../scope';
 import { Store, TStateConfigCreator, GetStateControllerFor, TStateFor, TStateViewForStateConfig } from '../Store';
 import { StateView } from '../StateView';
 import { GetInjectedFormBinding, TFormBindings } from './inject-form';
 export declare function injectState<TConfigCreator extends TStateConfigCreator, TValue = GetStateControllerFor<TConfigCreator>, TViewValue = GetStateViewFor<TConfigCreator>>(configCreator: TConfigCreator, allowMutationDecorators?: boolean, onCreate?: (statefulModule: StatefulModule<TConfigCreator>) => unknown): InjectedProp<TValue, TViewValue, TViewValue>;
-export declare class StatefulModule<TStateConfig> {
+export declare class StatefulModule<TStateConfig> implements InjectableModule {
     stateConfig: TStateConfig;
     allowMutationDecorators: boolean;
     onCreate?: ((module: StatefulModule<TStateConfig>) => unknown) | undefined;
@@ -15,12 +15,10 @@ export declare class StatefulModule<TStateConfig> {
     constructor(stateConfig: TStateConfig, allowMutationDecorators?: boolean, onCreate?: ((module: StatefulModule<TStateConfig>) => unknown) | undefined);
     init(): void;
     get moduleName(): string;
-    onDestroy(): void;
+    destroy(): void;
     exportInjectorValue(): GetStateControllerFor<TStateConfig, import("../Store").TDraftConfigFor<TStateConfig>, import("../Store").PickDefaultState<import("../Store").TDraftConfigFor<TStateConfig>>>;
-    exportComponentData(): {
-        self: GetStateViewFor<TStateConfig>;
-        extra: GetStateViewFor<TStateConfig>;
-    };
+    exportSelectorValue(): GetStateViewFor<TStateConfig>;
+    exportSelectorExtraValues(): GetStateViewFor<TStateConfig>;
 }
 /**
  * A decorator that registers the object method as an mutation

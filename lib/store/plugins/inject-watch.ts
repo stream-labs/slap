@@ -1,4 +1,4 @@
-import { inject, getInstanceMetadata } from '../../scope';
+import { inject, getInstanceMetadata, InjectableModule } from '../../scope';
 
 import {
   Store,
@@ -6,7 +6,7 @@ import {
 import { isSimilar } from '../../utils';
 import { injectChild } from './inject-child';
 
-export class WatchModule<T> {
+export class WatchModule<T> implements InjectableModule {
 
   store = inject(Store);
   unwatch: Function | null = null;

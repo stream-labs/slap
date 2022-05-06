@@ -5,15 +5,12 @@ import {
   Flatten,
   forEach,
   GetModuleInstanceFor,
-  InjectableModule,
-  Injector,
+  InjectableModuleTyped,
   moduleSystemProps,
   Provider,
 } from '../../scope';
 
-
-
-export function createModuleView<TModule>(module: TModule): GetModuleStateView<TModule>  {
+export function createModuleView<TModule>(module: TModule): GetModuleStateView<TModule> {
 
   let view = new StateView();
 
@@ -28,11 +25,12 @@ export function createModuleView<TModule>(module: TModule): GetModuleStateView<T
     if (provider) {
 
       injectedProps[propName] = true;
-      const injectedModule = provider.instance as InjectableModule;
-      const componentData = injectedModule.exportComponentData && injectedModule.exportComponentData();
+      const injectedModule = provider.instance as InjectableModuleTyped<any, any, any>;
       const injectedValue = injectedModule.exportInjectorValue ? injectedModule.exportInjectorValue() : injectedModule;
+      const selectorValue = injectedModule.exportSelectorValue && injectedModule.exportSelectorValue();
+      const selectorExtraValues = injectedModule.exportSelectorExtraValues && injectedModule.exportSelectorExtraValues();
 
-      const extraProps = componentData && componentData.extra;
+      const extraProps = selectorExtraValues;
       if (extraProps) {
         const extraPropsView = extraProps as StateView<any>;
         forEach(extraPropsView.descriptors, (descriptor, p) => {
@@ -41,7 +39,7 @@ export function createModuleView<TModule>(module: TModule): GetModuleStateView<T
         view = view.mergeView(extraProps as any);
       }
 
-      const selfProps = (componentData && componentData.self) || injectedValue;
+      const selfProps = selectorValue || injectedValue;
       if (selfProps) {
         view.defineProp({
           description: 'InjectorView',
@@ -93,33 +91,29 @@ export function createModuleView<TModule>(module: TModule): GetModuleStateView<T
   return view as any;
 }
 
-
-export type GetModuleSelfView<
+export type GetModuleSelectorValue<
   TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>
-  > = TModule extends { exportComponentData: () => ({ self: StateView<infer TView> })} ? TView : {}
+  > = TModule extends { exportSelectorValue: () => StateView<infer TView> } ? TView : {}
 
-export type GetModuleExtraView<
+export type GetModuleExtraValue<
   TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>
-  > = TModule extends { exportComponentData: () => ({ extra: StateView<infer TView> })} ? TView : {}
+  > = TModule extends { exportExtraSelectorValues: () => StateView<infer TView> } ? TView : {}
 
 export type GetComponentDataForModule<
   TModuleConfig,
   TModule = GetModuleInstanceFor<TModuleConfig>,
-  TSelfExport = GetModuleSelfView<TModuleConfig>,
-  TExtraExport = GetModuleExtraView<TModuleConfig>,
-  TInjectedProps = TModule extends { exportComponentData: () => any } ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
-  > = GetMerge<TExtraExport, TSelfExport & TInjectedProps>;
-
+  TSelectorExport = GetModuleSelectorValue<TModuleConfig>,
+  TSelectorExtraExport = GetModuleExtraValue<TModuleConfig>,
+  TInjectedProps = TModule extends { exportSelectorValue: () => any } ? {} : GetAllInjectedProps<TModule> & Omit<TModule, keyof GetInjectedProps<TModule>>
+  > = GetMerge<TSelectorExtraExport, TSelectorExport & TInjectedProps>;
 
 export type GetModuleStateView<TModuleConfig> = StateView<GetComponentDataForModule<TModuleConfig>>;
 
+export type GetInjectedPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends { __injector: InjectableModuleTyped<any, any, any>} ? TProp : never;
+export type GetInjectedExtraPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends { __injector: InjectableModuleTyped<any, any, infer TExtraProps>} ? TExtraProps extends StateView ? TProp : never : never;
 
-export type GetInjectedPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends { __injector: Injector<any, any, any>} ? TProp : never;
-export type GetInjectedExtraPropName<TModule, TProp extends keyof TModule> = TModule[TProp] extends { __injector: Injector<any, any, infer TExtraProps>} ? TExtraProps extends StateView ? TProp : never : never;
-
-export type GetInjectedProps<TModule> = {[K in keyof TModule as GetInjectedPropName<TModule, K>]: TModule[K] extends { __injector: Injector<any, StateView<infer TInjectorView>, any>} ? TInjectorView: never }
-export type GetExtraInjectedProps<TModule> = {[K in keyof TModule as GetInjectedExtraPropName<TModule, K>]: TModule[K] extends { __injector: Injector<any, any, StateView<infer TExtraProps>>} ? TExtraProps: never }
+export type GetInjectedProps<TModule> = {[K in keyof TModule as GetInjectedPropName<TModule, K>]: TModule[K] extends { __injector: InjectableModuleTyped<any, StateView<infer TInjectorView>, any>} ? TInjectorView: never }
+export type GetExtraInjectedProps<TModule> = {[K in keyof TModule as GetInjectedExtraPropName<TModule, K>]: TModule[K] extends { __injector: InjectableModuleTyped<any, any, StateView<infer TExtraProps>>} ? TExtraProps: never }
 export type GetFlattenExtraProps<TModule> = keyof GetExtraInjectedProps<TModule> extends never ? {} : Flatten<GetExtraInjectedProps<TModule>>
 export type GetAllInjectedProps<TModule> = GetMerge<GetFlattenExtraProps<TModule>, GetInjectedProps<TModule>>;
 
-export type PickInjectedViews<TView, TModule> = StateView<GetProps<TView> & GetAllInjectedProps<TModule>>;

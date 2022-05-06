@@ -1,7 +1,6 @@
 import { Scope } from './scope';
 import { Dict } from './utils';
-import { Injector } from './injector';
-import { GetModuleInstanceFor, InjectableModule, TLoadingStatus, TModuleCreator, TProviderFor } from './interfaces';
+import { GetModuleInstanceFor, InjectableModuleTyped, TModuleCreator, TProviderFor } from './interfaces';
 export declare class Provider<TInstance, TInitParams extends [] = []> {
     scope: Scope;
     creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance;
@@ -13,10 +12,9 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     factory: (args: TInitParams) => TInstance;
     isInited: boolean;
     isDestroyed: boolean;
-    initParams?: TInitParams;
     childScope: Scope | null;
-    childModules: Dict<InjectableModule>;
-    injectedModules: Dict<InjectableModule>;
+    childModules: Dict<InjectableModuleTyped<any, any, any>>;
+    injectedModules: Dict<InjectableModuleTyped<any, any, any>>;
     constructor(scope: Scope, creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance, name?: string, options?: Partial<ProviderOptions>);
     createInstance(args: TInitParams): TInstance;
     mountModule(): void;
@@ -38,7 +36,6 @@ export declare function getInstanceMetadata(instance: any): {
 };
 export declare const moduleSystemProps: Dict<boolean>;
 export interface ProviderEvents {
-    onInjectorStatusChange: (injector: Injector<unknown, unknown, unknown>, current: TLoadingStatus, prev: TLoadingStatus) => unknown;
     onBeforeInit: (provider: Provider<any>) => unknown;
     onAfterInit: (provider: Provider<any>) => unknown;
 }

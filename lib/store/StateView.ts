@@ -39,6 +39,7 @@ export class StateView<TProps = {}> {
       getRev: descriptorParams.getValue,
       stateView: null,
       dynamic: false,
+      description: '',
       ...descriptorParams,
     };
     (this.descriptors as any)[descriptor.name] = descriptor;
@@ -128,6 +129,6 @@ export type TModulePropDescriptor<TValue> = {
   dynamic: boolean,
 }
 
-export type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'description' | 'name' | 'getValue'>>
+export type TConstructDescriptorProps<TValue, TDescriptor = TModulePropDescriptor<TValue>> = Partial<TDescriptor> & Required<Pick<TModulePropDescriptor<TValue>, 'name' | 'getValue'>>
 export type TGetDescriptorsForProps<TProps extends Dict<any>> = {[P in keyof TProps]: TModulePropDescriptor<TProps[P]>}
 export type GetProps<TModuleView> = TModuleView extends StateView<infer TProps> ? TProps : never;

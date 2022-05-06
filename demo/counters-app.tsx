@@ -1,9 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import { injectState } from '../lib';
-import { ReactModules, useAppContext } from '../lib/react-bindings/ReactModules';
-import { useModule } from '../lib/react-bindings/useModule';
+import { injectState, useModule, ReactModules, useAppContext } from '../lib';
 
 function CountersApp() {
   return (

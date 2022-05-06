@@ -1,4 +1,4 @@
-import { generateId, injectProvider } from '../../scope';
+import { generateId, InjectableModule, injectProvider } from '../../scope';
 import { TStateViewForStateConfig } from '../Store';
 import { StateView } from '../StateView';
 import { injectState } from './inject-state';
@@ -7,8 +7,6 @@ import { injectChild } from './inject-child';
 import { createStateView } from './createStateView';
 
 export class QueryStateConfig<TData, TParams, TError> {
-
-  // constructor(public state: QueryState<TData, TParams, TError>) {}
 
   state: QueryState<TData, TParams, TError> = {
     status: 'idle' as QueryStatus,
@@ -40,7 +38,7 @@ export class QueryModule<
   TData = GetQueryData<TConstructorArgs>,
   TParams = GetQueryParams<TConstructorArgs>,
   TError = unknown,
-  > {
+  > implements InjectableModule {
 
   state = injectState(QueryStateConfig);
   provider = injectProvider();
@@ -169,16 +167,13 @@ export class QueryModule<
     this.enabled = enabled;
   }
 
-  onDestroy() {
+  destroy() {
     // prevent unfinished fetching
     this.setEnabled(false);
   }
 
-  exportComponentData() {
-    return {
-      self: this.queryView,
-      extra: null,
-    };
+  exportSelectorValue() {
+    return this.queryView;
   }
 }
 
