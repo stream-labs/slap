@@ -35,8 +35,7 @@ export type TLoadingStatus = 'not-started' | 'loading' | 'done' | 'error';
 
 export interface InjectableModule {
   init?(): unknown;
-  load?(): Promise<unknown> | unknown;
-  onLoad?(): unknown;
+  destroy?(): unknown;
   exportInjectorValue?(): any
   exportComponentData?(): { self: any; extra: any },
 }

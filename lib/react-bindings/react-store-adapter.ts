@@ -24,14 +24,13 @@ export class ReactStoreAdapter {
   }
 
   init() {
-    this.store.events.on('onReadyToRender', () => this.onMutation());
+    this.store.events.on('onReadyToRender', () => this.onAfterMutations());
   }
 
   watchers = {} as Record<string, Function>;
 
   watchersOrder = [] as string[];
 
-  // TODO: rename to mount-component ?
   createWatcher(watcherId: string, cb: Function) {
     this.watchersOrder.push(watcherId);
     this.watchers[watcherId] = cb;
@@ -46,7 +45,7 @@ export class ReactStoreAdapter {
 
   updateIsInProgress = false;
 
-  onMutation() {
+  onAfterMutations() {
     this.updateUI();
   }
 
