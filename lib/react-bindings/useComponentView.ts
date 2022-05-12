@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect } from 'react';
 import {
-  getComponentName, useForceUpdate, useOnCreate, useOnDestroy
+  getComponentName, useForceUpdate, useOnCreate, useOnDestroy,
 } from './hooks';
 import {
   generateId,
-  getInstanceMetadata,
+  getInstanceMetadata, Provider,
 } from '../scope';
 import { ExtendView } from '../store/StateView';
 import { createModuleView, GetModuleStateView, Store } from '../store';
@@ -29,16 +29,17 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
     if (parentModuleView) {
       moduleView = moduleView.mergeView(parentModuleView);
     }
-    const component = reactStore.registerComponent(moduleView, componentId, forceUpdate);
+    const component = reactStore.registerComponent(moduleView, componentId, forceUpdate, provider, reactStore);
 
     function extend<TNewProps>(
       newPropsFactory: (props: GetModuleStateView<TModule>['props']) => TNewProps,
     ): (ExtendView<GetModuleStateView<TModule>['props'], TNewProps>)['props'] {
-      const newProvider = provider.resolveChildProvider(() => newPropsFactory(moduleView.props as any), componentId);
+      const newId = componentId + '_extended';
+      const newProvider = provider.resolveChildProvider(() => newPropsFactory(moduleView.props as any), newId);
       newProvider.setMetadata('parentModuleView', moduleView);// TODO remove metadata
-      store.setModuleContext(componentId, provider.childScope!);
-      const result = useModule(componentId) as any;
-      store.resetModuleContext(componentId);
+      store.setModuleContext(newId, provider.childScope!);
+      const result = useModule(newId) as any;
+      store.resetModuleContext(newId);
       return result;
     }
 
@@ -62,6 +63,8 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
   });
 
   useLayoutEffect(() => {
+    // startListeningStoreChanges(provider, component, reactStore);
+    // component.startListeningStoreChanges(provider, component, reactStore);
 
     const stateView = component.stateView;
     if (!stateView.hasSelectedProps) return;
@@ -78,13 +81,13 @@ export function useComponentView<TModule, TResult = GetUseComponentViewResult<TM
       }
     });
     return () => {
-      reactStore.removeWatcher(watcherId);
+      reactStore.removeWatcher(component.id);
     };
   }, []);
 
   useEffect(() => {
     component.setMounted();
-  }, []);
+  });
 
   return component.stateView.proxy as TResult;
 }
@@ -95,3 +98,20 @@ export type GetUseComponentViewResult<TModuleInstance> =
     componentView: ComponentView,
     extend: <TNewProps>(newPropsFactory: (props: GetModuleStateView<TModuleInstance>['props']) => TNewProps) => ExtendView<GetModuleStateView<TModuleInstance>['props'], TNewProps>['props'] & {componentView: ComponentView }
   }
+
+function startListeningStoreChanges(provider: Provider<any>, component: ComponentView, reactStore: ReactStoreAdapter) {
+  const stateView = component.stateView;
+  if (!stateView.hasSelectedProps) return;
+
+  component.makeSnapshot();
+
+  const watcherId = reactStore.createWatcher(component.id, () => {
+
+    if (provider.isDestroyed) return;
+
+    const shouldUpdate = component.shouldComponentUpdate();
+    if (shouldUpdate) {
+      component.setInvalidated(true);
+    }
+  });
+}

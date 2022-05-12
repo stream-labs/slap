@@ -61,7 +61,7 @@ export function HighloadPage () {
 
 function Card(props: {id: string}) {
 
-  console.log('render card ', props.id);
+  // console.log('render card ', props.id);
 
   const {
     card,

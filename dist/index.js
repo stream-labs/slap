@@ -420,8 +420,8 @@ class ReactStoreAdapter {
         this.watchersOrder = [];
         this.updateIsInProgress = false;
     }
-    registerComponent(moduleView, componentId, forceUpdate) {
-        const componentView = new ComponentView(this.store, moduleView, componentId, forceUpdate);
+    registerComponent(moduleView, componentId, forceUpdate, provider, storeAdapter) {
+        const componentView = new ComponentView(this.store, moduleView, componentId, forceUpdate, provider, storeAdapter);
         this.components[componentId] = componentView;
         return componentView;
     }
@@ -433,7 +433,7 @@ class ReactStoreAdapter {
         delete this.components[componentId];
     }
     init() {
-        this.store.events.on('onReadyToRender', () => this.onAfterMutations());
+        this.store.events.on('onReadyToRender', () => this.updateUI());
     }
     createWatcher(watcherId, cb) {
         this.watchersOrder.push(watcherId);
@@ -444,9 +444,6 @@ class ReactStoreAdapter {
         const ind = this.watchersOrder.findIndex(id => watcherId === id);
         this.watchersOrder.splice(ind, 1);
         delete this.watchers[watcherId];
-    }
-    onAfterMutations() {
-        this.updateUI();
     }
     updateUI() {
         if (this.updateIsInProgress) {
@@ -474,11 +471,13 @@ class ReactStoreAdapter {
 }
 exports.ReactStoreAdapter = ReactStoreAdapter;
 class ComponentView {
-    constructor(store, stateView, id, forceUpdate) {
+    constructor(store, stateView, id, forceUpdate, provider, storeAdapter) {
         this.store = store;
         this.stateView = stateView;
         this.id = id;
         this.forceUpdate = forceUpdate;
+        this.provider = provider;
+        this.storeAdapter = storeAdapter;
         this.isDestroyed = false;
         this.isMounted = false;
         this.isInvalidated = false;
@@ -500,6 +499,22 @@ class ComponentView {
         this.lastSnapshot = snapshot;
         return snapshot;
     }
+    // startListeningStoreChanges(provider: Provider<any>, component: ComponentView, reactStore: ReactStoreAdapter) {
+    //   const stateView = component.stateView;
+    //   if (!stateView.hasSelectedProps) return;
+    //
+    //   component.makeSnapshot();
+    //
+    //   const watcherId = reactStore.createWatcher(component.id, () => {
+    //
+    //     if (provider.isDestroyed) return;
+    //
+    //     const shouldUpdate = component.shouldComponentUpdate();
+    //     if (shouldUpdate) {
+    //       component.setInvalidated(true);
+    //     }
+    //   });
+    // }
     needUpdate() {
         return this.isInvalidated && this.isMounted && !this.isDestroyed;
     }
@@ -576,13 +591,14 @@ function useComponentView(module) {
         if (parentModuleView) {
             moduleView = moduleView.mergeView(parentModuleView);
         }
-        const component = reactStore.registerComponent(moduleView, componentId, forceUpdate);
+        const component = reactStore.registerComponent(moduleView, componentId, forceUpdate, provider, reactStore);
         function extend(newPropsFactory) {
-            const newProvider = provider.resolveChildProvider(() => newPropsFactory(moduleView.props), componentId);
+            const newId = componentId + '_extended';
+            const newProvider = provider.resolveChildProvider(() => newPropsFactory(moduleView.props), newId);
             newProvider.setMetadata('parentModuleView', moduleView); // TODO remove metadata
-            store.setModuleContext(componentId, provider.childScope);
-            const result = (0, useModule_1.useModule)(componentId);
-            store.resetModuleContext(componentId);
+            store.setModuleContext(newId, provider.childScope);
+            const result = (0, useModule_1.useModule)(newId);
+            store.resetModuleContext(newId);
             return result;
         }
         moduleView.defineProp({
@@ -601,6 +617,8 @@ function useComponentView(module) {
         reactStore.destroyComponent(componentId);
     });
     (0, react_1.useLayoutEffect)(() => {
+        // startListeningStoreChanges(provider, component, reactStore);
+        // component.startListeningStoreChanges(provider, component, reactStore);
         const stateView = component.stateView;
         if (!stateView.hasSelectedProps)
             return;
@@ -614,15 +632,29 @@ function useComponentView(module) {
             }
         });
         return () => {
-            reactStore.removeWatcher(watcherId);
+            reactStore.removeWatcher(component.id);
         };
     }, []);
     (0, react_1.useEffect)(() => {
         component.setMounted();
-    }, []);
+    });
     return component.stateView.proxy;
 }
 exports.useComponentView = useComponentView;
+function startListeningStoreChanges(provider, component, reactStore) {
+    const stateView = component.stateView;
+    if (!stateView.hasSelectedProps)
+        return;
+    component.makeSnapshot();
+    const watcherId = reactStore.createWatcher(component.id, () => {
+        if (provider.isDestroyed)
+            return;
+        const shouldUpdate = component.shouldComponentUpdate();
+        if (shouldUpdate) {
+            component.setInvalidated(true);
+        }
+    });
+}
 
 
 /***/ }),
@@ -1487,6 +1519,8 @@ class StateController {
         const state = this.store.rootState[moduleName];
         const mutationIsFunction = typeof mutation === 'function';
         const metadata = this.getMetadata();
+        if (!metadata)
+            return; // state is destroyed
         if (!metadata.isInitialized) {
             if (mutationIsFunction) {
                 mutation(this);

@@ -1,10 +1,10 @@
-import { Dict } from '../scope';
+import { Dict, Provider } from '../scope';
 import { Store } from '../store/Store';
 import { StateView } from '../store';
 export declare class ReactStoreAdapter {
     store: Store;
     components: Dict<ComponentView>;
-    registerComponent(moduleView: StateView, componentId: string, forceUpdate: Function): ComponentView;
+    registerComponent(moduleView: StateView, componentId: string, forceUpdate: Function, provider: Provider<any>, storeAdapter: ReactStoreAdapter): ComponentView;
     destroyComponent(componentId: string): void;
     init(): void;
     watchers: Record<string, Function>;
@@ -12,7 +12,6 @@ export declare class ReactStoreAdapter {
     createWatcher(watcherId: string, cb: Function): string;
     removeWatcher(watcherId: string): void;
     updateIsInProgress: boolean;
-    onAfterMutations(): void;
     updateUI(): void;
 }
 export declare type ComponentSnapshot = {
@@ -24,11 +23,13 @@ export declare class ComponentView {
     stateView: StateView;
     id: string;
     forceUpdate: Function;
+    provider: Provider<any>;
+    storeAdapter: ReactStoreAdapter;
     isDestroyed: boolean;
     isMounted: boolean;
     isInvalidated: boolean;
     lastSnapshot: ComponentSnapshot;
-    constructor(store: Store, stateView: StateView, id: string, forceUpdate: Function);
+    constructor(store: Store, stateView: StateView, id: string, forceUpdate: Function, provider: Provider<any>, storeAdapter: ReactStoreAdapter);
     makeSnapshot(): ComponentSnapshot;
     needUpdate(): boolean;
     setMounted(): void;

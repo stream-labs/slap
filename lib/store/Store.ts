@@ -226,6 +226,7 @@ export class StateController<TConfig = any> {
     const state = this.store.rootState[moduleName];
     const mutationIsFunction = typeof mutation === 'function';
     const metadata = this.getMetadata();
+    if (!metadata) return; // state is destroyed
 
     if (!metadata.isInitialized) {
       if (mutationIsFunction) {

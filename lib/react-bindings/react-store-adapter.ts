@@ -1,5 +1,5 @@
 import { unstable_batchedUpdates } from 'react-dom';
-import { Dict } from '../scope';
+import { Dict, Provider } from '../scope';
 import { Store } from '../store/Store';
 import { inject } from '../scope/injector';
 import { StateView } from '../store';
@@ -10,8 +10,8 @@ export class ReactStoreAdapter {
   store = inject(Store);
   components = {} as Dict<ComponentView>;
 
-  registerComponent(moduleView: StateView, componentId: string, forceUpdate: Function): ComponentView {
-    const componentView = new ComponentView(this.store, moduleView, componentId, forceUpdate);
+  registerComponent(moduleView: StateView, componentId: string, forceUpdate: Function, provider: Provider<any>, storeAdapter: ReactStoreAdapter): ComponentView {
+    const componentView = new ComponentView(this.store, moduleView, componentId, forceUpdate, provider, storeAdapter);
     this.components[componentId] = componentView;
     return componentView;
   }
@@ -24,7 +24,7 @@ export class ReactStoreAdapter {
   }
 
   init() {
-    this.store.events.on('onReadyToRender', () => this.onAfterMutations());
+    this.store.events.on('onReadyToRender', () => this.updateUI());
   }
 
   watchers = {} as Record<string, Function>;
@@ -44,10 +44,6 @@ export class ReactStoreAdapter {
   }
 
   updateIsInProgress = false;
-
-  onAfterMutations() {
-    this.updateUI();
-  }
 
   updateUI() {
     if (this.updateIsInProgress) {
@@ -90,7 +86,7 @@ export class ComponentView {
     props: null as any,
   };
 
-  constructor(public store: Store, public stateView: StateView, public id: string, public forceUpdate: Function) {
+  constructor(public store: Store, public stateView: StateView, public id: string, public forceUpdate: Function, public provider: Provider<any>, public storeAdapter: ReactStoreAdapter) {
   }
 
   makeSnapshot(): ComponentSnapshot {
@@ -106,6 +102,23 @@ export class ComponentView {
     this.lastSnapshot = snapshot;
     return snapshot;
   }
+
+  // startListeningStoreChanges(provider: Provider<any>, component: ComponentView, reactStore: ReactStoreAdapter) {
+  //   const stateView = component.stateView;
+  //   if (!stateView.hasSelectedProps) return;
+  //
+  //   component.makeSnapshot();
+  //
+  //   const watcherId = reactStore.createWatcher(component.id, () => {
+  //
+  //     if (provider.isDestroyed) return;
+  //
+  //     const shouldUpdate = component.shouldComponentUpdate();
+  //     if (shouldUpdate) {
+  //       component.setInvalidated(true);
+  //     }
+  //   });
+  // }
 
   needUpdate() {
     return this.isInvalidated && this.isMounted && !this.isDestroyed;
