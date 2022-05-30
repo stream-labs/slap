@@ -6,6 +6,20 @@ import {
 import { isSimilar } from '../../utils';
 import { injectChild } from './inject-child';
 
+/**
+ * Creates a watcher that call a callback on state change
+ * @param expression a function that returns a piece of state to compare. The source of state should be reactive
+ * @param onChange call this callback if expression result changed
+ * @param isEqual a comparison function
+ */
+export function injectWatch<T>(
+  expression: () => T,
+  onChange: (newVal: T, prevVal: T) => unknown,
+  isEqual?: (newVal: T, prevVal: T) => boolean,
+) {
+  return injectChild(WatchModule, expression, onChange, isEqual);
+}
+
 export class WatchModule<T> implements InjectableModule {
 
   store = inject(Store);
@@ -38,12 +52,4 @@ export class WatchModule<T> implements InjectableModule {
     this.unwatch && this.unwatch();
   }
 
-}
-
-export function injectWatch<T>(
-  expression: () => T,
-  onChange: (newVal: T, prevVal: T) => unknown,
-  isEqual?: (newVal: T, prevVal: T) => boolean,
-) {
-  return injectChild(WatchModule, expression, onChange, isEqual);
 }

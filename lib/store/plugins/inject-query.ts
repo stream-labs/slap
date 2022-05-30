@@ -6,14 +6,38 @@ import { injectWatch } from './inject-watch';
 import { injectChild } from './inject-child';
 import { createStateView } from './createStateView';
 
+/**
+ * Injects DataQuery
+ * Inspired by https://react-query.tanstack.com/reference/useQuery
+ */
+export function injectQuery<TQueryArgs extends QueryArgs>(...args: TQueryArgs) {
+  return injectChild(QueryModule as any as QueryModule<TQueryArgs>, ...args);
+}
+
+/**
+ * Describes a reactive state for DataQuery
+ */
 export class QueryStateConfig<TData, TParams, TError> {
 
   state: QueryState<TData, TParams, TError> = {
+    /**
+     * current status of the DataQuery
+     */
     status: 'idle' as QueryStatus,
+    /**
+     * keeps fetched data on success
+     */
     data: null as unknown as TData,
+    /**
+     * keeps error on fail
+     */
     error: null as unknown as TError,
+
+    // TODO: remove from state
     params: null as unknown as TParams,
   };
+
+  // define state mutations
 
   setData(data: TData) {
     this.state.status = 'success';
@@ -25,13 +49,16 @@ export class QueryStateConfig<TData, TParams, TError> {
     this.state.error = error;
   }
 
+  // define state getters
+
   get isLoading() {
     return this.state.status === 'loading';
   }
 }
 
 /**
- * Alternative for https://react-query.tanstack.com/reference/useQuery
+ * A stateful module for working with DataQueries
+ * Inspired by https://react-query.tanstack.com/
  */
 export class QueryModule<
   TConstructorArgs extends Array<any>,
@@ -40,20 +67,29 @@ export class QueryModule<
   TError = unknown,
   > implements InjectableModule {
 
+  // create a reactive state for this module
   state = injectState(QueryStateConfig);
   provider = injectProvider();
+
+  // re-fetch query if params changed
   watcher = injectWatch(() => this.getParams(), this.refetch);
 
+  // keep current fetching promise to avoid redundant fetches
   fetchingPromise: Promise<TData> | null = null;
   promiseId = '';
+
+  // if enabled=false then no callbacks will be executed when fetching finished
   enabled = true;
+
+  // keeps settings, such as "onSuccess" for the current query
   options: QueryOptions;
-  stateView!: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>>>;
   isInitialFetch = true;
+
+  // provides reactive data for selecting in components
   queryView!: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & { refetch: () => Promise<TData>}>;
 
   constructor(...args: TConstructorArgs) {
-
+    // create initial options based on passed args
     const computedOptions = getQueryOptionsFromArgs(args);
     const options = {
       enabled: true,
@@ -71,7 +107,7 @@ export class QueryModule<
   }
 
   init() {
-
+    // define methods available in components
     const queryMethods = new StateView();
     queryMethods.defineProp({
       description: 'QueryMethod',
@@ -81,8 +117,8 @@ export class QueryModule<
         return () => this.refetch();
       },
     });
-    this.stateView = createStateView(this.state) as any;
-    this.queryView = this.stateView.mergeView(queryMethods);
+    const stateView = createStateView(this.state) as any;
+    this.queryView = stateView.mergeView(queryMethods);
     const data = this.options.initialData;
     this.state.update({
       params: this.getParams(),
@@ -91,11 +127,18 @@ export class QueryModule<
     this.exec();
   }
 
+  /**
+   * Start fetching if not started yet and return fetching promise
+   */
   exec(): Promise<TData> {
     if (this.fetchingPromise) return this.fetchingPromise;
     return this.fetch();
   }
 
+  /**
+   * Start fetching
+   * You most likely should call ".exec()" instead this method to avoid redundant fetching
+   */
   fetch(): Promise<TData> {
     let fetchResult: any;
 
@@ -136,6 +179,11 @@ export class QueryModule<
     return Promise.resolve(fetchResult);
   }
 
+  /**
+   * Returns "this" context for the "getParams()" callback
+   * QueryModule usually injected as a child module via `injectQuery`
+   * So take "this" context of the parent module
+   */
   get thisContext() {
     const parentProvider = this.provider.options.parentProvider;
     if (parentProvider) {
@@ -143,6 +191,10 @@ export class QueryModule<
     }
   }
 
+  /**
+   * Call the "getParams" callback
+   * Query will be re-fetched if params changed
+   */
   getParams(): TParams {
     if (!this.options.getParams) return null as any;
     if (this.thisContext) {
@@ -172,13 +224,12 @@ export class QueryModule<
     this.setEnabled(false);
   }
 
+  /**
+   * Export data and methods for a component selector
+   */
   exportSelectorValue() {
     return this.queryView;
   }
-}
-
-export function injectQuery<TQueryArgs extends QueryArgs>(...args: TQueryArgs) {
-  return injectChild(QueryModule as any as QueryModule<TQueryArgs>, ...args);
 }
 
 export type QueryRequiredOptions = {
@@ -208,7 +259,7 @@ type QueryStatus = 'idle' | 'loading' | 'error' | 'success'
 export type QueryArgs = [QueryConstructorOptions] | [(...any: any) => any] | [any, (...any: any) => any] | [any, (...any: any) => any, (...any: any) => any];
 
 /**
- * convers Query constructor agrs to QueryOptions
+ * converts Query constructor agrs to QueryOptions
  * @param args
  */
 export function getQueryOptionsFromArgs<TQueryArgs extends Array<any>, TResult = GetQueryOptions<TQueryArgs>>(args: TQueryArgs): TResult {

@@ -13,8 +13,12 @@ import { parseStateConfig } from './parse-config';
 import { isSimilar } from '../utils';
 
 /**
+ * A centralised framework-agnostic store.
+ * Data in this store is split by named states
+ * Each module could inject multiple named states.
+ * For better performance keep only reactive data in the store.
+ *
  * All React related code should be handled in ReactAdapter
- * Framework agnostic store
  */
 export class Store {
 
@@ -100,6 +104,9 @@ export interface StoreEvents {
   onReadyToRender: () => void
 }
 
+/**
+ * Controls a single named state
+ */
 export class StateController<TConfig = any> {
 
   draftState: any = null;
@@ -194,6 +201,9 @@ export class StateController<TConfig = any> {
     this.store.rootState[this.moduleName] = produce(this.store.rootState[this.moduleName], () => {});
   }
 
+  /**
+   * Register a named mutation in the store.
+   */
   registerMutation(mutationName: string, mutationMethod: Function, mutationThisContext?: any) {
     const controller = this;
     const { store, moduleName } = controller;
@@ -221,6 +231,10 @@ export class StateController<TConfig = any> {
     };
   }
 
+  /**
+   * Execute mutation
+   * @param mutation a mutation function or Mutation object for a pre-registered named mutation
+   */
   mutate(mutation: ((draft: this) => unknown) | Mutation) {
     const moduleName = this.moduleName;
     const state = this.store.rootState[moduleName];

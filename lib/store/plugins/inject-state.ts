@@ -12,8 +12,14 @@ import { injectChild } from './inject-child';
 import { GetInjectedFormBinding, injectFormBinding, TFormBindings } from './inject-form';
 import { createStateView } from './createStateView';
 
+/**
+ * Injects a reactive stateful module
+ * Stateful modules helps to keep UI updated with the state
+ * @param configCreator state config. Can be Object or Class
+ * @param allowMutationDecorators  methods marked with the @mutation() in the parent module will be registered as mutations
+ * @param onCreate callback that should be called when state is registered in the state manager
+ */
 export function injectState<
-
   TConfigCreator extends TStateConfigCreator,
   TValue = GetStateControllerFor<TConfigCreator>,
   TViewValue = GetStateViewFor<TConfigCreator>,

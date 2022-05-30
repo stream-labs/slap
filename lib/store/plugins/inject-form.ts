@@ -2,14 +2,20 @@ import { StateView } from '../StateView';
 import { InjectableModule, InjectedProp } from '../../scope';
 import { injectChild } from './inject-child';
 
-export type TFormBindings<TState, TExtraProps = {}> = {
-  [K in keyof TState]: {
-    name: K;
-    value: TState[K];
-    onChange: (newVal: TState[K]) => unknown;
-  };
-} & TExtraProps
+/**
+ * Injects an stateful module that helps to link a reactive data with form input components
+ */
+export function injectFormBinding<TState, TExtraProps = {}>(
+  stateGetter: TState | (() => TState),
+  stateSetter: (statePatch: Partial<TState>) => unknown,
+  extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps,
+): GetInjectedFormBinding<TState, TExtraProps> {
+  return injectChild(FormBindingModule, stateGetter, stateSetter, extraPropsGenerator) as any;
+}
 
+/**
+ * Creates a StateView for a component that helps to link a reactive data with form input components
+ */
 export function createFormBinding<TState, TExtraProps = {}>(
   stateGetter: TState | (() => TState),
   stateSetter: (statePatch: Partial<TState>) => unknown,
@@ -63,12 +69,14 @@ export class FormBindingModule implements InjectableModule {
 
 }
 
-export function injectFormBinding<TState, TExtraProps = {}>(
-  stateGetter: TState | (() => TState),
-  stateSetter: (statePatch: Partial<TState>) => unknown,
-  extraPropsGenerator?: (fieldName: keyof TState) => TExtraProps,
-): GetInjectedFormBinding<TState, TExtraProps> {
-  return injectChild(FormBindingModule, stateGetter, stateSetter, extraPropsGenerator) as any;
-}
+
+export type TFormBindings<TState, TExtraProps = {}> = {
+  [K in keyof TState]: {
+    name: K;
+    value: TState[K];
+    onChange: (newVal: TState[K]) => unknown;
+  };
+} & TExtraProps
+
 
 export type GetInjectedFormBinding<TState, TExtraProps = {}> = InjectedProp<FormBindingModule, StateView<TFormBindings<TState, TExtraProps>>, null>

@@ -3,6 +3,11 @@ import {
 } from '../scope';
 import { GetComponentDataForModule } from './plugins/createModuleView';
 
+/**
+ * Components use StateView to select reactive state and methods from modules
+ * StateView keeps information for components about reactive and non-reactive data
+ * It saves data snapshots for components and allow to compare them to detect changes
+ */
 export class StateView<TProps = {}> {
 
   props: TProps = {} as TProps;
@@ -15,6 +20,7 @@ export class StateView<TProps = {}> {
   wildcardPropCreator = null as null | ((propName: string) => unknown);
 
   constructor() {
+    // create Proxy that should listen all reactive props that component requested during rendering
     this.proxy = new Proxy(
       {
         __proxyName: 'StateViewProxy', // set proxy name for debugging
@@ -31,6 +37,9 @@ export class StateView<TProps = {}> {
     ) as any;
   }
 
+  /**
+   * Register a new property in the StateView instance
+   */
   defineProp<TValue>(descriptorParams: TConstructDescriptorProps<TValue>) {
     const descriptor: TModulePropDescriptor<TValue> = {
       configurable: true,
@@ -47,6 +56,10 @@ export class StateView<TProps = {}> {
     defineGetter(this.props as any, descriptor.name, () => descriptor.getValue());
   }
 
+  /**
+   * Defile a wildcard property
+   * The wildcard property could be accessible without registration with `defineProp` method
+   */
   defineWildcardProp(cb: StateView['wildcardPropCreator']) {
     this.hasWildcardProps = true;
     this.wildcardPropCreator = cb;
@@ -71,6 +84,9 @@ export class StateView<TProps = {}> {
     return descriptor.getValue();
   }
 
+  /**
+   * Create a snapshot with reactive data based on reactive props selected in a component
+   */
   getSnapshot() {
     const selectedDescriptors = this.selectedDescriptors;
     const props = {} as TProps;
@@ -93,9 +109,9 @@ export class StateView<TProps = {}> {
     return props;
   }
 
-  select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView {
-    return newViewFactory(this.props, this);
-  }
+  // select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView {
+  //   return newViewFactory(this.props, this);
+  // }
 
   clone() {
     const clone = new StateView<TProps>();

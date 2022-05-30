@@ -2,10 +2,17 @@ import { StateView } from '../StateView';
 import { traverse } from '../../utils';
 import { StateController } from '../Store';
 
+/**
+ * Create a StateView object for a StateController
+ * The StateView object provides data that could be selected in components.
+ * These data could be reactive, non-reactive and includes mutations and functions
+ */
 export function createStateView(controller: StateController) {
   const config = controller.getMetadata().config;
   const view = new StateView();
 
+  // define state revision getter
+  // state revisions helps to compare 2 snapshots from the same state source without expensive state traversing
   view.defineProp({
     description: 'StateRev',
     name: 'getRev',
@@ -17,6 +24,7 @@ export function createStateView(controller: StateController) {
     },
   });
 
+  // define a "state" getter that links state to itself
   traverse(config.state, stateKey => {
     view.defineProp({
       description: 'StateProp',
@@ -26,6 +34,7 @@ export function createStateView(controller: StateController) {
     });
   });
 
+  // expose mutations for a component
   traverse(config.mutations, stateKey => {
     view.defineProp({
       description: 'StateMutation',
@@ -35,6 +44,7 @@ export function createStateView(controller: StateController) {
     });
   });
 
+  // expose state getters(computed values) for a component
   traverse(config.getters, (propName) => {
     view.defineProp({
       description: 'StateGetter',
@@ -44,6 +54,7 @@ export function createStateView(controller: StateController) {
     });
   });
 
+  // expose state getter methods
   traverse(config.getterMethods, (propName) => {
     view.defineProp({
       description: 'StateGetterMethod',
