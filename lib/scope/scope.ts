@@ -141,16 +141,6 @@ export class Scope {
     return instance;
   }
 
-  // /**
-  //  * Register and instantiate a module
-  //  * TODO add type for args
-  //  */
-  // start<T extends TModuleCreator>(creator: T, ...args: any[]): TModuleInstanceFor<T> {
-  //   this.register(creator);
-  //   const instance = this.init(creator, ...args as any);
-  //   return instance;
-  // }
-
   /**
    * create the instance and resolve injections
    * every time returns a new instance
