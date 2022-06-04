@@ -1,5 +1,10 @@
 import { Dict } from '../scope';
 import { GetComponentDataForModule } from './plugins/createModuleView';
+/**
+ * Components use StateView to select reactive state and methods from modules
+ * StateView keeps information for components about reactive and non-reactive data
+ * It saves data snapshots for components and allow to compare them to detect changes
+ */
 export declare class StateView<TProps = {}> {
     props: TProps;
     proxy: TProps;
@@ -10,11 +15,20 @@ export declare class StateView<TProps = {}> {
     hasWildcardProps: boolean;
     wildcardPropCreator: ((propName: string) => unknown) | null;
     constructor();
+    /**
+     * Register a new property in the StateView instance
+     */
     defineProp<TValue>(descriptorParams: TConstructDescriptorProps<TValue>): void;
+    /**
+     * Defile a wildcard property
+     * The wildcard property could be accessible without registration with `defineProp` method
+     */
     defineWildcardProp(cb: StateView['wildcardPropCreator']): void;
     private selectValue;
+    /**
+     * Create a snapshot with reactive data based on reactive props selected in a component
+     */
     getSnapshot(): TProps;
-    select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView;
     clone(): StateView<TProps>;
     mergeView<TExtension extends StateView<any>, TResult = ExtendView<TProps, TExtension>>(extension: TExtension): TResult;
 }

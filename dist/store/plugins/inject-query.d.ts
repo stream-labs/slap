@@ -1,6 +1,14 @@
 import { InjectableModule } from '../../scope';
 import { TStateViewForStateConfig } from '../Store';
 import { StateView } from '../StateView';
+/**
+ * Injects DataQuery
+ * Inspired by https://react-query.tanstack.com/reference/useQuery
+ */
+export declare function injectQuery<TQueryArgs extends QueryArgs>(...args: TQueryArgs): import("../../scope").InjectedProp<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>, import("./createModuleView").GetModuleStateView<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>>, {}>;
+/**
+ * Describes a reactive state for DataQuery
+ */
 export declare class QueryStateConfig<TData, TParams, TError> {
     state: QueryState<TData, TParams, TError>;
     setData(data: TData): void;
@@ -8,7 +16,8 @@ export declare class QueryStateConfig<TData, TParams, TError> {
     get isLoading(): boolean;
 }
 /**
- * Alternative for https://react-query.tanstack.com/reference/useQuery
+ * A stateful module for working with DataQueries
+ * Inspired by https://react-query.tanstack.com/
  */
 export declare class QueryModule<TConstructorArgs extends Array<any>, TData = GetQueryData<TConstructorArgs>, TParams = GetQueryParams<TConstructorArgs>, TError = unknown> implements InjectableModule {
     state: import("../../scope").InjectedProp<import("../Store").GetStateControllerFor<typeof QueryStateConfig, QueryStateConfig<unknown, unknown, unknown>, QueryState<unknown, unknown, unknown>>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>>;
@@ -18,26 +27,43 @@ export declare class QueryModule<TConstructorArgs extends Array<any>, TData = Ge
     promiseId: string;
     enabled: boolean;
     options: QueryOptions;
-    stateView: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>>>;
     isInitialFetch: boolean;
     queryView: StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & {
         refetch: () => Promise<TData>;
     }>;
     constructor(...args: TConstructorArgs);
     init(): void;
+    /**
+     * Start fetching if not started yet and return fetching promise
+     */
     exec(): Promise<TData>;
+    /**
+     * Start fetching
+     * You most likely should call ".exec()" instead this method to avoid redundant fetching
+     */
     fetch(): Promise<TData>;
+    /**
+     * Returns "this" context for the "getParams()" callback
+     * QueryModule usually injected as a child module via `injectQuery`
+     * So take "this" context of the parent module
+     */
     get thisContext(): any;
+    /**
+     * Call the "getParams" callback
+     * Query will be re-fetched if params changed
+     */
     getParams(): TParams;
     refetch(): Promise<TData> | undefined;
     stopFetching(): void;
     setEnabled(enabled: boolean): void;
     destroy(): void;
+    /**
+     * Export data and methods for a component selector
+     */
     exportSelectorValue(): StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & {
         refetch: () => Promise<TData>;
     }>;
 }
-export declare function injectQuery<TQueryArgs extends QueryArgs>(...args: TQueryArgs): import("../../scope").InjectedProp<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>, import("./createModuleView").GetModuleStateView<QueryModule<TQueryArgs, GetQueryDataTypeFromOptions<GetQueryOptions<TQueryArgs>>, GetQueryParamsTypeFromOptions<GetQueryOptions<TQueryArgs>>, unknown>>, {}>;
 export declare type QueryRequiredOptions = {
     fetch: (...args: any) => any;
 };
@@ -59,7 +85,7 @@ export declare type QueryState<TData, TParams, TError> = {
 declare type QueryStatus = 'idle' | 'loading' | 'error' | 'success';
 export declare type QueryArgs = [QueryConstructorOptions] | [(...any: any) => any] | [any, (...any: any) => any] | [any, (...any: any) => any, (...any: any) => any];
 /**
- * convers Query constructor agrs to QueryOptions
+ * converts Query constructor agrs to QueryOptions
  * @param args
  */
 export declare function getQueryOptionsFromArgs<TQueryArgs extends Array<any>, TResult = GetQueryOptions<TQueryArgs>>(args: TQueryArgs): TResult;

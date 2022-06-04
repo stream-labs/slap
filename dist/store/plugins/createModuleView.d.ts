@@ -1,6 +1,10 @@
 import { StateView } from '../StateView';
 import { GetMerge } from '../../utils';
 import { Flatten, GetModuleInstanceFor, InjectableModuleTyped } from '../../scope';
+/**
+ * Create a StateView instance and register props from the given module in that StateView
+ * @param module
+ */
 export declare function createModuleView<TModule>(module: TModule): GetModuleStateView<TModule>;
 export declare type GetModuleSelectorValue<TModuleConfig, TModule = GetModuleInstanceFor<TModuleConfig>> = TModule extends {
     exportSelectorValue: () => StateView<infer TView>;

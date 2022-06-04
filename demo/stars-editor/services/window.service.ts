@@ -17,6 +17,7 @@ export class WindowState {
     { title: 'Functional Modules', id: 'functional-modules' },
     { title: 'ShouldComponentUpdate', id: 'should-update' },
     { title: 'Errors', id: 'errors' },
+    { title: 'Generated Array Mutations', id: 'generated-array-mutations' },
   ];
 
   setActivePage(page: string) {

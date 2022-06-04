@@ -1092,15 +1092,6 @@ class Scope {
             provider.mountModule();
         return instance;
     }
-    // /**
-    //  * Register and instantiate a module
-    //  * TODO add type for args
-    //  */
-    // start<T extends TModuleCreator>(creator: T, ...args: any[]): TModuleInstanceFor<T> {
-    //   this.register(creator);
-    //   const instance = this.init(creator, ...args as any);
-    //   return instance;
-    // }
     /**
      * create the instance and resolve injections
      * every time returns a new instance
@@ -1245,6 +1236,11 @@ exports.isClass = isClass;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.StateView = void 0;
 const scope_1 = __webpack_require__(527);
+/**
+ * Components use StateView to select reactive state and methods from modules
+ * StateView keeps information for components about reactive and non-reactive data
+ * It saves data snapshots for components and allow to compare them to detect changes
+ */
 class StateView {
     constructor() {
         this.props = {};
@@ -1254,6 +1250,7 @@ class StateView {
         this.hasSelectedProps = false;
         this.hasWildcardProps = false;
         this.wildcardPropCreator = null;
+        // create Proxy that should listen all reactive props that component requested during rendering
         this.proxy = new Proxy({
             __proxyName: 'StateViewProxy',
             __target: this,
@@ -1268,6 +1265,9 @@ class StateView {
             },
         });
     }
+    /**
+     * Register a new property in the StateView instance
+     */
     defineProp(descriptorParams) {
         const descriptor = Object.assign({ configurable: true, enumerable: true, reactive: false, getRev: descriptorParams.getValue, stateView: null, dynamic: false, description: '' }, descriptorParams);
         this.descriptors[descriptor.name] = descriptor;
@@ -1275,6 +1275,10 @@ class StateView {
             this.hasReactiveProps = true;
         (0, scope_1.defineGetter)(this.props, descriptor.name, () => descriptor.getValue());
     }
+    /**
+     * Defile a wildcard property
+     * The wildcard property could be accessible without registration with `defineProp` method
+     */
     defineWildcardProp(cb) {
         this.hasWildcardProps = true;
         this.wildcardPropCreator = cb;
@@ -1297,6 +1301,9 @@ class StateView {
         }
         return descriptor.getValue();
     }
+    /**
+     * Create a snapshot with reactive data based on reactive props selected in a component
+     */
     getSnapshot() {
         const selectedDescriptors = this.selectedDescriptors;
         const props = {};
@@ -1318,9 +1325,9 @@ class StateView {
         });
         return props;
     }
-    select(newViewFactory) {
-        return newViewFactory(this.props, this);
-    }
+    // select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView {
+    //   return newViewFactory(this.props, this);
+    // }
     clone() {
         const clone = new StateView();
         (0, scope_1.forEach)(this.descriptors, descriptor => clone.defineProp(descriptor));
@@ -1354,8 +1361,12 @@ const scope_1 = __webpack_require__(527);
 const parse_config_1 = __webpack_require__(890);
 const utils_1 = __webpack_require__(225);
 /**
+ * A centralised framework-agnostic store.
+ * Data in this store is split by named states
+ * Each module could inject multiple named states.
+ * For better performance keep only reactive data in the store.
+ *
  * All React related code should be handled in ReactAdapter
- * Framework agnostic store
  */
 class Store {
     constructor() {
@@ -1420,6 +1431,9 @@ class Store {
     }
 }
 exports.Store = Store;
+/**
+ * Controls a single named state
+ */
 class StateController {
     constructor(store, moduleName, config) {
         this.store = store;
@@ -1471,6 +1485,26 @@ class StateController {
                 return;
             const mutationMethod = (propVal) => controller[propertyName] = propVal;
             controller.registerMutation(mutationName, mutationMethod);
+            // generate array helpers
+            if (!Array.isArray(defaultState[propertyName]))
+                return;
+            // generate a "push" mutation
+            const pushMutationName = `push${(0, scope_1.capitalize)(propertyName)}`;
+            if (!config.mutations[pushMutationName]) {
+                controller.registerMutation(pushMutationName, (newItem) => controller[propertyName].push(newItem));
+            }
+            // generate a "remove" mutation
+            const removeMutation = `remove${(0, scope_1.capitalize)(propertyName)}`;
+            if (!config.mutations[removeMutation]) {
+                controller.registerMutation(removeMutation, (searchFn) => {
+                    const arr = controller[propertyName];
+                    let i = arr.length;
+                    while (i--) {
+                        if (searchFn(arr[i]))
+                            arr.splice(i, 1);
+                    }
+                });
+            }
         });
         // create default mutations
         this.registerDefaultMutations();
@@ -1500,6 +1534,9 @@ class StateController {
         this.getMetadata().isInitialized = true;
         this.store.rootState[this.moduleName] = (0, immer_1.default)(this.store.rootState[this.moduleName], () => { });
     }
+    /**
+     * Register a named mutation in the store.
+     */
     registerMutation(mutationName, mutationMethod, mutationThisContext) {
         const controller = this;
         const { store, moduleName } = controller;
@@ -1523,6 +1560,10 @@ class StateController {
             store.dispatchMutation(mutation);
         };
     }
+    /**
+     * Execute mutation
+     * @param mutation a mutation function or Mutation object for a pre-registered named mutation
+     */
     mutate(mutation) {
         const moduleName = this.moduleName;
         const state = this.store.rootState[moduleName];
@@ -1587,6 +1628,29 @@ class StateController {
     }
     get getters() {
         return this.getMetadata().getters;
+    }
+    waitFor(cb, waitOptions) {
+        let isFound = cb();
+        if (isFound)
+            return;
+        return new Promise((resolve, reject) => {
+            const unsubscribe = this.store.events.on('onMutation', () => {
+                isFound = cb();
+                if (!isFound)
+                    return;
+                unsubscribe();
+                resolve();
+            });
+            this.getMetadata().subscriptions.push(unsubscribe);
+            if (waitOptions === null || waitOptions === void 0 ? void 0 : waitOptions.timeout) {
+                setTimeout(() => {
+                    if (isFound)
+                        return;
+                    unsubscribe();
+                    reject(new Error('Store waiting timeout'));
+                }, waitOptions.timeout);
+            }
+        });
     }
 }
 exports.StateController = StateController;
@@ -1732,24 +1796,36 @@ exports.createModuleView = void 0;
 const StateView_1 = __webpack_require__(32);
 const utils_1 = __webpack_require__(225);
 const scope_1 = __webpack_require__(527);
+/**
+ * Create a StateView instance and register props from the given module in that StateView
+ * @param module
+ */
 function createModuleView(module) {
     let view = new StateView_1.StateView();
     const injectedProps = {};
+    // find and register props for injected modules
     (0, utils_1.traverse)(module, (propName, descr) => {
         var _a;
         if (scope_1.moduleSystemProps[propName])
             return;
         if (descr.get)
             return;
+        // consider that the property contains an injectable module if it has a "__provider" value
         const provider = (_a = descr.value) === null || _a === void 0 ? void 0 : _a.__provider;
         if (!(provider instanceof scope_1.Provider))
             return;
         if (provider) {
+            // mark the prop as injectable
             injectedProps[propName] = true;
+            // take the module instance
             const injectedModule = provider.instance;
+            // take the value that should be injected as property for the parent module
             const injectedValue = injectedModule.exportInjectorValue ? injectedModule.exportInjectorValue() : injectedModule;
+            // take the value that should be injected as property for the component's selector
             const selectorValue = injectedModule.exportSelectorValue && injectedModule.exportSelectorValue();
+            // take other(extra) props we should export to the component's selector
             const selectorExtraValues = injectedModule.exportSelectorExtraValues && injectedModule.exportSelectorExtraValues();
+            // register extra props in the StateView
             const extraProps = selectorExtraValues;
             if (extraProps) {
                 const extraPropsView = extraProps;
@@ -1759,6 +1835,7 @@ function createModuleView(module) {
                 });
                 view = view.mergeView(extraProps);
             }
+            // register extra injected value in the StateView
             const selfProps = selectorValue || injectedValue;
             if (selfProps) {
                 view.defineProp({
@@ -1773,11 +1850,14 @@ function createModuleView(module) {
             }
         }
     });
+    // register other module props
     (0, utils_1.traverse)(module, (propName, descr) => {
         if (injectedProps[propName])
             return;
         if (scope_1.moduleSystemProps[propName])
             return;
+        // register getters/computed values
+        // getters are reactive and will be recalculated when sate changed
         if (descr.get) {
             view.defineProp({
                 description: 'ModuleGetter',
@@ -1787,6 +1867,7 @@ function createModuleView(module) {
             });
             return;
         }
+        // register methods
         if (typeof descr.value === 'function') {
             view.defineProp({
                 description: 'ModuleMethod',
@@ -1796,6 +1877,9 @@ function createModuleView(module) {
             });
             return;
         }
+        // register simple module variables
+        // these variables are not reactive and changing them will not re-render components
+        // these variables could be used instead React 'refs'
         view.defineProp({
             description: 'ModuleVariable',
             reactive: false,
@@ -1819,9 +1903,16 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createStateView = void 0;
 const StateView_1 = __webpack_require__(32);
 const utils_1 = __webpack_require__(225);
+/**
+ * Create a StateView object for a StateController
+ * The StateView object provides data that could be selected in components.
+ * These data could be reactive, non-reactive and includes mutations and functions
+ */
 function createStateView(controller) {
     const config = controller.getMetadata().config;
     const view = new StateView_1.StateView();
+    // define state revision getter
+    // state revisions helps to compare 2 snapshots from the same state source without expensive state traversing
     view.defineProp({
         description: 'StateRev',
         name: 'getRev',
@@ -1832,6 +1923,7 @@ function createStateView(controller) {
             return controller.getMetadata().rev;
         },
     });
+    // define a "state" getter that links state to itself
     (0, utils_1.traverse)(config.state, stateKey => {
         view.defineProp({
             description: 'StateProp',
@@ -1840,6 +1932,7 @@ function createStateView(controller) {
             getValue: () => controller[stateKey],
         });
     });
+    // expose mutations for a component
     (0, utils_1.traverse)(config.mutations, stateKey => {
         view.defineProp({
             description: 'StateMutation',
@@ -1848,6 +1941,7 @@ function createStateView(controller) {
             getValue: () => controller[stateKey],
         });
     });
+    // expose state getters(computed values) for a component
     (0, utils_1.traverse)(config.getters, (propName) => {
         view.defineProp({
             description: 'StateGetter',
@@ -1856,6 +1950,7 @@ function createStateView(controller) {
             getValue: () => controller[propName],
         });
     });
+    // expose state getter methods
     (0, utils_1.traverse)(config.getterMethods, (propName) => {
         view.defineProp({
             description: 'StateGetterMethod',
@@ -1910,6 +2005,10 @@ __exportStar(__webpack_require__(668), exports);
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.injectChild = void 0;
 const injector_1 = __webpack_require__(869);
+/**
+ * Inject module as a child module
+ * The child module will be initialized and destroyed with a parent module
+ */
 function injectChild(Module, ...args) {
     const provider = (0, injector_1.injectProvider)();
     const injectedValue = provider.injectChildModule(Module, ...args);
@@ -1926,9 +2025,19 @@ exports.injectChild = injectChild;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectFormBinding = exports.FormBindingModule = exports.createFormBinding = void 0;
+exports.FormBindingModule = exports.createFormBinding = exports.injectFormBinding = void 0;
 const StateView_1 = __webpack_require__(32);
 const inject_child_1 = __webpack_require__(835);
+/**
+ * Injects an stateful module that helps to link a reactive data with form input components
+ */
+function injectFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
+    return (0, inject_child_1.injectChild)(FormBindingModule, stateGetter, stateSetter, extraPropsGenerator);
+}
+exports.injectFormBinding = injectFormBinding;
+/**
+ * Creates a StateView for a component that helps to link a reactive data with form input components
+ */
 function createFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
     function getState() {
         if (typeof stateGetter === 'function')
@@ -1964,10 +2073,6 @@ class FormBindingModule {
     }
 }
 exports.FormBindingModule = FormBindingModule;
-function injectFormBinding(stateGetter, stateSetter, extraPropsGenerator) {
-    return (0, inject_child_1.injectChild)(FormBindingModule, stateGetter, stateSetter, extraPropsGenerator);
-}
-exports.injectFormBinding = injectFormBinding;
 
 
 /***/ }),
@@ -1978,22 +2083,44 @@ exports.injectFormBinding = injectFormBinding;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getQueryOptionsFromArgs = exports.injectQuery = exports.QueryModule = exports.QueryStateConfig = void 0;
+exports.getQueryOptionsFromArgs = exports.QueryModule = exports.QueryStateConfig = exports.injectQuery = void 0;
 const scope_1 = __webpack_require__(527);
 const StateView_1 = __webpack_require__(32);
 const inject_state_1 = __webpack_require__(300);
 const inject_watch_1 = __webpack_require__(668);
 const inject_child_1 = __webpack_require__(835);
 const createStateView_1 = __webpack_require__(135);
+/**
+ * Injects DataQuery
+ * Inspired by https://react-query.tanstack.com/reference/useQuery
+ */
+function injectQuery(...args) {
+    return (0, inject_child_1.injectChild)(QueryModule, ...args);
+}
+exports.injectQuery = injectQuery;
+/**
+ * Describes a reactive state for DataQuery
+ */
 class QueryStateConfig {
     constructor() {
         this.state = {
+            /**
+             * current status of the DataQuery
+             */
             status: 'idle',
+            /**
+             * keeps fetched data on success
+             */
             data: null,
+            /**
+             * keeps error on fail
+             */
             error: null,
+            // TODO: remove from state
             params: null,
         };
     }
+    // define state mutations
     setData(data) {
         this.state.status = 'success';
         this.state.data = data;
@@ -2002,29 +2129,37 @@ class QueryStateConfig {
         this.state.status = 'error';
         this.state.error = error;
     }
+    // define state getters
     get isLoading() {
         return this.state.status === 'loading';
     }
 }
 exports.QueryStateConfig = QueryStateConfig;
 /**
- * Alternative for https://react-query.tanstack.com/reference/useQuery
+ * A stateful module for working with DataQueries
+ * Inspired by https://react-query.tanstack.com/
  */
 class QueryModule {
     constructor(...args) {
+        // create a reactive state for this module
         this.state = (0, inject_state_1.injectState)(QueryStateConfig);
         this.provider = (0, scope_1.injectProvider)();
+        // re-fetch query if params changed
         this.watcher = (0, inject_watch_1.injectWatch)(() => this.getParams(), this.refetch);
+        // keep current fetching promise to avoid redundant fetches
         this.fetchingPromise = null;
         this.promiseId = '';
+        // if enabled=false then no callbacks will be executed when fetching finished
         this.enabled = true;
         this.isInitialFetch = true;
+        // create initial options based on passed args
         const computedOptions = getQueryOptionsFromArgs(args);
         const options = Object.assign({ enabled: true, params: null, initialData: [], getParams: null, fetch: () => { }, onSuccess: () => { }, onError: () => { } }, computedOptions);
         this.options = options;
         this.enabled = !!options.enabled;
     }
     init() {
+        // define methods available in components
         const queryMethods = new StateView_1.StateView();
         queryMethods.defineProp({
             description: 'QueryMethod',
@@ -2034,8 +2169,8 @@ class QueryModule {
                 return () => this.refetch();
             },
         });
-        this.stateView = (0, createStateView_1.createStateView)(this.state);
-        this.queryView = this.stateView.mergeView(queryMethods);
+        const stateView = (0, createStateView_1.createStateView)(this.state);
+        this.queryView = stateView.mergeView(queryMethods);
         const data = this.options.initialData;
         this.state.update({
             params: this.getParams(),
@@ -2043,11 +2178,18 @@ class QueryModule {
         });
         this.exec();
     }
+    /**
+     * Start fetching if not started yet and return fetching promise
+     */
     exec() {
         if (this.fetchingPromise)
             return this.fetchingPromise;
         return this.fetch();
     }
+    /**
+     * Start fetching
+     * You most likely should call ".exec()" instead this method to avoid redundant fetching
+     */
     fetch() {
         let fetchResult;
         if (this.thisContext) {
@@ -2088,12 +2230,21 @@ class QueryModule {
         this.options.onSuccess && this.options.onSuccess();
         return Promise.resolve(fetchResult);
     }
+    /**
+     * Returns "this" context for the "getParams()" callback
+     * QueryModule usually injected as a child module via `injectQuery`
+     * So take "this" context of the parent module
+     */
     get thisContext() {
         const parentProvider = this.provider.options.parentProvider;
         if (parentProvider) {
             return parentProvider.instance;
         }
     }
+    /**
+     * Call the "getParams" callback
+     * Query will be re-fetched if params changed
+     */
     getParams() {
         if (!this.options.getParams)
             return null;
@@ -2119,17 +2270,16 @@ class QueryModule {
         // prevent unfinished fetching
         this.setEnabled(false);
     }
+    /**
+     * Export data and methods for a component selector
+     */
     exportSelectorValue() {
         return this.queryView;
     }
 }
 exports.QueryModule = QueryModule;
-function injectQuery(...args) {
-    return (0, inject_child_1.injectChild)(QueryModule, ...args);
-}
-exports.injectQuery = injectQuery;
 /**
- * convers Query constructor agrs to QueryOptions
+ * converts Query constructor agrs to QueryOptions
  * @param args
  */
 function getQueryOptionsFromArgs(args) {
@@ -2177,6 +2327,13 @@ const Store_1 = __webpack_require__(607);
 const inject_child_1 = __webpack_require__(835);
 const inject_form_1 = __webpack_require__(334);
 const createStateView_1 = __webpack_require__(135);
+/**
+ * Injects a reactive stateful module
+ * Stateful modules helps to keep UI updated with the state
+ * @param configCreator state config. Can be Object or Class
+ * @param allowMutationDecorators  methods marked with the @mutation() in the parent module will be registered as mutations
+ * @param onCreate callback that should be called when state is registered in the state manager
+ */
 function injectState(configCreator, allowMutationDecorators = true, onCreate) {
     return (0, inject_child_1.injectChild)(StatefulModule, configCreator, allowMutationDecorators, onCreate);
 }
@@ -2263,11 +2420,21 @@ exports.mutation = mutation;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectWatch = exports.WatchModule = void 0;
+exports.WatchModule = exports.injectWatch = void 0;
 const scope_1 = __webpack_require__(527);
 const Store_1 = __webpack_require__(607);
 const utils_1 = __webpack_require__(225);
 const inject_child_1 = __webpack_require__(835);
+/**
+ * Creates a watcher that call a callback on state change
+ * @param expression a function that returns a piece of state to compare. The source of state should be reactive
+ * @param onChange call this callback if expression result changed
+ * @param isEqual a comparison function
+ */
+function injectWatch(expression, onChange, isEqual) {
+    return (0, inject_child_1.injectChild)(WatchModule, expression, onChange, isEqual);
+}
+exports.injectWatch = injectWatch;
 class WatchModule {
     constructor(watchExpr, onChange, isEqual = utils_1.isSimilar) {
         this.watchExpr = watchExpr;
@@ -2297,10 +2464,6 @@ class WatchModule {
     }
 }
 exports.WatchModule = WatchModule;
-function injectWatch(expression, onChange, isEqual) {
-    return (0, inject_child_1.injectChild)(WatchModule, expression, onChange, isEqual);
-}
-exports.injectWatch = injectWatch;
 
 
 /***/ }),

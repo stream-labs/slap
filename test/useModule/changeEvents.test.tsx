@@ -6,26 +6,11 @@ import '@testing-library/jest-dom/extend-expect';
 import React from 'react';
 import { fireEvent, screen } from '@testing-library/react';
 import {
-  alertMock, renderApp, useModule, injectState, GetStateControllerFor
+  alertMock, renderApp, useModule, injectState, GetStateControllerFor,
 } from '../helpers';
-// import { GetStateControllerFor } from '../../lib';
-
-
-
-// const state = {
-//   counter: 0,
-//   items: [] as string[],
-//   addItem() {
-//     this.counter++;
-//     this.items.push(`Item${this.counter}`);
-//   },
-//   resetItems() {
-//     this.items = [];
-//   },
-// };
-//
-// const controller: GetStateControllerFor<typeof state>;
-// controller.onItemsChange()
+import useFakeTimers = jest.useFakeTimers;
+import runAllTimers = jest.runAllTimers;
+import { sleep } from '../../demo/stars-editor/utils/sleep';
 
 class MyModule {
 
@@ -79,3 +64,56 @@ describe('State change events', () => {
   });
 
 });
+
+// TODO write waitFor tests
+// function MyComponent2() {
+//   useModule(() => {
+//
+//     const state = injectState({
+//       isFooLoaded: true,
+//       isBarLoaded: true,
+//       isBazLoaded: true,
+//     });
+//
+//     async function init() {
+//       setTimeout(() => state.setIsBarLoaded(true), 500);
+//       setTimeout(() => state.setIsBazLoaded(true), 1000);
+//
+//       await state.waitFor(() => state.isFooLoaded);
+//       alert('Foo is loaded');
+//
+//       await state.waitFor(() => state.isBarLoaded);
+//       alert('Foo is loaded');
+//
+//       try {
+//         await state.waitFor(() => state.isBazLoaded, { timeout: 600 });
+//         alert('Bar is loaded');
+//       } catch (e) {
+//         alert('Bar is not loaded');
+//       }
+//     }
+//
+//     return {
+//       init,
+//       state,
+//     };
+//   });
+//   return (
+//     <div />
+//   );
+// }
+//
+// describe('Wait for state', () => {
+//   useFakeTimers();
+//   jest.spyOn(global, 'setTimeout');
+//
+//   it('Wait for needed state', async () => {
+//     await renderApp(<MyComponent2 />);
+//     // await sleep(100);
+//     runAllTimers();
+//     expect(window.setTimeout).toBeCalledTimes(2);
+//
+//     expect(alertMock).toBeCalledWith('Foo is loaded', 'Bar is not loaded');
+//   });
+//
+// });

@@ -2,6 +2,13 @@ import { InjectableModule, InjectedProp } from '../../scope';
 import { Store, TStateConfigCreator, GetStateControllerFor, TStateFor, TStateViewForStateConfig } from '../Store';
 import { StateView } from '../StateView';
 import { GetInjectedFormBinding, TFormBindings } from './inject-form';
+/**
+ * Injects a reactive stateful module
+ * Stateful modules helps to keep UI updated with the state
+ * @param configCreator state config. Can be Object or Class
+ * @param allowMutationDecorators  methods marked with the @mutation() in the parent module will be registered as mutations
+ * @param onCreate callback that should be called when state is registered in the state manager
+ */
 export declare function injectState<TConfigCreator extends TStateConfigCreator, TValue = GetStateControllerFor<TConfigCreator>, TViewValue = GetStateViewFor<TConfigCreator>>(configCreator: TConfigCreator, allowMutationDecorators?: boolean, onCreate?: (statefulModule: StatefulModule<TConfigCreator>) => unknown): InjectedProp<TValue, TViewValue, TViewValue>;
 export declare class StatefulModule<TStateConfig> implements InjectableModule {
     stateConfig: TStateConfig;
