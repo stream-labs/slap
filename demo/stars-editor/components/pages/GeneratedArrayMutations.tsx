@@ -25,8 +25,12 @@ class MyModuleWithArrays {
     });
   }
 
-  removeItem(id: number) {
+  removeWithFunction(id: number) {
     this.state.removeItems(item => item.id === id);
+  }
+
+  removeWithObject(id: number) {
+    this.state.removeItems({ id });
   }
 
   renameWithFunction(id: number, newName: string) {
@@ -53,7 +57,7 @@ class MyModuleWithArrays {
 
 export function GeneratedArrayMutationsPage() {
   const {
-    items, addItem, removeItem, setSelectedId, selectedItem, renameWithFunction, renameWithId, renameWithObject, selectedId,
+    items, addItem, removeWithFunction, removeWithObject, setSelectedId, selectedItem, renameWithFunction, renameWithId, renameWithObject, selectedId,
   } = useModule(MyModuleWithArrays);
 
   return (
@@ -62,7 +66,8 @@ export function GeneratedArrayMutationsPage() {
         {items.map(item => (
           <li key={item.id}>
             {item.name}
-            <button onClick={() => removeItem(item.id)}>Remove</button>
+            <button onClick={() => removeWithFunction(item.id)}>Remove with function</button>
+            <button onClick={() => removeWithObject(item.id)}>Remove with object</button>
             <button onClick={() => setSelectedId(item.id)}>Select</button>
           </li>
         ))}
