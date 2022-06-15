@@ -150,7 +150,7 @@ export class QueryModule<
 
     if (fetchResult?.then) {
       if (this.isInitialFetch) {
-        this.state.status = 'loading';
+        this.state.setStatus('loading');
         this.isInitialFetch = false;
       } else {
         this.state.setStatus('loading');
