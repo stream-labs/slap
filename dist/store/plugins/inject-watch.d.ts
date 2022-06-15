@@ -12,7 +12,7 @@ export declare class WatchModule<T> implements InjectableModule {
     watchExpr: () => T;
     onChange: (newVal: T, prevVal: T) => unknown;
     isEqual: typeof isSimilar;
-    store: Store;
+    store: import("../../scope").InjectedProp<Store, import("./createModuleView").GetModuleStateView<typeof Store>, {}>;
     unwatch: Function | null;
     current: T | null;
     constructor(watchExpr: () => T, onChange: (newVal: T, prevVal: T) => unknown, isEqual?: typeof isSimilar);

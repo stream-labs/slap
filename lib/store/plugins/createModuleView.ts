@@ -3,7 +3,7 @@ import { GetMerge, traverse } from '../../utils';
 import {
   Dict,
   Flatten,
-  forEach,
+  forEach, getInstanceMetadata,
   GetModuleInstanceFor,
   InjectableModuleTyped,
   moduleSystemProps,
@@ -19,6 +19,7 @@ export function createModuleView<TModule>(module: TModule): GetModuleStateView<T
   let view = new StateView();
 
   const injectedProps: Dict<boolean> = {};
+  const moduleProvider = getInstanceMetadata(module).provider;
 
   // find and register props for injected modules
   traverse(module as any as object, (propName, descr) => {
@@ -46,6 +47,8 @@ export function createModuleView<TModule>(module: TModule): GetModuleStateView<T
       // take other(extra) props we should export to the component's selector
       const selectorExtraValues = injectedModule.exportSelectorExtraValues && injectedModule.exportSelectorExtraValues();
 
+      const selfProps = selectorValue || injectedValue;
+
       // register extra props in the StateView
       const extraProps = selectorExtraValues;
       if (extraProps) {
@@ -56,8 +59,17 @@ export function createModuleView<TModule>(module: TModule): GetModuleStateView<T
         view = view.mergeView(extraProps as any);
       }
 
+      // register exposed props
+      const injectorOptions = moduleProvider.injectedModules[provider.name].options;
+      if (injectorOptions?.isExposed && selfProps) {
+        const exposedProps = createModuleView(selfProps) as StateView<any>;
+        forEach(exposedProps.descriptors, (descriptor, p) => {
+          if (!(descriptor.name in injectedModule)) view.defineProp(descriptor);
+        });
+        view = view.mergeView(exposedProps as any);
+      }
+
       // register extra injected value in the StateView
-      const selfProps = selectorValue || injectedValue;
       if (selfProps) {
         view.defineProp({
           description: 'InjectorView',

@@ -17,6 +17,7 @@ import { ShouldComponentUpdatePage } from './pages/ShouldComponentUpdate';
 import { ErrorsPage } from './pages/ErrorsPage';
 import { EventsPage } from './pages/GeneratedEvents';
 import { GeneratedArrayMutationsPage } from './pages/GeneratedArrayMutations';
+import { CheckoutPageComponent } from './pages/ExposedModulesPage';
 
 export function ClientApp() {
   const { activePage } = useModule(WindowService);
@@ -40,6 +41,7 @@ export function ClientApp() {
       {activePage === 'should-update' && <ShouldComponentUpdatePage /> }
       {activePage === 'errors' && <ErrorsPage /> }
       {activePage === 'generated-array-mutations' && <GeneratedArrayMutationsPage /> }
+      {activePage === 'exposed-modules' && <CheckoutPageComponent /> }
     </Layout>
   );
 }

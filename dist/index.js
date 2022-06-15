@@ -798,14 +798,21 @@ __exportStar(__webpack_require__(158), exports);
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.injectProvider = exports.injectScope = exports.inject = void 0;
+exports.injectProvider = exports.injectScope = exports.injectExposed = exports.inject = void 0;
 const scope_1 = __webpack_require__(521);
-function inject(ModuleClass) {
+function inject(ModuleClass, options) {
     const provider = injectProvider();
-    const module = provider.injectModule(ModuleClass);
+    const module = provider.injectModule(ModuleClass, options);
     return module;
 }
 exports.inject = inject;
+/**
+ * Inject module and expose its props to a component's selector
+ */
+function injectExposed(ModuleClass) {
+    return inject(ModuleClass, { isExposed: true });
+}
+exports.injectExposed = injectExposed;
 function injectScope() {
     return (0, scope_1.getCurrentScope)();
 }
@@ -881,7 +888,7 @@ class Provider {
     }
     mountModule() {
         Object.keys(this.injectedModules).forEach(injectedName => {
-            const childModuleProvider = getInstanceMetadata(this.injectedModules[injectedName]).provider;
+            const childModuleProvider = getInstanceMetadata(this.injectedModules[injectedName].instance).provider;
             if (!childModuleProvider.isInited)
                 childModuleProvider.mountModule();
         });
@@ -936,10 +943,10 @@ class Provider {
         }
         return childScope.resolveProvider(name);
     }
-    injectModule(ModuleLocator) {
+    injectModule(ModuleLocator, options = {}) {
         const module = this.scope.resolve(ModuleLocator);
         const moduleProvider = getInstanceMetadata(module).provider;
-        this.injectedModules[moduleProvider.name] = module;
+        this.injectedModules[moduleProvider.name] = { instance: module, options };
         const returnValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
         return returnValue; // TODO: resolve injected value
     }
@@ -949,7 +956,7 @@ class Provider {
         childScope.register(ModuleCreator, name, { parentProvider: this });
         const childModule = childScope.init(name, ...args);
         this.childModules[name] = childModule;
-        this.injectedModules[name] = childModule;
+        this.injectedModules[name] = { instance: childModule, options: {} };
         const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
         return returnValue;
     }
@@ -1496,13 +1503,22 @@ class StateController {
             // generate a "remove" mutation
             const removeMutation = `remove${(0, scope_1.capitalize)(propertyName)}`;
             if (!config.mutations[removeMutation]) {
-                controller.registerMutation(removeMutation, (searchFn) => {
-                    const arr = controller[propertyName];
-                    let i = arr.length;
-                    while (i--) {
-                        if (searchFn(arr[i]))
-                            arr.splice(i, 1);
-                    }
+                controller.registerMutation(removeMutation, (searchQuery) => {
+                    (0, utils_1.removeItems)(controller[propertyName], searchQuery);
+                });
+            }
+            // generate an "update" mutation
+            const updateMutation = `update${(0, scope_1.capitalize)(propertyName)}`;
+            if (!config.mutations[updateMutation]) {
+                controller.registerMutation(updateMutation, (searchQuery, updateFn) => {
+                    (0, utils_1.updateItems)(controller[propertyName], searchQuery, updateFn);
+                });
+            }
+            // create a find getter
+            const findGetterName = `find${(0, scope_1.capitalize)(propertyName)}`;
+            if (!config.getterMethods[findGetterName]) {
+                (0, scope_1.defineGetter)(controller, findGetterName, () => (searchQuery) => {
+                    return (0, utils_1.find)(controller[propertyName], searchQuery);
                 });
             }
         });
@@ -1803,6 +1819,7 @@ const scope_1 = __webpack_require__(527);
 function createModuleView(module) {
     let view = new StateView_1.StateView();
     const injectedProps = {};
+    const moduleProvider = (0, scope_1.getInstanceMetadata)(module).provider;
     // find and register props for injected modules
     (0, utils_1.traverse)(module, (propName, descr) => {
         var _a;
@@ -1825,6 +1842,7 @@ function createModuleView(module) {
             const selectorValue = injectedModule.exportSelectorValue && injectedModule.exportSelectorValue();
             // take other(extra) props we should export to the component's selector
             const selectorExtraValues = injectedModule.exportSelectorExtraValues && injectedModule.exportSelectorExtraValues();
+            const selfProps = selectorValue || injectedValue;
             // register extra props in the StateView
             const extraProps = selectorExtraValues;
             if (extraProps) {
@@ -1835,8 +1853,17 @@ function createModuleView(module) {
                 });
                 view = view.mergeView(extraProps);
             }
+            // register exposed props
+            const injectorOptions = moduleProvider.injectedModules[provider.name].options;
+            if ((injectorOptions === null || injectorOptions === void 0 ? void 0 : injectorOptions.isExposed) && selfProps) {
+                const exposedProps = createModuleView(selfProps);
+                (0, scope_1.forEach)(exposedProps.descriptors, (descriptor, p) => {
+                    if (!(descriptor.name in injectedModule))
+                        view.defineProp(descriptor);
+                });
+                view = view.mergeView(exposedProps);
+            }
             // register extra injected value in the StateView
-            const selfProps = selectorValue || injectedValue;
             if (selfProps) {
                 view.defineProp({
                     description: 'InjectorView',
@@ -2468,6 +2495,66 @@ exports.WatchModule = WatchModule;
 
 /***/ }),
 
+/***/ 567:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getUpdateFunction = exports.getSearchFunction = exports.find = exports.updateItems = exports.removeItems = void 0;
+function removeItems(arr, query) {
+    const searchFn = getSearchFunction(arr, query);
+    let i = arr.length;
+    while (i--) {
+        if (searchFn(arr[i]))
+            arr.splice(i, 1);
+    }
+}
+exports.removeItems = removeItems;
+function updateItems(arr, query, updateQuery) {
+    const searchFn = getSearchFunction(arr, query);
+    const updateFn = getUpdateFunction(updateQuery);
+    for (const item of arr) {
+        if (searchFn(item))
+            updateFn(item);
+    }
+}
+exports.updateItems = updateItems;
+function find(arr, query) {
+    const searchFn = getSearchFunction(arr, query);
+    return arr.find(searchFn);
+}
+exports.find = find;
+function getSearchFunction(arr, query) {
+    if (typeof query === 'function')
+        return query;
+    if (typeof query === 'object') {
+        const objQuery = query;
+        const keys = Object.keys(objQuery);
+        return (item) => {
+            for (const key of keys) {
+                if (objQuery[key] !== item[key])
+                    return false;
+            }
+            return true;
+        };
+    }
+    return (item) => (item === null || item === void 0 ? void 0 : item.id) === query;
+}
+exports.getSearchFunction = getSearchFunction;
+function getUpdateFunction(query) {
+    if (typeof query === 'function')
+        return query;
+    const patch = query;
+    return (item) => {
+        Object.assign(item, patch);
+    };
+}
+exports.getUpdateFunction = getUpdateFunction;
+
+
+/***/ }),
+
 /***/ 225:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -2491,6 +2578,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 __exportStar(__webpack_require__(233), exports);
 __exportStar(__webpack_require__(725), exports);
 __exportStar(__webpack_require__(222), exports);
+__exportStar(__webpack_require__(567), exports);
 
 
 /***/ }),

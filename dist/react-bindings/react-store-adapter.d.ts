@@ -2,7 +2,7 @@ import { Dict, Provider } from '../scope';
 import { Store } from '../store/Store';
 import { StateView } from '../store';
 export declare class ReactStoreAdapter {
-    store: Store;
+    store: import("../scope").InjectedProp<Store, import("../store").GetModuleStateView<typeof Store>, {}>;
     components: Dict<ComponentView>;
     registerComponent(moduleView: StateView, componentId: string, forceUpdate: Function, provider: Provider<any>, storeAdapter: ReactStoreAdapter): ComponentView;
     destroyComponent(componentId: string): void;

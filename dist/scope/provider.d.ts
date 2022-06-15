@@ -14,7 +14,10 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     isDestroyed: boolean;
     childScope: Scope | null;
     childModules: Dict<InjectableModuleTyped<any, any, any>>;
-    injectedModules: Dict<InjectableModuleTyped<any, any, any>>;
+    injectedModules: Dict<{
+        instance: InjectableModuleTyped<any, any, any>;
+        options: InjectedPropOptions;
+    }>;
     constructor(scope: Scope, creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance, name?: string, options?: Partial<ProviderOptions>);
     createInstance(args: TInitParams): TInstance;
     mountModule(): void;
@@ -25,7 +28,7 @@ export declare class Provider<TInstance, TInitParams extends [] = []> {
     get instanceId(): string;
     resolveChildScope(): Scope;
     resolveChildProvider<T extends TModuleCreator>(ModuleCreator: T, name: string): TProviderFor<T>;
-    injectModule<T extends TModuleCreator>(ModuleLocator: T): GetModuleInstanceFor<T>;
+    injectModule<T extends TModuleCreator>(ModuleLocator: T, options?: InjectedPropOptions): GetModuleInstanceFor<T>;
     injectChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any): any;
     events: import("nanoevents").Emitter<ProviderEvents>;
 }
@@ -48,4 +51,10 @@ export declare type ProviderOptions = {
      * Keeps parentProvider if the module has been injected as a child module
      */
     parentProvider: Provider<any>;
+};
+export declare type InjectedPropOptions = {
+    /**
+     * true if should expose props in the component selector when injected as a property
+     */
+    isExposed?: boolean;
 };

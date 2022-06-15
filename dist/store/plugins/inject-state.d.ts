@@ -14,7 +14,7 @@ export declare class StatefulModule<TStateConfig> implements InjectableModule {
     stateConfig: TStateConfig;
     allowMutationDecorators: boolean;
     onCreate?: ((module: StatefulModule<TStateConfig>) => unknown) | undefined;
-    store: Store;
+    store: InjectedProp<Store, import("./createModuleView").GetModuleStateView<typeof Store>, {}>;
     provider: import("../../scope").Provider<any, []>;
     stateController: GetStateControllerFor<TStateConfig>;
     stateView: GetStateViewFor<TStateConfig>;

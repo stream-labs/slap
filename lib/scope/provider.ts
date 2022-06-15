@@ -21,7 +21,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   childScope: Scope | null = null;
   childModules: Dict<InjectableModuleTyped<any, any, any>> = {};
-  injectedModules: Dict<InjectableModuleTyped<any, any, any>> = {};
+  injectedModules: Dict<{ instance: InjectableModuleTyped<any, any, any>, options: InjectedPropOptions }> = {};
 
   constructor(
     public scope: Scope,
@@ -65,11 +65,11 @@ export class Provider<TInstance, TInitParams extends [] = []> {
 
   mountModule() {
     Object.keys(this.injectedModules).forEach(injectedName => {
-      const childModuleProvider = getInstanceMetadata(this.injectedModules[injectedName]).provider;
+      const childModuleProvider = getInstanceMetadata(this.injectedModules[injectedName].instance).provider;
       if (!childModuleProvider.isInited) childModuleProvider.mountModule();
     });
     if (this.options.shouldCallHooks) {
-      const instance = this.instance as InjectableModuleTyped<any, any, any>;
+      const instance = this.instance as any as InjectableModuleTyped<any, any, any>;
       const provider = this as Provider<any, any>;
       this.events.emit('onBeforeInit', provider);
       instance.init && instance.init();
@@ -127,10 +127,10 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     return childScope.resolveProvider(name) as TProviderFor<T>;
   }
 
-  injectModule<T extends TModuleCreator>(ModuleLocator: T) {
+  injectModule<T extends TModuleCreator>(ModuleLocator: T, options: InjectedPropOptions = {}) {
     const module = this.scope.resolve(ModuleLocator);
     const moduleProvider = getInstanceMetadata(module).provider;
-    this.injectedModules[moduleProvider.name] = module;
+    this.injectedModules[moduleProvider.name] = { instance: module, options };
     const returnValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
     return returnValue as GetModuleInstanceFor<T>; // TODO: resolve injected value
   }
@@ -141,7 +141,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     childScope.register(ModuleCreator, name, { parentProvider: this as Provider<any, any> });
     const childModule = childScope.init(name, ...args) as InjectableModuleTyped<any, any, any>;
     this.childModules[name] = childModule;
-    this.injectedModules[name] = childModule;
+    this.injectedModules[name] = { instance: childModule, options: {} };
     const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
     return returnValue;
   }
@@ -191,4 +191,12 @@ export type ProviderOptions = {
    * Keeps parentProvider if the module has been injected as a child module
    */
   parentProvider: Provider<any>;
+}
+
+export type InjectedPropOptions = {
+
+  /**
+   * true if should expose props in the component selector when injected as a property
+   */
+  isExposed?: boolean;
 }
