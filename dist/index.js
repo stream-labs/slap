@@ -2227,7 +2227,7 @@ class QueryModule {
         }
         if (fetchResult === null || fetchResult === void 0 ? void 0 : fetchResult.then) {
             if (this.isInitialFetch) {
-                this.state.status = 'loading';
+                this.state.setStatus('loading');
                 this.isInitialFetch = false;
             }
             else {
