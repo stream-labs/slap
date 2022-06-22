@@ -40,8 +40,10 @@ export interface InjectableModule {
   exportSelectorExtraValues?(): any;
 }
 
-export interface InjectableModuleTyped<TInjectedValue, TSelectorValue, TSelectorExtraValues> extends InjectableModule {
-  exportInjectorValue?(): TInjectedValue;
-  exportSelectorValue?(): TSelectorValue;
-  exportSelectorExtraValues?(): TSelectorExtraValues;
+export interface InjectableModuleTyped
+  <TInjectedValue, TSelectorValue, TSelectorExtraValues> extends InjectableModule
+{
+  exportInjectorValue?(): TInjectedValue; // export this value as an injector value
+  exportSelectorValue?(): TSelectorValue;// export this value into useModule selector under the module's name
+  exportSelectorExtraValues?(): TSelectorExtraValues; // export this values as additional data available for selection
 }
