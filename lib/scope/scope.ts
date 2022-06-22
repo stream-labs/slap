@@ -29,9 +29,15 @@ const defaultScopeSettings = {
 export class Scope {
   id!: string;
 
-  childScopes: Record<string, Scope> = {};
-
+  /**
+   * Keeps all registered providers
+   */
   providers: Record<string, Provider<any>> = {};
+
+  /**
+   * Keeps all registered child scopes
+   */
+  childScopes: Record<string, Scope> = {};
 
   settings: ScopeSettings;
 
@@ -176,7 +182,9 @@ export class Scope {
     return new Scope(dependencies, { ...settings, parentScope: this });
   }
 
-  // TODO refactor
+  /**
+   * Register a child scope
+   */
   registerScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>) {
     const scope = this.createChildScope({}, settings);
     this.childScopes[scope.id] = scope;
@@ -184,7 +192,9 @@ export class Scope {
     dependencies && scope.registerMany(dependencies);
     return scope;
   }
-
+  /**
+   * Unregister a child scope
+   */
   unregisterScope(scopeId: string) {
     const scope = this.childScopes[scopeId];
     if (!scope) throw new Error(`Can not unregister Scope ${scopeId} - Scope not found`);
@@ -197,6 +207,9 @@ export class Scope {
     return this.parent.getRootScope();
   }
 
+  /**
+   * Destroy current scope and all providers
+   */
   dispose() {
     // destroy child scopes
     Object.keys(this.childScopes).forEach(scopeId => {
@@ -213,6 +226,9 @@ export class Scope {
     if (!this.parent) this.events.events = {};
   }
 
+  /**
+   * Could be usefull for debugging
+   */
   getScheme(): any {
     return {
       id: this.id,
@@ -221,6 +237,9 @@ export class Scope {
     };
   }
 
+  /**
+   * Returns true if it doesn't have parent scopes
+   */
   get isRoot() {
     return !!this.parent;
   }

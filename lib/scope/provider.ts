@@ -10,18 +10,56 @@ import {
   TModuleCreator, TProviderFor,
 } from './interfaces';
 
+/**
+ * Providers initialize modules and keeps their metadata
+ */
 export class Provider<TInstance, TInitParams extends [] = []> {
+
+  /**
+   * Uniq id for the provider
+   */
   id: string;
+
+  /**
+   * Keeps module's instance
+   */
   instance: TInstance | null = null;
+
+  /**
+   * keeps user's metadata
+   */
   metadata: Dict<any> = {};
+
+  /**
+   * function that constructs a new module
+   */
   factory: (args: TInitParams) => TInstance;
 
-  isInited = false; // true if instance is added to the Scope
+  /**
+   * true if instance is initialized and added to the Scope
+   */
+  isInited = false;
+
+  /**
+   * true if instance is initialized and added to the Scope
+   */
   isDestroyed = false;
 
-  childScope: Scope | null = null;
-  childModules: Dict<InjectableModuleTyped<any, any, any>> = {};
+  /**
+   * Keeps information about all injected modules
+   */
   injectedModules: Dict<{ instance: InjectableModuleTyped<any, any, any>, options: InjectedPropOptions }> = {};
+
+  /**
+   * Keeps information about all child modules.
+   * Child modules are kind of injected modules with the same lifecycle of the parent module
+   */
+  childModules: Dict<InjectableModuleTyped<any, any, any>> = {};
+
+  /**
+   * Keeps a child scope if the provider has created one
+   */
+  childScope: Scope | null = null;
 
   constructor(
     public scope: Scope,
@@ -56,6 +94,10 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     throw new Error(`Can not construct the object ${creator}`);
   }
 
+  /**
+   * Creates a module instance
+   * @param args
+   */
   createInstance(args: TInitParams): TInstance {
     const instance = this.factory(args) as any;
     this.instance = instance;
@@ -63,6 +105,9 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     return instance;
   }
 
+  /**
+   * Init all injected modules
+   */
   mountModule() {
     Object.keys(this.injectedModules).forEach(injectedName => {
       const childModuleProvider = getInstanceMetadata(this.injectedModules[injectedName].instance).provider;
@@ -114,11 +159,17 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     return getInstanceMetadata(this.instance).id;
   }
 
+  /**
+   * Returns a child scope. Creates a new one if not exist
+   */
   resolveChildScope() {
     if (!this.childScope) this.childScope = this.scope.createChildScope();
     return this.childScope;
   }
 
+  /**
+   * Resolves a provider for the module in the child scope
+   */
   resolveChildProvider<T extends TModuleCreator>(ModuleCreator: T, name: string): TProviderFor<T> {
     const childScope = this.resolveChildScope();
     if (!childScope.isRegistered(name)) {
@@ -127,6 +178,9 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     return childScope.resolveProvider(name) as TProviderFor<T>;
   }
 
+  /**
+   * Inject a module into the current module
+   */
   injectModule<T extends TModuleCreator>(ModuleLocator: T, options: InjectedPropOptions = {}) {
     const module = this.scope.resolve(ModuleLocator);
     const moduleProvider = getInstanceMetadata(module).provider;
@@ -134,7 +188,9 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     const returnValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
     return returnValue as GetModuleInstanceFor<T>; // TODO: resolve injected value
   }
-
+  /**
+   * Inject a child module into the current module
+   */
   injectChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any) {
     const childScope = this.resolveChildScope();
     const name = `${this.id}__child_${ModuleCreator.name || ''}_${generateId()}`;
@@ -149,6 +205,9 @@ export class Provider<TInstance, TInitParams extends [] = []> {
   events = createNanoEvents<ProviderEvents>();
 }
 
+/**
+ * Attaches a metadata for the module instance
+ */
 export function createInstanceMetadata(instance: any, provider: Provider<any, any>) {
   const id = `${provider.id}__${generateId()}`;
   const descriptor = { enumerable: false, configurable: false };

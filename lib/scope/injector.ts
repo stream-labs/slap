@@ -5,7 +5,6 @@ import {
   GetModuleExtraValue,
   GetModuleInjectorValue,
   GetModuleStateView,
-  StateView,
 } from '../store';
 
 export function inject<TModule extends TModuleClass>(ModuleClass: TModule, options?: InjectedPropOptions): InjectedProp<GetModuleInjectorValue<TModule>, GetModuleStateView<TModule>, GetModuleExtraValue<TModule>> {
