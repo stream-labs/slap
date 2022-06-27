@@ -1,5 +1,7 @@
 import React from 'react';
-import { Button } from 'antd';
+import {
+  Button, Col, Layout, Row, Space, Switch,
+} from 'antd';
 import {
   injectState, useModule, injectExposed,
 } from '../../../../lib';
@@ -11,7 +13,7 @@ type ShoppingCartItem = {
   amount: number;
 }
 
-class UserService {
+class UserModule {
 
   state = injectState({
     username: 'Alex',
@@ -20,32 +22,33 @@ class UserService {
 
 }
 
-class ShoppingCartService {
+class ShoppingCartModule {
 
   state = injectState({
     items: [
       {
-        id: 1, name: 'Pencil', price: 5, amount: 10,
+        id: 1, name: 'Pencil', price: 5, quantity: 10,
       },
       {
-        id: 2, name: 'Ruler', price: 10, amount: 2,
+        id: 2, name: 'Ruler', price: 10, quantity: 2,
       },
     ],
+    shouldAddBag: false,
   });
 
   get total() {
-    return this.state.items.map(item => item.price * item.amount).reduce((a, b) => a + b);
+    return this.state.items.map(item => item.price * item.quantity).reduce((a, b) => a + b);
   }
 
-  setAmount(id: number, amount: number) {
-    this.state.updateItems(id, { amount });
+  setQuantity(id: number, quantity: number) {
+    this.state.updateItems(id, { quantity });
   }
 }
 
 class CheckoutPageModule {
 
-  userService = injectExposed(UserService);
-  shoppingCartService = injectExposed(ShoppingCartService);
+  userService = injectExposed(UserModule);
+  shoppingCartService = injectExposed(ShoppingCartModule);
 
   get isEnoughMoney() {
     return this.userService.state.balance >= this.shoppingCartService.total;
@@ -62,27 +65,49 @@ export function CheckoutPageComponent () {
   // return <></>;
 
   const {
-    total, username, balance, isEnoughMoney, items, buy, setAmount,
+    total, username, balance, isEnoughMoney, items, buy, setQuantity, shouldAddBag, setShouldAddBag,
   } = useModule(CheckoutPageModule);
 
+  const rowStyle = { marginBottom: '32px' };
+
   return (
-    <div>
-      <h2>Hello {username}. Your balance is {balance} </h2>
+    <Row justify="center">
+      <Col>
+        <h2 style={rowStyle}>Hello {username}. Your balance is {balance} </h2>
 
-      <p>You have {items.length} items in your cart</p>
-      <ul>
-        {items.map(item => (
-          <li key={item.name}>
-            Item: {item.name}, price: {item.price}, amount: {item.amount}
-            <Button onClick={() => setAmount(item.id, item.amount + 1)}> + </Button>
-            <Button onClick={() => setAmount(item.id, item.amount - 1)}> - </Button>
-          </li>
-        ))}
-      </ul>
-      <p>Total amount is {total}$</p>
+        <div style={rowStyle}>
+          You have {items.length} items in your cart
+        </div>
 
-      {!isEnoughMoney && <p style={{ color: 'red' }}> Your balance is too low to buy items</p>}
-      {isEnoughMoney && <button onClick={buy}>Buy</button>}
-    </div>
+        <div style={rowStyle}>
+          <ul>
+            {items.map(item => (
+              <li key={item.name}>
+                {item.name}, price: <b>{item.price}$</b>, quantity: <b>{item.quantity}</b>
+                <Space style={{ marginLeft: '16px' }}>
+                  <Button onClick={() => setQuantity(item.id, item.quantity + 1)}> Add </Button>
+                  <Button onClick={() => setQuantity(item.id, item.quantity - 1)}> Remove </Button>
+                </Space>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div style={rowStyle}>
+          <div style={rowStyle}>
+            <Switch checked={shouldAddBag} onChange={val => setShouldAddBag(val)} style={{ marginRight: '16px' }} /> Add a Bag
+          </div>
+          {shouldAddBag && <div> A bag has been added to your order </div>}
+        </div>
+
+        <Row style={rowStyle}>
+          <p>Total is <b>{total}$</b></p>
+        </Row>
+
+        {!isEnoughMoney && <p style={{ color: 'red' }}> Your balance is too low to buy items</p>}
+        {isEnoughMoney && <button onClick={buy}>Checkout</button>}
+      </Col>
+
+    </Row>
   );
 }

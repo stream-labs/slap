@@ -41,6 +41,7 @@ export class Store {
 
     const config = parseStateConfig(configCreator);
     const controller = new StateController(this, moduleName, config);
+    this.events.emit('onModuleCreated', controller);
     return controller as GetStateControllerFor<TConfigCreator>;
   }
 
@@ -63,6 +64,7 @@ export class Store {
     metadata.subscriptions.forEach(unsub => unsub());
     delete this.rootState[moduleName];
     delete this.modulesMetadata[moduleName];
+    this.events.emit('onModuleDestroyed', moduleName);
   }
 
   recordingAccessors = 0;
@@ -102,7 +104,9 @@ export class Store {
 }
 
 export interface StoreEvents {
-  onMutation: (mutation: Mutation | Function) => void
+  onModuleCreated: (controller: StateController<unknown>) => void;
+  onModuleDestroyed: (moduleName: string) => void;
+  onMutation: (mutation: Mutation | Function, moduleName: string) => void
   onReadyToRender: () => void
 }
 
@@ -115,17 +119,18 @@ export class StateController<TConfig = any> {
 
   constructor(
     public store: Store,
-    public moduleName: string,
+    public __moduleName: string,
     config: TStateConfig,
   ) {
     const defaultState = config.state;
 
-    store.rootState[moduleName] = { ...defaultState };
+    store.rootState[__moduleName] = { ...defaultState };
 
     // create metadata
     const controller = this;
     const getters = {};
     const metadata: StatefulModuleMetadata = {
+      moduleName: __moduleName,
       config,
       controller,
       getters,
@@ -133,7 +138,7 @@ export class StateController<TConfig = any> {
       isInitialized: false,
       rev: 0,
     };
-    store.modulesMetadata[moduleName] = metadata;
+    store.modulesMetadata[__moduleName] = metadata;
 
     // generate getters
     Object.keys(defaultState).forEach(propName => {
@@ -235,7 +240,7 @@ export class StateController<TConfig = any> {
   finishInitialization() {
     // use immer to lock an immutable state
     this.getMetadata().isInitialized = true;
-    this.store.rootState[this.moduleName] = produce(this.store.rootState[this.moduleName], () => {});
+    this.store.rootState[this.__moduleName] = produce(this.store.rootState[this.__moduleName], () => {});
   }
 
   /**
@@ -243,7 +248,8 @@ export class StateController<TConfig = any> {
    */
   registerMutation(mutationName: string, mutationMethod: Function, mutationThisContext?: any) {
     const controller = this;
-    const { store, moduleName } = controller;
+    const { store, __moduleName } = controller;
+    const moduleName = __moduleName;
     const mutationContext = mutationThisContext || controller;
 
     controller.getMetadata().config.mutations[mutationName] = mutationMethod;
@@ -273,7 +279,7 @@ export class StateController<TConfig = any> {
    * @param mutation a mutation function or Mutation object for a pre-registered named mutation
    */
   mutate(mutation: ((draft: this) => unknown) | Mutation) {
-    const moduleName = this.moduleName;
+    const moduleName = this.__moduleName;
     const state = this.store.rootState[moduleName];
     const mutationIsFunction = typeof mutation === 'function';
     const metadata = this.getMetadata();
@@ -311,7 +317,7 @@ export class StateController<TConfig = any> {
       this.draftState = null;
     }
 
-    this.store.events.emit('onMutation', mutation);
+    this.store.events.emit('onMutation', mutation, moduleName);
 
     if (!this.store.pendingMutations) {
       this.store.events.emit('onReadyToRender');
@@ -328,7 +334,7 @@ export class StateController<TConfig = any> {
     if (this.draftState) return this.draftState;
 
     const store = this.store;
-    const moduleName = this.moduleName;
+    const moduleName = this.__moduleName;
 
     if (store.recordingAccessors) {
       store.affectedModules[moduleName] = this.getMetadata().rev;
@@ -338,8 +344,16 @@ export class StateController<TConfig = any> {
   }
 
   getMetadata() {
-    return this.store.modulesMetadata[this.moduleName];
+    return this.store.modulesMetadata[this.__moduleName];
   }
+
+  // getSnapshot() {
+  //   const keys = Object.keys(this.store.rootState[this.__moduleName]);
+  //   const snapshot = {};
+  //   const state = this.state;
+  //   keys.forEach(key => snapshot[key] = )
+  //   return this.getMetadata().config.
+  // }
 
   get getters(): TStateFor<TConfig> {
     return this.getMetadata().getters as TStateFor<TConfig>;
@@ -393,6 +407,7 @@ export type TStateConfig = {
 export type TStateConfigDraft = Partial<TStateConfig>
 
 export interface StatefulModuleMetadata {
+  moduleName: string;
   rev: number;
   config: TStateConfig;
   controller: StateController;

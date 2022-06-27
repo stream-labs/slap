@@ -11,6 +11,7 @@ const entry = {
   twoapps: './demo/twoapps.tsx',
   shopapp: './demo/shop-app.tsx',
   starseditor: './demo/stars-editor/index.tsx',
+  inspectorapp: './demo/inspector-app.tsx',
 };
 
 module.exports = {

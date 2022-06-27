@@ -8,7 +8,7 @@ section {
     border-radius: 2px;
 }
 
-button {
+.button {
     line-height: 1.5715;
     position: relative;
     display: inline-block;
@@ -146,3 +146,4 @@ button:disabled:hover {
 .todo-footer {
     text-align: center;
 }
+

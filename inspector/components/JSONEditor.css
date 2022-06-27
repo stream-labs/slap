@@ -1,0 +1,38 @@
+.json-editor {
+    --jse-theme-color: #e1e3e4;
+    --jse-menu-color: --jse-text-color;
+    --jse-font-size-mono: 12px;
+    --jse-font-size: 12px;
+    /*--jse-context-menu-button-background: pink;*/
+
+    /*--jse-panel-button-background: green;*/
+    /*--jse-panel-button-color-highlight: green;*/
+    /*--jse-panel-button-background-highlight: green;*/
+
+    /*--jse-button-background: yellow;*/
+    /*--jse-button-background-highlight: yellow;*/
+    /*--jse-button-color: var(--jse-text-color);*/
+    /*--jse-button-primary-background: yellow;*/
+    /*--jse-button-primary-background-highlight: yellow;*/
+    /*--jse-button-primary-background-disabled: yellow;*/
+    /*--jse-button-primary-color: purple;*/
+}
+
+.json-editor .jse-group-button {
+    border: 1px solid #ccc !important;
+}
+
+.json-editor .jse-group-button.jse-selected {
+    background-color: #ccc !important;
+    color: white !important;
+}
+
+.json-editor .jse-collapse-all { display: none}
+.json-editor .jse-expand-all { display: none}
+.json-editor .jse-format { display: none}
+.json-editor .jse-compact { display: none}
+.json-editor .jse-sort { display: none}
+
+.json-editor .jse-contents{ border-left: none !important; border-right: none !important; }
+
+.json-editor .jse-menu { border: 1px solid #ddd !important; border-left: none; border-right: none}

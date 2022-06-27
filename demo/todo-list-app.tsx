@@ -6,15 +6,19 @@ import './index.css';
 export function TodoListApp() {
   return (
     <ReactModules>
-      {/* <Module module={TodoModule}> */}
-        <section className="todo-list">
-          <h2>Todo List</h2>
-          <TodoInput />
-          <TodoItems />
-          <TodoCompleteButton />
-        </section>
-      {/* </Module> */}
+      <TodoList />
     </ReactModules>
+  );
+}
+
+export function TodoList() {
+  return (
+    <section className="todo-list">
+      <h2>Todo List</h2>
+      <TodoInput />
+      <TodoItems />
+      <TodoCompleteButton />
+    </section>
   );
 }
 
@@ -35,7 +39,7 @@ export function TodoInput() {
         onChange={ev => setInputValue(ev.currentTarget.value)}
         onKeyPress={event => event.key === 'Enter' && addTask()}
       />
-      <button disabled={!canAddTask} onClick={addTask}>
+      <button className="button" disabled={!canAddTask} onClick={addTask}>
         Add
       </button>
     </div>
@@ -53,10 +57,10 @@ export function TodoItems() {
             <button className="danger" onClick={() => removeTask(task.id)}>Delete</button>
 
             {!task.isCompleted
-              && (<button onClick={() => setCompleted(task.id, true)}>Done</button>)}
+              && (<button className="button" onClick={() => setCompleted(task.id, true)}>Done</button>)}
 
             {task.isCompleted
-              && (<button onClick={() => setCompleted(task.id, false)}>Undone</button>)}
+              && (<button className="button" onClick={() => setCompleted(task.id, false)}>Undone</button>)}
           </div>
         </li>
       ))}

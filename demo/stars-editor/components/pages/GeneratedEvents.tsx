@@ -9,6 +9,10 @@ class MyModuleWithEvents {
   state = injectState({
     logs: [] as string[],
     blogs: [] as string[],
+
+    get maxLogsAdded() {
+      return this.logs.length >= 3;
+    }
   });
 
   init() {
@@ -16,6 +20,7 @@ class MyModuleWithEvents {
       console.log('new logs', newLogs, 'prevLogs', prevLogs);
       message.info(`Logs changed ${this.state.logs.length}`);
     });
+    // TODO add watch for maxLogsAdded
   }
 
   addLog() {

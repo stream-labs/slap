@@ -193,7 +193,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
    */
   injectChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any) {
     const childScope = this.resolveChildScope();
-    const name = `${this.id}__child_${ModuleCreator.name || ''}_${generateId()}`;
+    const name = `${this.id}__child__${ModuleCreator.name || ''}_${generateId()}`;
     childScope.register(ModuleCreator, name, { parentProvider: this as Provider<any, any> });
     const childModule = childScope.init(name, ...args) as InjectableModuleTyped<any, any, any>;
     this.childModules[name] = childModule;

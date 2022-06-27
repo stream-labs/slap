@@ -1,0 +1,67 @@
+@import '~antd/dist/antd.css';
+
+#app {
+    margin-top: 0;
+}
+
+.inspector-root {
+    font-size: 12px;
+}
+
+.nav-tree  .ant-tree-treenode {
+    font-size: 12px;
+    width: 100%;
+}
+
+.nav-tree  .ant-tree-treenode-selected {
+    color: white;
+    background-color: #0189FD;
+}
+
+.nav-tree .ant-tree-node-content-wrapper {
+    color: #6A51B2;
+    transition: none;
+}
+
+
+.nav-tree  .ant-tree-treenode .not-inited-module {
+    color: rgba(0,0,0,0.50);
+}
+.nav-tree  .ant-tree-treenode .is-stateful-module {
+    color: #d46b08;
+}
+
+.nav-tree .ant-tree-node-content-wrapper.ant-tree-node-selected {
+    color: white;
+    background-color: transparent;
+}
+.nav-tree .ant-tree-node-content-wrapper.ant-tree-node-selected .not-inited-module {
+    color: white;
+}
+
+.nav-tree .ant-tree-node-content-wrapper.ant-tree-node-selected .is-stateful-module {
+    color: white;
+}
+
+
+.inspector-root .ant-descriptions-item-content,
+.inspector-root .ant-descriptions-item-label {
+    font-size: 12px;
+}
+
+.inspector-root .ant-tag {
+    font-size: 11px;
+}
+
+.inspector-root .ant-layout-sider {
+    background: none;
+}
+
+.inspector-root .side-panel-collapse .ant-collapse-header {
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    border-left: none;
+    border-right: 0;
+    border-radius: 0;
+}

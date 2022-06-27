@@ -111,6 +111,7 @@ export class Scope {
     if (!provider) return;
     provider.destroy();
     delete this.providers[provider.name];
+    this.events.emit('onModuleUnregister', provider.id);
   }
 
   // helper methods
@@ -241,7 +242,7 @@ export class Scope {
    * Returns true if it doesn't have parent scopes
    */
   get isRoot() {
-    return !!this.parent;
+    return !this.parent;
   }
 
   get parent() {
@@ -254,7 +255,7 @@ export class Scope {
 export interface ScopeEvents {
   onModuleRegister: (provider: Provider<any>) => void
   onModuleInit: (provider: Provider<any>) => void,
-  onModuleLoad: (provider: Provider<any>) => void,
+  onModuleUnregister: (providerId: string) => void,
 }
 
 export function getCurrentScope() {

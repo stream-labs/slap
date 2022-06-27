@@ -19,7 +19,7 @@ export function useAppContext() {
 
 export function createApp(Services: TModuleConstructorMap = {}): TAppContext {
   const rootScope = new Scope({ ...Services, Store, ReactStoreAdapter });
-  const modulesScope = rootScope.createChildScope({}, { autoregister: true });
+  const modulesScope = rootScope.registerScope({}, { autoregister: true });
 
   rootScope.init(ReactStoreAdapter);
 

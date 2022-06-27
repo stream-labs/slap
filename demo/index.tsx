@@ -16,6 +16,9 @@ ReactDOM.render(
 
     <a href="./starseditor.html">Complex production style app</a>
     <br />
+
+    <a href="./inspectorapp.html">App with inspector</a>
+    <br />
   </div>,
   document.getElementById('app'),
 );
