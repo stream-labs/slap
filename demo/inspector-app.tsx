@@ -4,7 +4,7 @@ import { createApp, ReactModules } from '../lib';
 import './index.css';
 import { TodoList } from './todo-list-app';
 import { Layout } from 'antd';
-import { Inspector } from '../inspector/Inspector';
+import { Inspector } from '../dist-inspector/inspector';
 
 const { Footer, Content } = Layout;
 

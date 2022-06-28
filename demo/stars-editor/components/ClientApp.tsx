@@ -18,7 +18,7 @@ import { ErrorsPage } from './pages/ErrorsPage';
 import { EventsPage } from './pages/GeneratedEvents';
 import { GeneratedArrayMutationsPage } from './pages/GeneratedArrayMutations';
 import { CheckoutPageComponent } from './pages/ExposedModulesPage';
-import { Inspector } from '../../../inspector/Inspector';
+import { Inspector } from '../../../inspector';
 
 export function ClientApp() {
   const { activePage } = useModule(WindowService);

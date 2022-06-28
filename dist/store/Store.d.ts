@@ -27,7 +27,9 @@ export declare class Store {
     events: import("nanoevents").Emitter<StoreEvents>;
 }
 export interface StoreEvents {
-    onMutation: (mutation: Mutation | Function) => void;
+    onModuleCreated: (controller: StateController<unknown>) => void;
+    onModuleDestroyed: (moduleName: string) => void;
+    onMutation: (mutation: Mutation | Function, moduleName: string) => void;
     onReadyToRender: () => void;
 }
 /**
@@ -35,9 +37,9 @@ export interface StoreEvents {
  */
 export declare class StateController<TConfig = any> {
     store: Store;
-    moduleName: string;
+    __moduleName: string;
     draftState: any;
-    constructor(store: Store, moduleName: string, config: TStateConfig);
+    constructor(store: Store, __moduleName: string, config: TStateConfig);
     finishInitialization(): void;
     /**
      * Register a named mutation in the store.
@@ -73,6 +75,7 @@ export declare type TStateConfig = {
 };
 export declare type TStateConfigDraft = Partial<TStateConfig>;
 export interface StatefulModuleMetadata {
+    moduleName: string;
     rev: number;
     config: TStateConfig;
     controller: StateController;

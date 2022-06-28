@@ -1,12 +1,12 @@
 const path = require('path');
 
 module.exports = {
-  entry: './lib/index.ts',
+  entry: './inspector/index.ts',
   output: {
     filename: 'index.js',
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'dist-inspector/inspector'),
     clean: true,
-    library: 'slap',
+    library: 'slap-inspector',
     libraryTarget: 'umd',
     globalObject: 'typeof self !== \'undefined\' ? self : this', // for usage in node-js
   },
@@ -25,11 +25,15 @@ module.exports = {
           options: {
             compilerOptions: {
               declaration: true,
-              outDir: 'dist',
+              outDir: 'dist-inspector',
             },
           },
         }],
         exclude: /node_modules/,
+      },
+      {
+        test: /\.css$/i,
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },
@@ -41,6 +45,5 @@ module.exports = {
     react: 'react', // Case matters here
     'react-dom': 'react-dom', // Case matters here
   },
-
 
 };

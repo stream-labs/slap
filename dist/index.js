@@ -280,7 +280,7 @@ function useAppContext() {
 exports.useAppContext = useAppContext;
 function createApp(Services = {}) {
     const rootScope = new scope_1.Scope(Object.assign(Object.assign({}, Services), { Store: store_1.Store, ReactStoreAdapter: react_store_adapter_1.ReactStoreAdapter }));
-    const modulesScope = rootScope.createChildScope({}, { autoregister: true });
+    const modulesScope = rootScope.registerScope({}, { autoregister: true });
     rootScope.init(react_store_adapter_1.ReactStoreAdapter);
     return { servicesScope: rootScope, modulesScope };
 }
@@ -845,19 +845,44 @@ exports.moduleSystemProps = exports.getInstanceMetadata = exports.createInstance
 const nanoevents_1 = __webpack_require__(111);
 const is_plain_object_1 = __webpack_require__(57);
 const utils_1 = __webpack_require__(986);
+/**
+ * Providers initialize modules and keeps their metadata
+ */
 class Provider {
     constructor(scope, creator, name = '', options = {}) {
         this.scope = scope;
         this.creator = creator;
         this.name = name;
         this.options = options;
+        /**
+         * Keeps module's instance
+         */
         this.instance = null;
+        /**
+         * keeps user's metadata
+         */
         this.metadata = {};
-        this.isInited = false; // true if instance is added to the Scope
+        /**
+         * true if instance is initialized and added to the Scope
+         */
+        this.isInited = false;
+        /**
+         * true if instance is initialized and added to the Scope
+         */
         this.isDestroyed = false;
-        this.childScope = null;
-        this.childModules = {};
+        /**
+         * Keeps information about all injected modules
+         */
         this.injectedModules = {};
+        /**
+         * Keeps information about all child modules.
+         * Child modules are kind of injected modules with the same lifecycle of the parent module
+         */
+        this.childModules = {};
+        /**
+         * Keeps a child scope if the provider has created one
+         */
+        this.childScope = null;
         this.events = (0, nanoevents_1.createNanoEvents)();
         if (!this.name)
             this.name = `AnonymousProvider__${(0, utils_1.generateId)()}`;
@@ -880,12 +905,19 @@ class Provider {
         }
         throw new Error(`Can not construct the object ${creator}`);
     }
+    /**
+     * Creates a module instance
+     * @param args
+     */
     createInstance(args) {
         const instance = this.factory(args);
         this.instance = instance;
         createInstanceMetadata(instance, this);
         return instance;
     }
+    /**
+     * Init all injected modules
+     */
     mountModule() {
         Object.keys(this.injectedModules).forEach(injectedName => {
             const childModuleProvider = getInstanceMetadata(this.injectedModules[injectedName].instance).provider;
@@ -931,11 +963,17 @@ class Provider {
     get instanceId() {
         return getInstanceMetadata(this.instance).id;
     }
+    /**
+     * Returns a child scope. Creates a new one if not exist
+     */
     resolveChildScope() {
         if (!this.childScope)
             this.childScope = this.scope.createChildScope();
         return this.childScope;
     }
+    /**
+     * Resolves a provider for the module in the child scope
+     */
     resolveChildProvider(ModuleCreator, name) {
         const childScope = this.resolveChildScope();
         if (!childScope.isRegistered(name)) {
@@ -943,6 +981,9 @@ class Provider {
         }
         return childScope.resolveProvider(name);
     }
+    /**
+     * Inject a module into the current module
+     */
     injectModule(ModuleLocator, options = {}) {
         const module = this.scope.resolve(ModuleLocator);
         const moduleProvider = getInstanceMetadata(module).provider;
@@ -950,9 +991,12 @@ class Provider {
         const returnValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
         return returnValue; // TODO: resolve injected value
     }
+    /**
+     * Inject a child module into the current module
+     */
     injectChildModule(ModuleCreator, ...args) {
         const childScope = this.resolveChildScope();
-        const name = `${this.id}__child_${ModuleCreator.name || ''}_${(0, utils_1.generateId)()}`;
+        const name = `${this.id}__child__${ModuleCreator.name || ''}_${(0, utils_1.generateId)()}`;
         childScope.register(ModuleCreator, name, { parentProvider: this });
         const childModule = childScope.init(name, ...args);
         this.childModules[name] = childModule;
@@ -962,6 +1006,9 @@ class Provider {
     }
 }
 exports.Provider = Provider;
+/**
+ * Attaches a metadata for the module instance
+ */
 function createInstanceMetadata(instance, provider) {
     const id = `${provider.id}__${(0, utils_1.generateId)()}`;
     const descriptor = { enumerable: false, configurable: false };
@@ -1010,8 +1057,14 @@ const defaultScopeSettings = {
  */
 class Scope {
     constructor(dependencies = {}, settings = {}) {
-        this.childScopes = {};
+        /**
+         * Keeps all registered providers
+         */
         this.providers = {};
+        /**
+         * Keeps all registered child scopes
+         */
+        this.childScopes = {};
         this.events = (0, nanoevents_1.createNanoEvents)();
         const uid = (0, utils_1.generateId)();
         const parentScope = settings === null || settings === void 0 ? void 0 : settings.parentScope;
@@ -1069,6 +1122,7 @@ class Scope {
             return;
         provider.destroy();
         delete this.providers[provider.name];
+        this.events.emit('onModuleUnregister', provider.id);
     }
     // helper methods
     isRegistered(moduleLocator) {
@@ -1125,7 +1179,9 @@ class Scope {
     createChildScope(dependencies, settings) {
         return new Scope(dependencies, Object.assign(Object.assign({}, settings), { parentScope: this }));
     }
-    // TODO refactor
+    /**
+     * Register a child scope
+     */
     registerScope(dependencies, settings) {
         const scope = this.createChildScope({}, settings);
         this.childScopes[scope.id] = scope;
@@ -1133,6 +1189,9 @@ class Scope {
         dependencies && scope.registerMany(dependencies);
         return scope;
     }
+    /**
+     * Unregister a child scope
+     */
     unregisterScope(scopeId) {
         const scope = this.childScopes[scopeId];
         if (!scope)
@@ -1145,6 +1204,9 @@ class Scope {
             return this;
         return this.parent.getRootScope();
     }
+    /**
+     * Destroy current scope and all providers
+     */
     dispose() {
         // destroy child scopes
         Object.keys(this.childScopes).forEach(scopeId => {
@@ -1159,6 +1221,9 @@ class Scope {
         if (!this.parent)
             this.events.events = {};
     }
+    /**
+     * Could be usefull for debugging
+     */
     getScheme() {
         return {
             id: this.id,
@@ -1166,8 +1231,11 @@ class Scope {
             parentScope: this.parent ? this.parent.getScheme() : null,
         };
     }
+    /**
+     * Returns true if it doesn't have parent scopes
+     */
     get isRoot() {
-        return !!this.parent;
+        return !this.parent;
     }
     get parent() {
         return this.settings.parentScope;
@@ -1198,12 +1266,18 @@ function generateId() {
     return (idCounter++).toString();
 }
 exports.generateId = generateId;
+/**
+ * Loop though an object
+ */
 function forEach(dict, cb) {
     Object.keys(dict).forEach(propName => {
         cb(dict[propName], propName);
     });
 }
 exports.forEach = forEach;
+/**
+ * Register a getter on object
+ */
 function defineGetter(target, methodName, getter, descriptor) {
     var _a, _b;
     Object.defineProperty(target, methodName, {
@@ -1213,6 +1287,9 @@ function defineGetter(target, methodName, getter, descriptor) {
     });
 }
 exports.defineGetter = defineGetter;
+/**
+ * Register a setter on object
+ */
 function defineSetter(target, methodName, setter, descriptor) {
     var _a, _b;
     Object.defineProperty(target, methodName, {
@@ -1222,6 +1299,9 @@ function defineSetter(target, methodName, setter, descriptor) {
     });
 }
 exports.defineSetter = defineSetter;
+/**
+ * Capitalize the first letter
+ */
 function capitalize(srt) {
     return srt.charAt(0).toUpperCase() + srt.slice(1);
 }
@@ -1394,6 +1474,7 @@ class Store {
         }
         const config = (0, parse_config_1.parseStateConfig)(configCreator);
         const controller = new StateController(this, moduleName, config);
+        this.events.emit('onModuleCreated', controller);
         return controller;
     }
     dispatchMutation(mutation) {
@@ -1412,6 +1493,7 @@ class Store {
         metadata.subscriptions.forEach(unsub => unsub());
         delete this.rootState[moduleName];
         delete this.modulesMetadata[moduleName];
+        this.events.emit('onModuleDestroyed', moduleName);
     }
     listenAffectedModules(cb) {
         this.recordingAccessors++;
@@ -1442,16 +1524,17 @@ exports.Store = Store;
  * Controls a single named state
  */
 class StateController {
-    constructor(store, moduleName, config) {
+    constructor(store, __moduleName, config) {
         this.store = store;
-        this.moduleName = moduleName;
+        this.__moduleName = __moduleName;
         this.draftState = null;
         const defaultState = config.state;
-        store.rootState[moduleName] = Object.assign({}, defaultState);
+        store.rootState[__moduleName] = Object.assign({}, defaultState);
         // create metadata
         const controller = this;
         const getters = {};
         const metadata = {
+            moduleName: __moduleName,
             config,
             controller,
             getters,
@@ -1459,7 +1542,7 @@ class StateController {
             isInitialized: false,
             rev: 0,
         };
-        store.modulesMetadata[moduleName] = metadata;
+        store.modulesMetadata[__moduleName] = metadata;
         // generate getters
         Object.keys(defaultState).forEach(propName => {
             const getter = () => controller.state[propName];
@@ -1548,14 +1631,15 @@ class StateController {
     finishInitialization() {
         // use immer to lock an immutable state
         this.getMetadata().isInitialized = true;
-        this.store.rootState[this.moduleName] = (0, immer_1.default)(this.store.rootState[this.moduleName], () => { });
+        this.store.rootState[this.__moduleName] = (0, immer_1.default)(this.store.rootState[this.__moduleName], () => { });
     }
     /**
      * Register a named mutation in the store.
      */
     registerMutation(mutationName, mutationMethod, mutationThisContext) {
         const controller = this;
-        const { store, moduleName } = controller;
+        const { store, __moduleName } = controller;
+        const moduleName = __moduleName;
         const mutationContext = mutationThisContext || controller;
         controller.getMetadata().config.mutations[mutationName] = mutationMethod;
         // override the original Module method to dispatch mutations
@@ -1581,7 +1665,7 @@ class StateController {
      * @param mutation a mutation function or Mutation object for a pre-registered named mutation
      */
     mutate(mutation) {
-        const moduleName = this.moduleName;
+        const moduleName = this.__moduleName;
         const state = this.store.rootState[moduleName];
         const mutationIsFunction = typeof mutation === 'function';
         const metadata = this.getMetadata();
@@ -1619,7 +1703,7 @@ class StateController {
             this.getMetadata().rev++;
             this.draftState = null;
         }
-        this.store.events.emit('onMutation', mutation);
+        this.store.events.emit('onMutation', mutation, moduleName);
         if (!this.store.pendingMutations) {
             this.store.events.emit('onReadyToRender');
         }
@@ -1633,15 +1717,22 @@ class StateController {
         if (this.draftState)
             return this.draftState;
         const store = this.store;
-        const moduleName = this.moduleName;
+        const moduleName = this.__moduleName;
         if (store.recordingAccessors) {
             store.affectedModules[moduleName] = this.getMetadata().rev;
         }
         return store.rootState[moduleName];
     }
     getMetadata() {
-        return this.store.modulesMetadata[this.moduleName];
+        return this.store.modulesMetadata[this.__moduleName];
     }
+    // getSnapshot() {
+    //   const keys = Object.keys(this.store.rootState[this.__moduleName]);
+    //   const snapshot = {};
+    //   const state = this.state;
+    //   keys.forEach(key => snapshot[key] = )
+    //   return this.getMetadata().config.
+    // }
     get getters() {
         return this.getMetadata().getters;
     }
