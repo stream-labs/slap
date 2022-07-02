@@ -44,6 +44,9 @@ module.exports = {
     static: distPath,
     compress: true,
     port: 4000,
+
+    // disable hot reload
+    liveReload: false,
   },
   plugins: [
     ...Object.keys(entry).map(entryName => {

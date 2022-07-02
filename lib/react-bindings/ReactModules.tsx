@@ -1,7 +1,7 @@
 import React, {
   ReactNode, useContext,
 } from 'react';
-import { useOnCreate } from './hooks';
+import { useOnCreate, useOnDestroy } from './hooks';
 import { Scope, TModuleConstructorMap } from '../scope';
 import { ReactStoreAdapter } from './react-store-adapter';
 import { Store } from '../store';
@@ -22,16 +22,31 @@ export function createApp(Services: TModuleConstructorMap = {}): TAppContext {
   const modulesScope = rootScope.registerScope({}, { autoregister: true });
 
   rootScope.init(ReactStoreAdapter);
+  const app = { id: rootScope.id, servicesScope: rootScope, modulesScope };
 
-  return { servicesScope: rootScope, modulesScope };
+  registerAppForDevtools(app);
+  return app;
 }
 
 export function ReactModules(p: {children: ReactNode | ReactNode[], app?: TAppContext}) {
   const appScope = useOnCreate(() => p.app || createApp());
+  useOnDestroy(() => {
+    unregisterAppFromDevtools(appScope.servicesScope.id);
+  });
 
   return (
     <SlapContext.Provider value={appScope}>
       {p.children}
     </SlapContext.Provider>
   );
+}
+
+function registerAppForDevtools(app: TAppContext) {
+  const apps = (window as any).ReactModulesApps = (window as any).ReactModulesApps || {};
+  apps[app.servicesScope.id] = app;
+}
+
+function unregisterAppFromDevtools(appId: string) {
+  const apps = (window as any).ReactModulesApps[appId];
+  delete apps[appId];
 }

@@ -1,24 +1,29 @@
-import { Menu } from 'antd';
 import React from 'react';
+import { Layout } from 'antd';
 import { useModule } from '../../lib';
-import { InspectorService, ProviderModel, TempAny } from '../useInspector';
+import { InspectorService, ProviderModel } from '../inspector-service';
+import { PanelHeader } from './PanelHeader';
+import { LoggerService } from '../logger.service';
 
-
-
+const { Content } = Layout;
 
 export function Logs() {
 
-  const {} = useModule(InspectorService);
+  const { logs } = useModule(LoggerService);
 
   return (
-    <Menu
-      selectable
-      items={items}
-      mode="inline"
-      onClick={menuClickHandler}
-      selectedKeys={[selectedMenuKey]}
-      openKeys={expandedMenuKeys}
-      onOpenChange={keys => setExpandedMenuKeys(keys)}
-    />
+
+    <Layout>
+      <PanelHeader title="Logs" />
+      <Content>
+        {logs.map(log => <div key={log.id}>{log.message} <ProviderTag provider={log.provider} /></div>)}
+      </Content>
+    </Layout>
   );
+}
+
+function ProviderTag(p: {provider: string | ProviderModel }) {
+  const { provider } = p;
+  const providerName = typeof provider === 'string' ? provider : provider.name;
+  return <span>{providerName}</span>;
 }

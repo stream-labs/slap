@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout } from 'antd';
+import { Button, Layout } from 'antd';
 import { Header } from './Header';
 import { EditorPage } from './pages/editor/EditorPage';
 import { AboutPage } from './pages/AboutPage';
@@ -19,6 +19,7 @@ import { EventsPage } from './pages/GeneratedEvents';
 import { GeneratedArrayMutationsPage } from './pages/GeneratedArrayMutations';
 import { CheckoutPageComponent } from './pages/ExposedModulesPage';
 import { Inspector } from '../../../inspector';
+import { startInspectorInWindow } from '../../../inspector/inspector-server';
 
 export function ClientApp() {
   const { activePage } = useModule(WindowService);
@@ -51,7 +52,9 @@ export function ClientApp() {
         position: 'absolute', width: '100%', height: '50%', bottom: 0, border: '1px solid #ddd',
       }}
       >
-        <Inspector inspectedApp={app} />
+
+        <Button onClick={startInspectorInWindow}>Start Inspector</Button>
+        {/* <Inspector inspectedApp={app} /> */}
       </div>
     </Layout>
   );

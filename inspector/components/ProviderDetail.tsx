@@ -4,11 +4,11 @@ import {
 import React, { useState } from 'react';
 import { RightSquareOutlined } from '@ant-design/icons';
 import { useModule } from '../../lib';
-import { InspectorService, ProviderModel } from '../useInspector';
-import { DescriptionList, InspectorHeader, SidePanel } from '../Inspector';
+import { InspectorService, ProviderModel } from '../inspector-service';
+import { DescriptionList, SidePanel } from '../Inspector';
 import { StateInspector } from './StateDetail';
+import { PanelHeader } from './PanelHeader';
 
-const { Panel } = Collapse;
 const { Header, Content } = Layout;
 
 export function ProviderDetail() {
@@ -18,7 +18,7 @@ export function ProviderDetail() {
   const provider = selectedProvider;
   return (
     <Layout style={{ height: '100%' }}>
-      <InspectorHeader
+      <PanelHeader
         title={provider.shortName}
         extra={(
           <Tooltip title="Expose this module to the developer's console" placement="left">

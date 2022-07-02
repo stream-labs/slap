@@ -347,14 +347,6 @@ export class StateController<TConfig = any> {
     return this.store.modulesMetadata[this.__moduleName];
   }
 
-  // getSnapshot() {
-  //   const keys = Object.keys(this.store.rootState[this.__moduleName]);
-  //   const snapshot = {};
-  //   const state = this.state;
-  //   keys.forEach(key => snapshot[key] = )
-  //   return this.getMetadata().config.
-  // }
-
   get getters(): TStateFor<TConfig> {
     return this.getMetadata().getters as TStateFor<TConfig>;
   }

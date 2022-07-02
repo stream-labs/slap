@@ -1,25 +1,40 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { createApp, ReactModules } from '../lib';
+import { createApp, Provider, ReactModules, useOnCreate } from '../lib';
 import './index.css';
 import { TodoList } from './todo-list-app';
-import { Layout } from 'antd';
-import { Inspector } from '../dist-inspector/inspector';
+import { Button, Layout } from 'antd';
+import { Inspector } from '../inspector';
+import { startInspectorInWindow } from '../inspector/inspector-server';
+import { ApiClient } from '../lib/utils/remote/api-client';
+import { connectPostMessageClient } from '../lib/utils/remote/post-message-transport';
+import { IntrospectionApi } from '../lib/utils/remote/introspection-api';
+import { ProviderModel, TempAny } from '../inspector/inspector-service';
 
 const { Footer, Content } = Layout;
 
 export function TodoListApp() {
-  const app = createApp();
+  // const app = createApp();
+  // useOnCreate(async () => {
+  //
+  //   const inspectedWin = window.opener;
+  //   const connection = await connectPostMessageClient(inspectedWin);
+  //   const api = new ApiClient(connection);
+  //   await api.connect();
+  //   const inspectorApi = api.getService(IntrospectionApi);
+  //   await api.subscribe('InspectorApi', 'scopeEvents', 'onModuleInit', (provider: TempAny) => {
+  //     console.log('onModuleInit', provider);
+  //   });
+  //   await api.subscribe('InspectorApi', 'scopeEvents', 'onModuleRegister', (provider: TempAny) => {
+  //     console.log('onModuleRegister', provider);
+  //   });
+  //   // const providers = await core.getProviders();
+  //   // console.log('fetched providers', providers);
+  // });
   return (
-    <ReactModules app={app}>
-      <Layout style={{ height: '100%' }}>
-        <Content><TodoList /></Content>
-        <Footer style={{ padding: 0, height: '50%', border: '1px solid #ddd' }}>
-          <Inspector inspectedApp={app} />
-        </Footer>
-      </Layout>
-    </ReactModules>
+    <Inspector />
   );
+
 }
 
 ReactDOM.render(<TodoListApp />, document.getElementById('app'));

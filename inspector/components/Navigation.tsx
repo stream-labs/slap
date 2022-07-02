@@ -3,7 +3,7 @@ import React from 'react';
 import { DataNode } from 'rc-tree/lib/interface';
 import { SearchOutlined } from '@ant-design/icons';
 import { useModule } from '../../lib';
-import { InspectorService, ProviderModel, TempAny } from '../useInspector';
+import { InspectorService, ProviderModel, TempAny } from '../inspector-service';
 import { TextInput } from '../../demo/stars-editor/components/pages/editor/ItemProps';
 //
 // export function Navigation() {

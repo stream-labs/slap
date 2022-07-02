@@ -109,10 +109,6 @@ export class StateView<TProps = {}> {
     return props;
   }
 
-  // select<TNewView extends StateView<any>>(newViewFactory: (props: TProps, view: StateView<TProps>) => TNewView): TNewView {
-  //   return newViewFactory(this.props, this);
-  // }
-
   clone() {
     const clone = new StateView<TProps>();
     forEach(this.descriptors, descriptor => clone.defineProp(descriptor));

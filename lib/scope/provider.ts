@@ -61,6 +61,8 @@ export class Provider<TInstance, TInitParams extends [] = []> {
    */
   childScope: Scope | null = null;
 
+  type = '';
+
   constructor(
     public scope: Scope,
     public creator: (new (...args: TInitParams) => TInstance) | ((...args: TInitParams) => TInstance) | TInstance,
@@ -74,6 +76,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
     this.options = { shouldCallHooks: true, ...this.options };
 
     if (typeof creator === 'function') {
+      this.type = creator.name;
 
       if (isClass(creator)) {
         this.factory = (args: TInitParams) => new (creator as any)(...args);

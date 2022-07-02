@@ -1,11 +1,21 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {
-  ReactModules, useModule, injectChild, inject, generateId, injectQuery, injectState,
+  ReactModules,
+  useModule,
+  injectChild,
+  inject,
+  generateId,
+  injectQuery,
+  injectState,
+  createApp,
+  useOnCreate, useAppContext,
 } from '../lib';
 import './index.css';
+import { Button } from 'antd';
+import { startInspectorInWindow } from '../inspector/inspector-server';
 
-export class ShopModule {
+export class ShopService {
 
   shopName = `My Shop ${generateId()}`;
   shopTitle = `Welcome to ${this.shopName}`;
@@ -61,16 +71,21 @@ export class CartModule {
 }
 
 function ShopApp() {
+  const app = useOnCreate(() => {
+    return createApp({ ShopService });
+  });
   return (
-    <ReactModules>
+    <ReactModules app={app}>
       <ShopPage />
+
+      <Button onClick={startInspectorInWindow}>Start Inspector</Button>
     </ReactModules>
   );
 }
 
 function ShopPage() {
 
-  const { shopTitle } = useModule(ShopModule);
+  const { shopTitle } = useModule(ShopService);
 
   return (
     <div>
@@ -86,7 +101,7 @@ function ShopPage() {
 
 function ItemsList() {
 
-  const { itemList } = useModule(ShopModule);
+  const { itemList } = useModule(ShopService);
 
   return (
     <div>
@@ -99,9 +114,9 @@ function ItemsList() {
 
 function Cart() {
 
-  const { cart, discount, discountMessage } = useModule(ShopModule).extend(shop => {
+  const { cart, discount, discountMessage } = useModule(ShopService).extend(shop => {
 
-    const injectedShop = inject(ShopModule);
+    const injectedShop = inject(ShopService);
 
     return {
       discount: 10,
@@ -131,7 +146,7 @@ async function fetchRecommendedItems() {
 
 function BookmarkedItems() {
 
-  const { bookmarks, clearBookmarks, componentView } = useModule(ShopModule).extend(shop => {
+  const { bookmarks, clearBookmarks, componentView } = useModule(ShopService).extend(shop => {
     const bookmarks = injectState({ items: [{ id: 'item5', name: 'Headphones', price: 10 }] as ShopItem[] });
 
     function clearBookmarks() {
@@ -158,7 +173,7 @@ function BookmarkedItems() {
 
 function RecommendedItems() {
 
-  const { recommendedItemsQuery } = useModule(ShopModule).extend(shop => {
+  const { recommendedItemsQuery } = useModule(ShopService).extend(shop => {
 
     const recommendedItemsQuery = injectQuery(fetchRecommendedItems);
 

@@ -4,7 +4,7 @@ import { JSONEditor } from 'svelte-jsoneditor';
 import {
   inject, injectState, StatefulModuleMetadata, useModule,
 } from '../../lib';
-import { InspectorService, TempAny } from '../useInspector';
+import { InspectorService, TempAny } from '../inspector-service';
 import { TextInput } from '../../demo/stars-editor/components/pages/editor/ItemProps';
 import SvelteJSONEditor from './JSONEditor';
 
@@ -35,13 +35,13 @@ class StateInspectorModule {
   }
 
   init() {
-    console.log('create module', this.moduleName);
-    const inspectedStore = this.inspector.inspectedApp.store;
-    this.refresh();
-    this.unsubscribe = inspectedStore.events.on('onMutation', (mutation, moduleName) => {
-      if (moduleName !== this.moduleName) return;
-      this.refresh();
-    });
+    // console.log('create module', this.moduleName);
+    // const inspectedStore = this.inspector.inspectedApp.store;
+    // this.refresh();
+    // this.unsubscribe = inspectedStore.events.on('onMutation', (mutation, moduleName) => {
+    //   if (moduleName !== this.moduleName) return;
+    //   this.refresh();
+    // });
   }
 
   destroy() {
@@ -50,15 +50,15 @@ class StateInspectorModule {
   }
 
   refresh() {
-    const id = this.moduleName;
-    const metadata = this.inspector.inspectedApp.store.modulesMetadata[id];
-    const data = metadata.controller.state;
-    this.state.setData(data);
+    // const id = this.moduleName;
+    // const metadata = this.inspector.inspectedApp.store.modulesMetadata[id];
+    // const data = metadata.controller.state;
+    // this.state.setData(data);
   }
 
-  get inspectedStateController() {
-    return this.inspector.inspectedApp.store.modulesMetadata[this.moduleName].controller;
-  }
+  // get inspectedStateController() {
+  //   // return this.inspector.inspectedApp.store.modulesMetadata[this.moduleName].controller;
+  // }
 
   // setProp(propName: string, value: unknown) {
   //   const stateController = this.inspectedStateController;
@@ -68,18 +68,18 @@ class StateInspectorModule {
   // }
 
   setData(value: {json: any, text: string}) {
-    console.log('set data', value);
-    const stateController = this.inspectedStateController as any;
-
-    let data = value.json;
-    if (value.text) {
-      try {
-        data = JSON.parse(value.text);
-      } catch (e) {
-        return; // invalid json
-      }
-    }
-    stateController.update(data);
+    // console.log('set data', value);
+    // const stateController = this.inspectedStateController as any;
+    //
+    // let data = value.json;
+    // if (value.text) {
+    //   try {
+    //     data = JSON.parse(value.text);
+    //   } catch (e) {
+    //     return; // invalid json
+    //   }
+    // }
+    // stateController.update(data);
   }
 }
 

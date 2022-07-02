@@ -9,53 +9,41 @@ import {
   createApp, ReactModules, TAppContext,
 } from '../lib/index';
 import './Inspector.css';
-import { InspectorService } from './useInspector';
+import { InspectorService } from './inspector-service';
 import { NavigationTree, SearchBar } from './components/Navigation';
 import { ProviderDetail } from './components/ProviderDetail';
 import { StateDetail } from './components/StateDetail';
+import { Logs } from './components/Logs';
 
-const { Sider, Content } = Layout;
+const { Sider, Content, Footer } = Layout;
 
-export function Inspector(p: { inspectedApp: TAppContext}) {
-  // useModule(InspectorService);
+export function Inspector() {
 
   const inspectorApp = createApp({ InspectorService });
-  inspectorApp.servicesScope.init(InspectorService, p.inspectedApp);
+  inspectorApp.servicesScope.init(InspectorService);
 
   return (
     <ReactModules app={inspectorApp}>
       <Layout style={{ backgroundColor: 'white' }} className="inspector-root">
-        <Sider width="50%" style={{ borderRight: '1px solid #ddd', overflowY: 'auto' }}>
-          <SearchBar />
-          <NavigationTree />
-        </Sider>
-        <Content style={{ overflowY: 'auto' }}>
-          <ProviderDetail />
-          <StateDetail />
-        </Content>
+        <Layout>
+          <Sider width="50%" style={{ borderRight: '1px solid #ddd', overflowY: 'auto' }}>
+            <SearchBar />
+            <NavigationTree />
+          </Sider>
+          <Content style={{ overflowY: 'auto' }}>
+            <ProviderDetail />
+            <StateDetail />
+          </Content>
+        </Layout>
+        <Footer style={{ padding: 0 }}>
+          <Logs />
+        </Footer>
       </Layout>
+
     </ReactModules>
 
   );
 
-}
-
-export function InspectorHeader(p: { title: string, extra: ReactChild }) {
-  const { title, extra } = p;
-  const colStyle: CSSProperties = {
-    backgroundColor: '#e1e3e4',
-    lineHeight: '30px',
-    borderBottom: '1px solid #ddd',
-    padding: '0 16px',
-  };
-  return (
-    <Row
-      wrap={false}
-    >
-      <Col flex="auto" style={{ ...colStyle, color: '#6A51B2' }}>{title}</Col>
-      <Col flex="auto" style={{ ...colStyle, textAlign: 'right' }}>{extra}</Col>
-    </Row>
-  );
 }
 
 export function SidePanel(p: {title?: string, children: ReactNode, isExpanded?: boolean }) {

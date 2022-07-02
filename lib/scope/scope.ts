@@ -13,6 +13,7 @@ let currentProvider: Provider<any> | null = null;
 let unmountedModulesCount = 0;
 
 interface ScopeSettings {
+  rootScope: Scope,
   parentScope: Scope | null,
   autoregister: boolean,
   providerOptions?: Partial<ProviderOptions>
@@ -30,14 +31,24 @@ export class Scope {
   id!: string;
 
   /**
-   * Keeps all registered providers
+   * List of providers by name for current scope
    */
   providers: Record<string, Provider<any>> = {};
 
   /**
-   * Keeps all registered child scopes
+   * List of providers by id for current scope + child scopes
+   */
+  allProviders: Record<string, Provider<any>> = {};
+
+  /**
+   * Keeps registered child scopes
    */
   childScopes: Record<string, Scope> = {};
+
+  /**
+   * Keeps registered child scopes + sub child scopes
+   */
+  allChildScopes: Record<string, Scope> = {};
 
   settings: ScopeSettings;
 
@@ -52,7 +63,7 @@ export class Scope {
 
     this.settings = parentScope
       ? { ...parentScope.settings, ...settings }
-      : { ...defaultScopeSettings, ...settings };
+      : { ...defaultScopeSettings, rootScope: this, ...settings };
 
     dependencies && this.registerMany(dependencies);
   }
@@ -69,6 +80,7 @@ export class Scope {
 
     const provider = new Provider(this, ModuleCreator, moduleName, options);
     this.providers[moduleName] = provider;
+    this.settings.rootScope.allProviders[provider.id] = provider;
 
     this.events.emit('onModuleRegister', provider);
     return provider;
@@ -111,6 +123,7 @@ export class Scope {
     if (!provider) return;
     provider.destroy();
     delete this.providers[provider.name];
+    delete this.settings.rootScope.allProviders[provider.id];
     this.events.emit('onModuleUnregister', provider.id);
   }
 
@@ -144,7 +157,7 @@ export class Scope {
       unmountedModulesCount--;
     }
     if (!unmountedModulesCount) provider.mountModule();
-
+    this.events.emit('onModuleInit', provider);
     return instance;
   }
 
@@ -180,7 +193,11 @@ export class Scope {
     dependencies?: TModuleConstructorMap,
     settings?: Omit<Partial<ScopeSettings>, 'parentScope'>,
   ) {
-    return new Scope(dependencies, { ...settings, parentScope: this });
+    return new Scope(dependencies, {
+      ...settings,
+      parentScope: this,
+      rootScope: this.settings.rootScope,
+    });
   }
 
   /**
@@ -188,7 +205,9 @@ export class Scope {
    */
   registerScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>) {
     const scope = this.createChildScope({}, settings);
+    const rootScope = this.settings.rootScope;
     this.childScopes[scope.id] = scope;
+    rootScope.allChildScopes[scope.id] = scope;
     scope.events = this.events;
     dependencies && scope.registerMany(dependencies);
     return scope;
@@ -201,11 +220,7 @@ export class Scope {
     if (!scope) throw new Error(`Can not unregister Scope ${scopeId} - Scope not found`);
     scope.dispose();
     delete this.childScopes[scopeId];
-  }
-
-  getRootScope(): Scope {
-    if (!this.parent) return this;
-    return this.parent.getRootScope();
+    delete this.settings.rootScope.allChildScopes[scopeId];
   }
 
   /**
@@ -225,17 +240,6 @@ export class Scope {
 
     // unsubscribe events
     if (!this.parent) this.events.events = {};
-  }
-
-  /**
-   * Could be usefull for debugging
-   */
-  getScheme(): any {
-    return {
-      id: this.id,
-      registry: this.providers,
-      parentScope: this.parent ? this.parent.getScheme() : null,
-    };
   }
 
   /**
