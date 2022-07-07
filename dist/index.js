@@ -2294,7 +2294,7 @@ class QueryModule {
             return this.fetchingPromise;
         if (this.isInitialFetch)
             return this.fetch();
-        return this.state.data;
+        return Promise.resolve(this.state.data);
     }
     /**
      * Start fetching if not started yet and return fetching promise

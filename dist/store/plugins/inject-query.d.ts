@@ -36,7 +36,7 @@ export declare class QueryModule<TConstructorArgs extends Array<any>, TData = Ge
     /**
      * Return the current value if exists. If not then start fetching
      */
-    getCurrent(): unknown;
+    getCurrent(): Promise<TData>;
     /**
      * Start fetching if not started yet and return fetching promise
      */

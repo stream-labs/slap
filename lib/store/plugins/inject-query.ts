@@ -133,10 +133,10 @@ export class QueryModule<
   /**
    * Return the current value if exists. If not then start fetching
    */
-  getCurrent() {
+  getCurrent(): Promise<TData> {
     if (this.fetchingPromise) return this.fetchingPromise;
     if (this.isInitialFetch) return this.fetch();
-    return this.state.data;
+    return Promise.resolve(this.state.data as TData);
   }
 
   /**
