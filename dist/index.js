@@ -2349,7 +2349,8 @@ class QueryModule {
         // result is not a promise, set the data
         this.state.setData(fetchResult);
         this.options.onSuccess && this.options.onSuccess();
-        return Promise.resolve(fetchResult);
+        this.fetchingPromise = Promise.resolve(fetchResult);
+        return this.fetchingPromise;
     }
     /**
      * Returns "this" context for the "getParams()" callback
