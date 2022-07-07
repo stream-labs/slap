@@ -2287,6 +2287,16 @@ class QueryModule {
         this.exec();
     }
     /**
+     * Return the current value if exists. If not then start fetching
+     */
+    getCurrent() {
+        if (this.fetchingPromise)
+            return this.fetchingPromise;
+        if (this.isInitialFetch)
+            return this.fetch();
+        return this.state.data;
+    }
+    /**
      * Start fetching if not started yet and return fetching promise
      */
     exec() {
@@ -2325,6 +2335,7 @@ class QueryModule {
                 this.promiseId = '';
                 this.state.setData(data);
                 this.events.emit('onChange', data, prevData);
+                return data;
             })
                 .catch((e) => {
                 if (!this.enabled || this.promiseId !== promiseId)

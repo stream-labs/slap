@@ -34,6 +34,10 @@ export declare class QueryModule<TConstructorArgs extends Array<any>, TData = Ge
     constructor(...args: TConstructorArgs);
     init(): void;
     /**
+     * Return the current value if exists. If not then start fetching
+     */
+    getCurrent(): unknown;
+    /**
      * Start fetching if not started yet and return fetching promise
      */
     exec(): Promise<TData>;
