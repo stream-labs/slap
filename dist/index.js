@@ -845,19 +845,44 @@ exports.moduleSystemProps = exports.getInstanceMetadata = exports.createInstance
 const nanoevents_1 = __webpack_require__(111);
 const is_plain_object_1 = __webpack_require__(57);
 const utils_1 = __webpack_require__(986);
+/**
+ * Providers initialize modules and keeps their metadata
+ */
 class Provider {
     constructor(scope, creator, name = '', options = {}) {
         this.scope = scope;
         this.creator = creator;
         this.name = name;
         this.options = options;
+        /**
+         * Keeps module's instance
+         */
         this.instance = null;
+        /**
+         * keeps user's metadata
+         */
         this.metadata = {};
-        this.isInited = false; // true if instance is added to the Scope
+        /**
+         * true if instance is initialized and added to the Scope
+         */
+        this.isInited = false;
+        /**
+         * true if instance is initialized and added to the Scope
+         */
         this.isDestroyed = false;
-        this.childScope = null;
-        this.childModules = {};
+        /**
+         * Keeps information about all injected modules
+         */
         this.injectedModules = {};
+        /**
+         * Keeps information about all child modules.
+         * Child modules are kind of injected modules with the same lifecycle of the parent module
+         */
+        this.childModules = {};
+        /**
+         * Keeps a child scope if the provider has created one
+         */
+        this.childScope = null;
         this.events = (0, nanoevents_1.createNanoEvents)();
         if (!this.name)
             this.name = `AnonymousProvider__${(0, utils_1.generateId)()}`;
@@ -880,12 +905,19 @@ class Provider {
         }
         throw new Error(`Can not construct the object ${creator}`);
     }
+    /**
+     * Creates a module instance
+     * @param args
+     */
     createInstance(args) {
         const instance = this.factory(args);
         this.instance = instance;
         createInstanceMetadata(instance, this);
         return instance;
     }
+    /**
+     * Init all injected modules
+     */
     mountModule() {
         Object.keys(this.injectedModules).forEach(injectedName => {
             const childModuleProvider = getInstanceMetadata(this.injectedModules[injectedName].instance).provider;
@@ -931,11 +963,17 @@ class Provider {
     get instanceId() {
         return getInstanceMetadata(this.instance).id;
     }
+    /**
+     * Returns a child scope. Creates a new one if not exist
+     */
     resolveChildScope() {
         if (!this.childScope)
             this.childScope = this.scope.createChildScope();
         return this.childScope;
     }
+    /**
+     * Resolves a provider for the module in the child scope
+     */
     resolveChildProvider(ModuleCreator, name) {
         const childScope = this.resolveChildScope();
         if (!childScope.isRegistered(name)) {
@@ -943,6 +981,9 @@ class Provider {
         }
         return childScope.resolveProvider(name);
     }
+    /**
+     * Inject a module into the current module
+     */
     injectModule(ModuleLocator, options = {}) {
         const module = this.scope.resolve(ModuleLocator);
         const moduleProvider = getInstanceMetadata(module).provider;
@@ -950,6 +991,9 @@ class Provider {
         const returnValue = module.exportInjectorValue ? module.exportInjectorValue() : module;
         return returnValue; // TODO: resolve injected value
     }
+    /**
+     * Inject a child module into the current module
+     */
     injectChildModule(ModuleCreator, ...args) {
         const childScope = this.resolveChildScope();
         const name = `${this.id}__child_${ModuleCreator.name || ''}_${(0, utils_1.generateId)()}`;
@@ -962,6 +1006,9 @@ class Provider {
     }
 }
 exports.Provider = Provider;
+/**
+ * Attaches a metadata for the module instance
+ */
 function createInstanceMetadata(instance, provider) {
     const id = `${provider.id}__${(0, utils_1.generateId)()}`;
     const descriptor = { enumerable: false, configurable: false };
@@ -1010,8 +1057,14 @@ const defaultScopeSettings = {
  */
 class Scope {
     constructor(dependencies = {}, settings = {}) {
-        this.childScopes = {};
+        /**
+         * Keeps all registered providers
+         */
         this.providers = {};
+        /**
+         * Keeps all registered child scopes
+         */
+        this.childScopes = {};
         this.events = (0, nanoevents_1.createNanoEvents)();
         const uid = (0, utils_1.generateId)();
         const parentScope = settings === null || settings === void 0 ? void 0 : settings.parentScope;
@@ -1125,7 +1178,9 @@ class Scope {
     createChildScope(dependencies, settings) {
         return new Scope(dependencies, Object.assign(Object.assign({}, settings), { parentScope: this }));
     }
-    // TODO refactor
+    /**
+     * Register a child scope
+     */
     registerScope(dependencies, settings) {
         const scope = this.createChildScope({}, settings);
         this.childScopes[scope.id] = scope;
@@ -1133,6 +1188,9 @@ class Scope {
         dependencies && scope.registerMany(dependencies);
         return scope;
     }
+    /**
+     * Unregister a child scope
+     */
     unregisterScope(scopeId) {
         const scope = this.childScopes[scopeId];
         if (!scope)
@@ -1145,6 +1203,9 @@ class Scope {
             return this;
         return this.parent.getRootScope();
     }
+    /**
+     * Destroy current scope and all providers
+     */
     dispose() {
         // destroy child scopes
         Object.keys(this.childScopes).forEach(scopeId => {
@@ -1159,6 +1220,9 @@ class Scope {
         if (!this.parent)
             this.events.events = {};
     }
+    /**
+     * Could be usefull for debugging
+     */
     getScheme() {
         return {
             id: this.id,
@@ -1166,6 +1230,9 @@ class Scope {
             parentScope: this.parent ? this.parent.getScheme() : null,
         };
     }
+    /**
+     * Returns true if it doesn't have parent scopes
+     */
     get isRoot() {
         return !!this.parent;
     }
@@ -1198,12 +1265,18 @@ function generateId() {
     return (idCounter++).toString();
 }
 exports.generateId = generateId;
+/**
+ * Loop though an object
+ */
 function forEach(dict, cb) {
     Object.keys(dict).forEach(propName => {
         cb(dict[propName], propName);
     });
 }
 exports.forEach = forEach;
+/**
+ * Register a getter on object
+ */
 function defineGetter(target, methodName, getter, descriptor) {
     var _a, _b;
     Object.defineProperty(target, methodName, {
@@ -1213,6 +1286,9 @@ function defineGetter(target, methodName, getter, descriptor) {
     });
 }
 exports.defineGetter = defineGetter;
+/**
+ * Register a setter on object
+ */
 function defineSetter(target, methodName, setter, descriptor) {
     var _a, _b;
     Object.defineProperty(target, methodName, {
@@ -1222,6 +1298,9 @@ function defineSetter(target, methodName, setter, descriptor) {
     });
 }
 exports.defineSetter = defineSetter;
+/**
+ * Capitalize the first letter
+ */
 function capitalize(srt) {
     return srt.charAt(0).toUpperCase() + srt.slice(1);
 }
@@ -2111,6 +2190,7 @@ exports.FormBindingModule = FormBindingModule;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getQueryOptionsFromArgs = exports.QueryModule = exports.QueryStateConfig = exports.injectQuery = void 0;
+const nanoevents_1 = __webpack_require__(111);
 const scope_1 = __webpack_require__(527);
 const StateView_1 = __webpack_require__(32);
 const inject_state_1 = __webpack_require__(300);
@@ -2179,6 +2259,7 @@ class QueryModule {
         // if enabled=false then no callbacks will be executed when fetching finished
         this.enabled = true;
         this.isInitialFetch = true;
+        this.events = (0, nanoevents_1.createNanoEvents)();
         // create initial options based on passed args
         const computedOptions = getQueryOptionsFromArgs(args);
         const options = Object.assign({ enabled: true, params: null, initialData: [], getParams: null, fetch: () => { }, onSuccess: () => { }, onError: () => { } }, computedOptions);
@@ -2236,12 +2317,14 @@ class QueryModule {
             const promiseId = (0, scope_1.generateId)();
             this.promiseId = promiseId;
             this.fetchingPromise = fetchResult;
+            const prevData = this.state.data;
             return fetchResult.then((data) => {
                 if (!this.enabled || this.promiseId !== promiseId)
                     return;
                 this.fetchingPromise = null;
                 this.promiseId = '';
                 this.state.setData(data);
+                this.events.emit('onChange', data, prevData);
             })
                 .catch((e) => {
                 if (!this.enabled || this.promiseId !== promiseId)
@@ -2296,12 +2379,16 @@ class QueryModule {
     destroy() {
         // prevent unfinished fetching
         this.setEnabled(false);
+        this.events.events = {}; // clear events
     }
     /**
      * Export data and methods for a component selector
      */
     exportSelectorValue() {
         return this.queryView;
+    }
+    onChange(cb) {
+        return this.events.on('onChange', cb);
     }
 }
 exports.QueryModule = QueryModule;

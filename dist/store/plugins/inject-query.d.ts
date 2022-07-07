@@ -1,4 +1,4 @@
-import { InjectableModule } from '../../scope';
+import { InjectableModule, Provider } from '../../scope';
 import { TStateViewForStateConfig } from '../Store';
 import { StateView } from '../StateView';
 /**
@@ -21,7 +21,7 @@ export declare class QueryStateConfig<TData, TParams, TError> {
  */
 export declare class QueryModule<TConstructorArgs extends Array<any>, TData = GetQueryData<TConstructorArgs>, TParams = GetQueryParams<TConstructorArgs>, TError = unknown> implements InjectableModule {
     state: import("../../scope").InjectedProp<import("../Store").GetStateControllerFor<typeof QueryStateConfig, QueryStateConfig<unknown, unknown, unknown>, QueryState<unknown, unknown, unknown>>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>, import("./inject-state").GetStateViewFor<typeof QueryStateConfig>>;
-    provider: import("../../scope").Provider<any, []>;
+    provider: Provider<any, []>;
     watcher: import("../../scope").InjectedProp<import("./inject-watch").WatchModule<unknown>, import("./createModuleView").GetModuleStateView<typeof import("./inject-watch").WatchModule>, {}>;
     fetchingPromise: Promise<TData> | null;
     promiseId: string;
@@ -56,6 +56,7 @@ export declare class QueryModule<TConstructorArgs extends Array<any>, TData = Ge
     refetch(): Promise<TData> | undefined;
     stopFetching(): void;
     setEnabled(enabled: boolean): void;
+    events: import("nanoevents").Emitter<QueryEvents<TData>>;
     destroy(): void;
     /**
      * Export data and methods for a component selector
@@ -63,6 +64,10 @@ export declare class QueryModule<TConstructorArgs extends Array<any>, TData = Ge
     exportSelectorValue(): StateView<TStateViewForStateConfig<QueryStateConfig<TData, TParams, TError>> & {
         refetch: () => Promise<TData>;
     }>;
+    onChange(cb: (newVal: TData, prevVal: TData | null) => unknown): import("nanoevents").Unsubscribe;
+}
+export interface QueryEvents<TData> {
+    onChange: (newVal: TData, prevVal: TData | null) => void;
 }
 export declare type QueryRequiredOptions = {
     fetch: (...args: any) => any;

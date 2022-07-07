@@ -5,7 +5,7 @@ import React from 'react';
 import {
   screen, fireEvent, waitFor, getByText,
 } from '@testing-library/react';
-import { renderApp, TextInput, useModule, injectQuery, injectState } from '../helpers';
+import { renderApp, TextInput, useModule, injectQuery, injectState, alertMock } from '../helpers';
 
 class QueriesModule {
 
@@ -36,11 +36,17 @@ class QueriesModule {
 
   shopItemsQuery = injectQuery(this.fetchShopItems, this.getFilter);
 
+  alertOnItemsChange() {
+    this.shopItemsQuery.onChange(newData => {
+      alert('Changed');
+    })
+  }
+
 }
 
 function QueriesComponent() {
   const {
-    state, maxPrice, setMaxPrice, shopItemsQuery,
+    state, maxPrice, setMaxPrice, shopItemsQuery, alertOnItemsChange,
   } = useModule(QueriesModule);
 
 
@@ -57,7 +63,7 @@ function QueriesComponent() {
           </div>
         ))}
       </div>
-
+      <button onClick={alertOnItemsChange}>Alert on items change</button>
     </div>
   );
 }
@@ -111,5 +117,15 @@ describe('Inject query', () => {
         </div>
       </div>
     `);
+
+    // TEST ON CHANGE SUBSCRIPTION
+    const $subscribeChangesBtn = screen.getByText('Alert on items change');
+    fireEvent.click($subscribeChangesBtn);
+    // change the maxPrice filter to trigger loading again
+    fireEvent.change($maxPrice, { target: { value: '50' } });
+    waitFor(() => {
+      expect(alertMock).toBeCalledTimes(1);
+    });
+
   });
 });

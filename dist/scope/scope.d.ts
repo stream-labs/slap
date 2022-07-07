@@ -10,8 +10,14 @@ interface ScopeSettings {
  */
 export declare class Scope {
     id: string;
-    childScopes: Record<string, Scope>;
+    /**
+     * Keeps all registered providers
+     */
     providers: Record<string, Provider<any>>;
+    /**
+     * Keeps all registered child scopes
+     */
+    childScopes: Record<string, Scope>;
     settings: ScopeSettings;
     constructor(dependencies?: TModuleConstructorMap, settings?: Partial<ScopeSettings>);
     registerMany(dependencies: TModuleConstructorMap): void;
@@ -34,11 +40,26 @@ export declare class Scope {
      */
     create<TLocator extends TModuleLocatorType>(locator: TLocator, ...args: any): GetModuleInstanceFor<TLocator>;
     createChildScope(dependencies?: TModuleConstructorMap, settings?: Omit<Partial<ScopeSettings>, 'parentScope'>): Scope;
+    /**
+     * Register a child scope
+     */
     registerScope(dependencies?: TModuleConstructorMap, settings?: Partial<Scope['settings']>): Scope;
+    /**
+     * Unregister a child scope
+     */
     unregisterScope(scopeId: string): void;
     getRootScope(): Scope;
+    /**
+     * Destroy current scope and all providers
+     */
     dispose(): void;
+    /**
+     * Could be usefull for debugging
+     */
     getScheme(): any;
+    /**
+     * Returns true if it doesn't have parent scopes
+     */
     get isRoot(): boolean;
     get parent(): Scope | null;
     events: import("nanoevents").Emitter<ScopeEvents>;

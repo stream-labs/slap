@@ -149,10 +149,15 @@ class QueriesModule2 {
 
   shopItemsQuery = injectQuery(this.fetchShopItems, this.getFilter);
 
+  alertOnItemsChange() {
+    this.shopItemsQuery.onChange(newData => {
+      alert('Changed');
+    })
+  }
 }
 
 function ShortSyntaxQueries() {
-  const { state, maxPrice, setMaxPrice, shopItemsQuery } = useModule(QueriesModule2);
+  const { state, maxPrice, setMaxPrice, shopItemsQuery, alertOnItemsChange } = useModule(QueriesModule2);
 
   return (
     <div>
@@ -165,6 +170,7 @@ function ShortSyntaxQueries() {
           {item.name}
         </div>
       ))}
+      <button onClick={alertOnItemsChange}> alertOnItemsChange </button>
     </div>
   );
 }

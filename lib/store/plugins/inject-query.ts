@@ -1,4 +1,7 @@
-import { generateId, InjectableModule, injectProvider } from '../../scope';
+import { createNanoEvents } from 'nanoevents';
+import {
+  generateId, InjectableModule, injectProvider, Provider,
+} from '../../scope';
 import { TStateViewForStateConfig } from '../Store';
 import { StateView } from '../StateView';
 import { injectState } from './inject-state';
@@ -158,11 +161,13 @@ export class QueryModule<
       const promiseId = generateId();
       this.promiseId = promiseId;
       this.fetchingPromise = fetchResult;
+      const prevData = this.state.data;
       return fetchResult.then((data: TData) => {
         if (!this.enabled || this.promiseId !== promiseId) return;
         this.fetchingPromise = null;
         this.promiseId = '';
         this.state.setData(data);
+        this.events.emit('onChange', data, prevData as any);
       })
         .catch((e: unknown) => {
           if (!this.enabled || this.promiseId !== promiseId) return;
@@ -219,9 +224,12 @@ export class QueryModule<
     this.enabled = enabled;
   }
 
+  events = createNanoEvents<QueryEvents<TData>>();
+
   destroy() {
     // prevent unfinished fetching
     this.setEnabled(false);
+    this.events.events = {}; // clear events
   }
 
   /**
@@ -230,6 +238,14 @@ export class QueryModule<
   exportSelectorValue() {
     return this.queryView;
   }
+
+  onChange(cb: (newVal: TData, prevVal: TData | null) => unknown) {
+    return this.events.on('onChange', cb);
+  }
+}
+
+export interface QueryEvents<TData> {
+  onChange: (newVal: TData, prevVal: TData | null) => void
 }
 
 export type QueryRequiredOptions = {
