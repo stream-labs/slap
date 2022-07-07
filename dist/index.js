@@ -2316,6 +2316,7 @@ class QueryModule {
         else {
             fetchResult = this.options.fetch(this.getParams());
         }
+        this.fetchingPromise = fetchResult;
         if (fetchResult === null || fetchResult === void 0 ? void 0 : fetchResult.then) {
             if (this.isInitialFetch) {
                 this.state.setStatus('loading');
@@ -2326,7 +2327,6 @@ class QueryModule {
             }
             const promiseId = (0, scope_1.generateId)();
             this.promiseId = promiseId;
-            this.fetchingPromise = fetchResult;
             const prevData = this.state.data;
             return fetchResult.then((data) => {
                 if (!this.enabled || this.promiseId !== promiseId)

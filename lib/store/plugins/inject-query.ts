@@ -159,6 +159,7 @@ export class QueryModule<
     } else {
       fetchResult = this.options.fetch(this.getParams());
     }
+    this.fetchingPromise = fetchResult;
 
     if (fetchResult?.then) {
       if (this.isInitialFetch) {
@@ -169,7 +170,6 @@ export class QueryModule<
       }
       const promiseId = generateId();
       this.promiseId = promiseId;
-      this.fetchingPromise = fetchResult;
       const prevData = this.state.data;
       return fetchResult.then((data: TData) => {
         if (!this.enabled || this.promiseId !== promiseId) return;
