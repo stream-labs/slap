@@ -2,7 +2,7 @@ import React from 'react';
 import {
   useModule,
   injectState,
-  inject,injectQuery, generateId
+  inject, injectQuery, generateId,
 } from '../../../../lib';
 import { EditorService } from '../../services/editor.service';
 

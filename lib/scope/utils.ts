@@ -48,3 +48,14 @@ export function isClass(object: any) {
   // TODO find a better way to distinguish Class and Function
   return typeof object === 'function' && object.name && object.name.charAt(0) === object.name.charAt(0).toUpperCase();
 }
+
+export function assertIsDefined<T>(val: T): asserts val is NonNullable<T> {
+  if (val === undefined || val === null) {
+    throw new Error(`Expected 'val' to be defined, but received ${val}`);
+  }
+}
+
+export function defined<T>(val: T): NonNullable<T> {
+  assertIsDefined(val);
+  return val;
+}

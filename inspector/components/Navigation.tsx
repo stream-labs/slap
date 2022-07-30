@@ -3,72 +3,8 @@ import React from 'react';
 import { DataNode } from 'rc-tree/lib/interface';
 import { SearchOutlined } from '@ant-design/icons';
 import { useModule } from '../../lib';
-import { InspectorService, ProviderModel, TempAny } from '../inspector-service';
+import { InspectorService, ProviderModel, TempAny } from '../inspector.service';
 import { TextInput } from '../../demo/stars-editor/components/pages/editor/ItemProps';
-//
-// export function Navigation() {
-//   const {
-//     providers,
-//     setSelectedMenuKey,
-//     selectedMenuKey,
-//     expandedMenuKeys,
-//     setExpandedMenuKeys,
-//     persistentSettings,
-//     storeModules,
-//   } = useModule(InspectorService);
-//
-//   console.log('persistentSettings', persistentSettings);
-//
-//   function getProviderMenuItem(p: ProviderModel) {
-//     return {
-//       label: p.shortName,
-//       key: `provider__${p.id}`,
-//     };
-//   }
-//
-//   function menuClickHandler(info: TempAny) {
-//     setSelectedMenuKey(info.key);
-//   }
-//
-//   const items = [
-//     {
-//       label: 'Logs',
-//       key: 'logs',
-//     },
-//     {
-//       label: 'Services',
-//       key: 'services',
-//       children: providers.filter(p => p.isService).map(getProviderMenuItem),
-//     },
-//     {
-//       label: 'Modules',
-//       key: 'modules',
-//       children: providers.filter(p => !p.isService).map(getProviderMenuItem),
-//     },
-//     {
-//       label: 'Components',
-//       key: 'components',
-//       children: [],
-//     },
-//     {
-//       label: 'Store',
-//       key: 'store',
-//       children: storeModules.map(m => ({ key: `store__${m.id}`, label: m.id })),
-//     },
-//   ];
-//
-//   return (
-//     <Menu
-//       selectable
-//       items={items}
-//       mode="inline"
-//       onClick={menuClickHandler}
-//       selectedKeys={[selectedMenuKey]}
-//       openKeys={expandedMenuKeys}
-//       onOpenChange={keys => setExpandedMenuKeys(keys)}
-//     />
-//   );
-// }
 
 export function NavigationTree() {
   const {
@@ -81,11 +17,19 @@ export function NavigationTree() {
     storeModules,
   } = useModule(InspectorService);
 
-  function getProviderMenuItem(p: ProviderModel): DataNode {
+  function getProviderMenuItem(id: string): DataNode {
+    const p = providers[id];
+    if (!p) {
+      return {
+        title: <span> unloaded {id} </span>,
+        key: `provider__${id}`,
+      };
+    }
+
     const isStatefulModule = p.id.includes('StatefulModule');
     const title = isStatefulModule ? 'State' : p.shortName;
-    const children = !isStatefulModule && p.childProviders.length
-      ? p.childProviders.map(getProviderMenuItem)
+    const children = !isStatefulModule && p.childIds.length
+      ? p.childIds.map(getProviderMenuItem)
       : undefined;
     const areChildrenHaveState = p.hasState && !isStatefulModule;
 
@@ -109,14 +53,14 @@ export function NavigationTree() {
       key: 'services',
       children: Object.values(providers)
         .filter(p => p.isService)
-        .map(getProviderMenuItem),
+        .map(p => getProviderMenuItem(p.id)),
     },
     {
       title: 'Modules',
       key: 'modules',
       children: Object.values(providers)
-        .filter(p => !p.isService && !p.isChild)
-        .map(getProviderMenuItem),
+        .filter(p => !p.isService && !p.parentId)
+        .map(p => getProviderMenuItem(p.id)),
     },
     {
       title: 'Components',

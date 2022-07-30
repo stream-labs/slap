@@ -1,6 +1,6 @@
 import { JSONEditor } from 'svelte-jsoneditor/dist/jsoneditor.js';
 import { useEffect, useRef } from 'react';
-import { TempAny } from '../inspector-service';
+import { TempAny } from '../inspector.service';
 import './JSONEditor.css';
 
 export default function SvelteJSONEditor(props: {content: TempAny, onChange: TempAny}) {

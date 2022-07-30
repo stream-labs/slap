@@ -1,10 +1,9 @@
-
 import {
   Dict, getInstanceMetadata, injectProvider, injectScope, Provider, Scope,
 } from '../../scope';
 import { injectEvents } from '../../store/plugins/inject-events';
-import { ProviderModel, TempAny } from '../../../inspector/inspector-service';
-import { Observable } from '../observable';
+import { ProviderModel, TempAny } from '../../../inspector/inspector.service';
+import { Store } from '../../store';
 
 export class IntrospectionApi {
 
@@ -38,45 +37,65 @@ export class IntrospectionApi {
     return result;
   }
 
-  getProvider(providerId: string) {
-    const provider = this.scope.allProviders[providerId];
-    return getProviderModel(provider);
-  }
-
   getApiRootScope() {
     return getScopeModel(this.scope.parent!);
   }
 
-  getScopeProviders(scopeId: string) {
+  getProviders() {
     const rootScope = this.scope.settings.rootScope;
-    const scope = scopeId === rootScope.id ? rootScope : rootScope.allChildScopes[scopeId];
-    const providers = scope.providers;
+    const providers = rootScope.allProviders;
     const result: Dict<ProviderModel> = {};
-    Object.keys(providers).forEach(name => {
-      result[name] = getProviderModel(providers[name]);
-    });
+    Object.values(providers).forEach(p => result[p.id] = getProviderModel(p));
     return result;
   }
 
-  subscribe(providerIdOrName: string, propName: string, eventName: string) {
-    const provider = this.scope.resolveProvider(providerIdOrName);
-    if (!provider) return;
-    const instance = this.scope.resolve(providerIdOrName);
-    return new Observable((instance as any)[propName], eventName);
+  // getScopeProviders(scopeId: string) {
+  //   const rootScope = this.scope.settings.rootScope;
+  //   const scope = scopeId === rootScope.id ? rootScope : rootScope.allChildScopes[scopeId];
+  //   const providers = scope.providers;
+  //   const result: Dict<ProviderModel> = {};
+  //   Object.keys(providers).forEach(name => {
+  //     result[name] = getProviderModel(providers[name], true);
+  //   });
+  //   return result;
+  // }
+
+  getProvider(providerId: string, shouldIncludeChildren = false) {
+    const provider = this.scope.allProviders[providerId];
+    if (!provider) return null;
+
+    return getProviderModel(provider, shouldIncludeChildren);
   }
+
+  private getStateController(stateModuleId: string) {
+    return this.scope.resolve(Store).getController(stateModuleId);
+  }
+
+  getState(stateModuleId: string) {
+    const controller = this.scope.resolve(Store).getController(stateModuleId);
+    return controller && controller.state;
+  }
+
+  updateState(stateModuleId: string, patch: object) {
+    const controller = this.getStateController(stateModuleId);
+    if (!controller) return;
+    // TODO add types for `update` method
+    (controller as any).update(patch);
+  }
+
+  // subscribe(providerIdOrName: string, propName: string, eventName: string) {
+  //   const provider = this.scope.resolveProvider(providerIdOrName);
+  //   if (!provider) return;
+  //   const instance = this.scope.resolve(providerIdOrName);
+  //   return new Observable((instance as any)[propName], eventName);
+  // }
 }
 
-export function getProviderModel(provider: Provider<unknown>): ProviderModel {
+export function getProviderModel(provider: Provider<unknown>, shouldIncludeChildren = false): ProviderModel {
   const moduleType = provider.name.includes('StatefulModule') ? 'state' : 'regular';
   const childProviders = Object.values(provider.childModules).map((m: TempAny) => {
-    return getProviderModel(m.__provider);
+    return getProviderModel(m.__provider, shouldIncludeChildren);
   });
-
-  // const childProviders = moduleType !== 'state' // skip submodules of StatefulModule for now
-  //   ? Object.values(provider.childModules).map((m: TempAny) => {
-  //     return getProviderModel(m.__provider);
-  //   })
-  //   : [];
 
   const hasState = moduleType === 'state'
     || !!childProviders.find(p => p.hasState);
@@ -96,16 +115,17 @@ export function getProviderModel(provider: Provider<unknown>): ProviderModel {
 
   return {
     id: provider.id,
+    parentId: provider.options.parentProvider?.id || '',
     name: provider.name,
     type: provider.type,
     shortName: provider.name.split('__').slice(-1)[0],
     isService: provider.scope.isRoot,
     isInited: provider.isInited,
-    isChild: !!provider.options.parentProvider,
+    childIds: childProviders.map(p => p.id),
+    children: childProviders,
     hasState,
     moduleType,
     injections,
-    childProviders,
   };
 }
 
@@ -113,17 +133,7 @@ function getScopeModel(scope: Scope) {
   return {
     id: scope.id,
     childScopes: Object.keys(scope.childScopes),
-  }
-}
-
-export function getAllChildProviders(provider: ProviderModel): ProviderModel[] {
-  const result:ProviderModel[] = [];
-  const childProviders = Object.values(provider.childProviders);
-  childProviders.forEach(child => {
-    result.push(child);
-    result.push(...getAllChildProviders(child));
-  });
-  return result;
+  };
 }
 
 export type ProviderListItem = { name: string, id: string, type: string }

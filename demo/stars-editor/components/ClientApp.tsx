@@ -18,7 +18,6 @@ import { ErrorsPage } from './pages/ErrorsPage';
 import { EventsPage } from './pages/GeneratedEvents';
 import { GeneratedArrayMutationsPage } from './pages/GeneratedArrayMutations';
 import { CheckoutPageComponent } from './pages/ExposedModulesPage';
-import { Inspector } from '../../../inspector';
 import { startInspectorInWindow } from '../../../inspector/inspector-server';
 
 export function ClientApp() {

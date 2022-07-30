@@ -1,5 +1,5 @@
-import { getApiClient, ProviderModel, TempAny } from './inspector-service';
-import { generateId, injectState } from '../lib';
+import { InspectorService, ProviderModel, TempAny } from './inspector.service';
+import { generateId, inject, injectState, Mutation } from '../lib';
 
 export class LoggerService {
 
@@ -7,20 +7,38 @@ export class LoggerService {
     logs: [] as LogRecord[],
   });
 
+  private inspector = inject(InspectorService);
+
   async init() {
-    const api = await getApiClient();
-    await api.subscribe('IntrospectionApi', 'scopeEvents', 'onModuleRegister', (provider: TempAny) => {
+    const { remoteApp, remoteStore } = this.inspector;
+
+    await remoteApp.subscribe('scopeEvents').on('onModuleRegister', (provider: TempAny) => {
       this.log('ModuleRegister', provider);
     });
 
-    await api.subscribe('IntrospectionApi', 'scopeEvents', 'onModuleInit', (provider: TempAny) => {
+    await remoteApp.subscribe('scopeEvents').on('onModuleInit', (provider: TempAny) => {
       this.log('ModuleInit', provider);
     });
 
-    await api.subscribe('IntrospectionApi', 'scopeEvents', 'onModuleUnregister', (providerId: string) => {
+    await remoteApp.subscribe('scopeEvents').on('onModuleUnregister', (providerId) => {
       this.log('ModuleUnregister', providerId);
     });
 
+    await remoteStore.subscribe('events').on('onModuleCreated', (moduleName) => {
+      this.log('StateCreated', moduleName);
+    });
+
+    await remoteStore.subscribe('events').on('onMutation', (moduleName, mutation) => {
+      this.log('StateMutation', `${moduleName}.${mutation?.mutationName}`);
+    });
+
+    await remoteStore.subscribe('events').on('onReadyToRender', () => {
+      this.log('State is ready to re-render', '');
+    });
+
+    await remoteStore.subscribe('events').on('onModuleDestroyed', (moduleName) => {
+      this.log('StateDestroyed', moduleName);
+    });
   }
 
   log(message: string, provider: ProviderModel | string) {

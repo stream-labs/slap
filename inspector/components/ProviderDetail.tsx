@@ -4,7 +4,7 @@ import {
 import React, { useState } from 'react';
 import { RightSquareOutlined } from '@ant-design/icons';
 import { useModule } from '../../lib';
-import { InspectorService, ProviderModel } from '../inspector-service';
+import { InspectorService, ProviderModel } from '../inspector.service';
 import { DescriptionList, SidePanel } from '../Inspector';
 import { StateInspector } from './StateDetail';
 import { PanelHeader } from './PanelHeader';
@@ -36,7 +36,7 @@ export function ProviderDetail() {
 function ProviderDetailContent(p: { provider: ProviderModel, isCompactMode?: boolean }) {
   const { provider, isCompactMode } = p;
   const [isChildrenVisible, setIsChildrenVisible] = useState(false);
-  const childProviders = provider.childProviders;
+  const childProviders = provider.childIds;
   const childrenCnt = childProviders.length;
   const shouldShowChildModulesSwitcher = isCompactMode && childrenCnt;
   const shouldShowChildModules = (!isCompactMode || isChildrenVisible) && !!childrenCnt;
@@ -63,16 +63,16 @@ function ProviderDetailContent(p: { provider: ProviderModel, isCompactMode?: boo
         <StateInspector stateId={provider.id} key={provider.id} />
       )}
 
-      {shouldShowChildModules && (
-      <SidePanel title={`Child Modules (${childProviders.length})`}>
-          {childProviders.map(child => (
-            <div key={child.id}>
-              {child.shortName} <ProviderTags provider={child} />
-            </div>
-          ))}
+      {/* {shouldShowChildModules && ( */}
+      {/* <SidePanel title={`Child Modules (${childProviders.length})`}> */}
+      {/*     {childProviders.map(child => ( */}
+      {/*       <div key={child.id}> */}
+      {/*         {child.shortName} <ProviderTags provider={child} /> */}
+      {/*       </div> */}
+      {/*     ))} */}
 
-      </SidePanel>
-      )}
+      {/* </SidePanel> */}
+      {/* )} */}
 
       {shouldShowChildModulesSwitcher && (
         <>

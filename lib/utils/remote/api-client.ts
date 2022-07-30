@@ -1,6 +1,8 @@
+import { Emitter } from 'nanoevents';
 import { ClientMessage, Connection, ServerMessage } from './api-server';
-import { Dict } from '../../scope';
-import { ProviderModel, TempAny } from '../../../inspector/inspector-service';
+import { Dict, InjectableModuleTyped } from '../../scope';
+import { ProviderModel, TempAny } from '../../../inspector/inspector.service';
+import { EventsModule } from '../../store/plugins/inject-events';
 
 const INTROSPECTION_API = 'IntrospectionApi';
 
@@ -25,7 +27,7 @@ export class ApiClient {
     return this.connection.send(JSON.stringify(msg));
   }
 
-  request<T = unknown>(serviceName: string, methodName: string, args: unknown[] = [], requestId?: string) {
+  request<T = unknown>(serviceName: string, methodName: string, args: string[] = [], requestId?: string) {
     const id = requestId || String(++this.nextId);
     const message = { id, method: `${serviceName}.${methodName}`, args };
     return new Promise<T>((resolve, reject) => {
@@ -72,33 +74,60 @@ export class ApiClient {
     subscription.cb(data);
   }
 
-  getService<TLocator, TService = TLocator extends new (...args: any) => infer R ? R : any>(locator: TLocator): RemoteService<TService> {
+  getService<
+    TLocator,
+    TService = TLocator extends new (...args: any) => infer R ? R : any>
+  (locator: TLocator): RemoteService<TService> {
     const api = this;
     const serviceName = typeof locator === 'string' ? locator : (locator as any).name;
-    // const providerModel = this.request('InspectorApi', 'getProviderModel');
     return new Proxy({} as any, {
-      get(target: {}, p: string) {
-        return (...args: unknown[]) => {
-          return api.request(serviceName, p, args);
+      get(target: {}, propName: string) {
+        return (...args: any[]) => {
+          if (propName === 'subscribe') {
+            const emitterName = args[0];
+            return api.subscribe(serviceName, emitterName);
+          }
+          return api.request(serviceName, propName, args);
         };
       },
     });
   }
 
-  subscribe(providerIdOrName: string, propName: string, eventName: string, cb: (data: TempAny) => unknown) {
-    const requestId = `subscribe_${providerIdOrName}.${propName}.${eventName}_${String(++this.nextId)}`;
-    const request = this.request(
-      INTROSPECTION_API,
-      'subscribe',
-      [providerIdOrName, propName, eventName],
-      requestId,
-    );
-    this.subscriptions[requestId] = { id: requestId, cb };
-    return request;
+  subscribe(providerIdOrName: string, emitterName: string) {
+
+    return {
+      on: async (eventName: string, cb: (data: TempAny) => unknown) => {
+        const requestId = `subscribe_${providerIdOrName}.${emitterName}.${eventName}_${String(++this.nextId)}`;
+        const request = this.request(
+          providerIdOrName,
+          'subscribe',
+          [emitterName, eventName],
+          requestId,
+        );
+        this.subscriptions[requestId] = { id: requestId, cb };
+        await request;
+        return () => this.unsubscribe(requestId);
+      },
+    };
+  }
+
+  unsubscribe(subscriptionId: string) {
+    delete this.subscriptions[subscriptionId];
+    return this.request('global', 'unsubscribe', [subscriptionId]);
   }
 }
 
-export type RemoteService<ServiceClass> = TPromisifyFunctions<ServiceClass>;
+export type RemoteService<ServiceClass> = TPromisifyFunctions<ServiceClass> & {
+  subscribe
+    <TPropName extends keyof GetEventEmitters<ServiceClass>>
+  (propName:TPropName): ServiceClass[TPropName];
+};
+
+export type GetEventEmitterPropName<TService, TPropName extends keyof TService> = TService[TPropName] extends { __injector: InjectableModuleTyped<EventsModule<any>, any, any>} ? TPropName : TService[TPropName] extends Emitter<any> ? TPropName : never;
+
+export type GetEventEmitters<TService> = {
+  [K in keyof TService as GetEventEmitterPropName<TService, K>]: TService[K];
+}
 
 /**
  * Makes all functions return a Promise and sets other types to never

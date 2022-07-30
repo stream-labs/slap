@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layout } from 'antd';
 import { useModule } from '../../lib';
-import { InspectorService, ProviderModel } from '../inspector-service';
+import { InspectorService, ProviderModel } from '../inspector.service';
 import { PanelHeader } from './PanelHeader';
 import { LoggerService } from '../logger.service';
 

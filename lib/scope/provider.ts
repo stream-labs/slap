@@ -166,7 +166,7 @@ export class Provider<TInstance, TInitParams extends [] = []> {
    * Returns a child scope. Creates a new one if not exist
    */
   resolveChildScope() {
-    if (!this.childScope) this.childScope = this.scope.createChildScope();
+    if (!this.childScope) this.childScope = this.scope.registerScope();
     return this.childScope;
   }
 
@@ -195,14 +195,20 @@ export class Provider<TInstance, TInitParams extends [] = []> {
    * Inject a child module into the current module
    */
   injectChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any) {
+    const childProvider = this.createChildModule(ModuleCreator, ...args);
+    const childInstance = childProvider.instance;
+    const returnValue = childInstance.exportInjectorValue ? childInstance.exportInjectorValue() : childInstance;
+    return returnValue;
+  }
+
+  createChildModule<T extends TModuleCreator>(ModuleCreator: T, ...args: any) {
     const childScope = this.resolveChildScope();
     const name = `${this.id}__child__${ModuleCreator.name || ''}_${generateId()}`;
-    childScope.register(ModuleCreator, name, { parentProvider: this as Provider<any, any> });
+    const childProvider: Provider<any> = childScope.register(ModuleCreator, name, { parentProvider: this as Provider<any, any> });
     const childModule = childScope.init(name, ...args) as InjectableModuleTyped<any, any, any>;
     this.childModules[name] = childModule;
     this.injectedModules[name] = { instance: childModule, options: {} };
-    const returnValue = childModule.exportInjectorValue ? childModule.exportInjectorValue() : childModule;
-    return returnValue;
+    return childProvider;
   }
 
   events = createNanoEvents<ProviderEvents>();

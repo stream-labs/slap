@@ -1,23 +1,23 @@
 import React from 'react';
 import { Button, message, Tag } from 'antd';
 import {
-  Dict, injectScope, injectState, Provider, Scope, Store, TAppContext,
+  Dict, defined, injectScope, injectState, Provider, Scope, Store, TAppContext,
 } from '../lib';
 import { sleep } from '../demo/stars-editor/utils/sleep';
 import { InspectInConsoleModal } from './components/InspectInConsoleModal';
 import {
   ProviderListItem,
-  getAllChildProviders,
   getProviderModel, IntrospectionApi,
 } from '../lib/utils/remote/introspection-api';
 import { connectPostMessageClient } from '../lib/utils/remote/post-message-transport';
-import { ApiClient } from '../lib/utils/remote/api-client';
+import { ApiClient, RemoteService } from '../lib/utils/remote/api-client';
 
 export class InspectorService {
 
   scope = injectScope();
 
   state = injectState({
+    isLoaded: false,
     providers: {} as Dict<ProviderModel>,
     selectedMenuKey: '',
     selectedMenuCategory: '',
@@ -47,77 +47,36 @@ export class InspectorService {
     return this.state.providers[this.state.selectedItemId];
   }
 
-  get selectedStateModule() {
-    if (this.state.selectedMenuCategory !== 'store') return;
-    return this.state.findStoreModules(this.state.selectedItemId);
-  }
+  private api?: ApiClient;
 
   async init() {
-    const api = await getApiClient();
-    const remoteApp = api.getService(IntrospectionApi);
+    this.api = await getApiClient();
+    const remoteApp = this.remoteApp;
 
-    await api.subscribe('IntrospectionApi', 'scopeEvents', 'onModuleRegister', (provider: TempAny) => {
+    await remoteApp.subscribe('scopeEvents').on('onModuleRegister', provider => {
       this.registerProvider(provider);
     });
 
-    await api.subscribe('IntrospectionApi', 'scopeEvents', 'onModuleInit', (provider: TempAny) => {
+    await remoteApp.subscribe('scopeEvents').on('onModuleInit', provider => {
       const providerModel = this.state.providers[provider.id];
       if (!providerModel) return;
 
       this.state.mutate(state => {
-        state.providers[provider.id].isInited = true;
+        const providerModel = state.providers[provider.id];
+        providerModel.isInited = true;
+        providerModel.childIds = provider.childIds;
       });
     });
 
-    await api.subscribe('IntrospectionApi', 'scopeEvents', 'onModuleUnregister', (providerId: string) => {
+    await remoteApp.subscribe('scopeEvents').on('onModuleUnregister', (providerId: string) => {
       this.removeProvider(providerId);
     });
 
-    const rootScope = await remoteApp.getApiRootScope();
-    const servicesProviders = await remoteApp.getScopeProviders(rootScope.id);
-    const modulesProviders = await remoteApp.getScopeProviders(rootScope.childScopes[0]);
+    const providers = await remoteApp.getProviders();
+    Object.values(providers).forEach(p => this.registerProvider(p));
 
-    Object.values(servicesProviders).forEach(p => this.registerProvider(p));
-    Object.values(modulesProviders).forEach(p => this.registerProvider(p));
-
-    // await api.subscribe('InspectorApi', 'scopeEvents', 'onModuleInit', (provider: TempAny) => {
-    //   this.registerProvider(provider);
-    // });
-
-    // const rootScope = this.inspectedApp.rootScope;
-    // const modulesScope = Object.values(rootScope.childScopes)[0];
-    // const servicesProviders = Object.values(rootScope.providers);
-    // const modulesProviders = Object.values(modulesScope.providers);
-    // const providers = [...servicesProviders, ...modulesProviders];
     // const hiddenModules = ['Store', 'ReactStoreAdapter'];
-    // providers.filter(p => !hiddenModules.includes(p.name)).forEach(p => this.registerProvider(p));
     this.state.setSelectedMenuKey(loadStateFromLocalStorage().selectedMenuKey || '');
-
-    // const inspectedStore = this.inspectedApp.store;
-    //
-    // const updateStoreData = () => {
-    //   const storeData = Object.keys(inspectedStore.modulesMetadata).map(moduleName => {
-    //     const { rev } = inspectedStore.modulesMetadata[moduleName];
-    //     return { id: moduleName, rev };
-    //   });
-    //   this.state.setStoreModules(storeData);
-    // };
-    // updateStoreData();
-
-    // this.state.store.events.on('onMutation', (mutation, moduleName) => {
-    //   // if (moduleName.includes('InspectorModule')) return;
-    //   // updateStoreData();
-    // });
-
-    // inspectedStore.events.on('onModuleCreated', async () => {
-    //   await sleep(0);
-    //   updateStoreData();
-    // });
-    //
-    // inspectedStore.events.on('onModuleDestroyed', async () => {
-    //   await sleep(0);
-    //   updateStoreData();
-    // });
 
     // TODO replace with onPersistentSettingsChange
     this.state.onSelectedMenuKeyChange(() => {
@@ -129,44 +88,48 @@ export class InspectorService {
       saveStateToLocalStorage(this.state.persistentSettings);
     });
 
-    // rootScope.events.on('onModuleRegister', async provider => {
-    //   await sleep(0);
-    //   this.registerProvider(provider);
-    // });
-    // rootScope.events.on('onModuleUnregister', async providerId => {
-    //   await sleep(0);
-    //   // TODO
-    //   this.removeProvider(providerId);
-    // });
+    this.state.setIsLoaded(true);
+  }
+
+  get remoteApp() {
+    return defined(this.api).getService(IntrospectionApi);
+  }
+
+  get remoteStore() {
+    return defined(this.api).getService('Store') as RemoteService<Store>;
   }
 
   private registerProvider(provider: ProviderModel) {
     if (this.state.providers[provider.id]) return;
 
-    // const providerModel = getProviderModel(provider);
     this.state.mutate(state => {
-      console.log('register provider', provider.id);
       state.providers[provider.id] = provider;
-      // const allChildren = getAllChildProviders(providerModel);
-      // allChildren.forEach(child => {
-      //   console.log('register provider', child.id);
-      //   state.providers[child.id] = child;
-      // });
+      const parentProvider = state.providers[provider.parentId];
+      if (!parentProvider) return;
+
+      if (!parentProvider.childIds.includes(provider.id)) {
+        parentProvider.childIds.push(provider.id);
+      }
     });
   }
 
   private removeProvider(providerId: string) {
     if (!this.state.providers[providerId]) return;
 
-    const providerModel = this.state.providers[providerId];
     this.state.mutate(state => {
-      console.log('unregister provider', providerId);
+      const provider = state.providers[providerId];
+      const childIds = state.providers[providerId].childIds;
       delete state.providers[providerId];
-      // const allChildren = getAllChildProviders(providerModel);
-      // allChildren.forEach(child => {
-      //   console.log('unregister provider', child.id);
-      //   delete state.providers[child.id];
-      // });
+
+      const parentProvider = state.providers[provider.parentId];
+
+      if (parentProvider.childIds.includes(provider.id)) {
+        parentProvider.childIds = parentProvider.childIds.filter(id => id !== provider.id);
+      }
+
+      childIds.forEach(childId => {
+        this.removeProvider(childId);
+      });
     });
   }
 
@@ -196,18 +159,17 @@ function saveStateToLocalStorage(state: PersistentSettings) {
 
 export type ProviderModel = {
   id: string;
+  parentId: string;
   name: string;
   type: string;
   shortName: string;
   isService: boolean;
   isInited: boolean;
-  isChild: boolean;
   hasState: boolean;
   moduleType: 'regular' | 'state';
   injections: Dict<ProviderListItem>;
-  childProviders: ProviderModel[];
-
-  // getOriginalProvider(): Provider<unknown>;
+  childIds: string[];
+  children: ProviderModel[];
 }
 
 export type TempAny = any;

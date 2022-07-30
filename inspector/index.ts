@@ -1,1 +1,1 @@
-export { Inspector } from './Inspector';
+export { InspectorApp } from './Inspector';

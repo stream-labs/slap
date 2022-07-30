@@ -6,10 +6,10 @@ import {
   Col, Collapse, Descriptions, Layout, Row,
 } from 'antd';
 import {
-  createApp, ReactModules, TAppContext,
+  createApp, ReactModules, TAppContext, useModule,
 } from '../lib/index';
 import './Inspector.css';
-import { InspectorService } from './inspector-service';
+import { InspectorService } from './inspector.service';
 import { NavigationTree, SearchBar } from './components/Navigation';
 import { ProviderDetail } from './components/ProviderDetail';
 import { StateDetail } from './components/StateDetail';
@@ -17,33 +17,39 @@ import { Logs } from './components/Logs';
 
 const { Sider, Content, Footer } = Layout;
 
-export function Inspector() {
+export function InspectorApp() {
 
   const inspectorApp = createApp({ InspectorService });
   inspectorApp.servicesScope.init(InspectorService);
 
   return (
     <ReactModules app={inspectorApp}>
-      <Layout style={{ backgroundColor: 'white' }} className="inspector-root">
-        <Layout>
-          <Sider width="50%" style={{ borderRight: '1px solid #ddd', overflowY: 'auto' }}>
-            <SearchBar />
-            <NavigationTree />
-          </Sider>
-          <Content style={{ overflowY: 'auto' }}>
-            <ProviderDetail />
-            <StateDetail />
-          </Content>
-        </Layout>
-        <Footer style={{ padding: 0 }}>
-          <Logs />
-        </Footer>
-      </Layout>
-
+      <InspectorLayout />
     </ReactModules>
-
   );
+}
 
+export function InspectorLayout() {
+  const { isLoaded } = useModule(InspectorService);
+  if (!isLoaded) return (<div>Loading...</div>);
+
+  return (
+    <Layout style={{ backgroundColor: 'white' }} className="inspector-root">
+      <Layout>
+        <Sider width="50%" style={{ borderRight: '1px solid #ddd', overflowY: 'auto' }}>
+          <SearchBar />
+          <NavigationTree />
+        </Sider>
+        <Content style={{ overflowY: 'auto' }}>
+          <ProviderDetail />
+          <StateDetail />
+        </Content>
+      </Layout>
+      <Footer style={{ padding: 0 }}>
+        <Logs />
+      </Footer>
+    </Layout>
+  );
 }
 
 export function SidePanel(p: {title?: string, children: ReactNode, isExpanded?: boolean }) {
