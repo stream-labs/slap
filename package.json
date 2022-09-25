@@ -32,7 +32,7 @@
     "copy-webpack-plugin": "^10.2.1",
     "css-loader": "^6.5.1",
     "declaration-bundler-webpack-plugin": "^1.0.3",
-    "eslint": "^8.6.0",
+    "eslint": "8.24.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-import-resolver-node": "^0.3.6",
     "eslint-plugin-import": "^2.25.4",
